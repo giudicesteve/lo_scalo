@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FFF5F0;
+  --foreground: #231F20;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-cream text-brand-dark;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-primary text-white px-6 py-3 rounded-full font-medium 
+           transition-all duration-200 hover:bg-brand-primary-hover 
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-transparent border-2 border-brand-dark text-brand-dark 
+           px-6 py-3 rounded-full font-medium transition-all duration-200 
+           hover:bg-brand-dark hover:text-white active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent border border-brand-gray text-brand-dark 
+           px-4 py-2 rounded-full text-sm transition-all duration-200 
+           hover:border-brand-dark active:scale-95;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-card transition-shadow duration-200 
+           hover:shadow-card-hover;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-brand-light-gray 
+           bg-white text-brand-dark placeholder-brand-gray
+           focus:outline-none focus:border-brand-primary focus:ring-2 
+           focus:ring-brand-primary/20 transition-all duration-200;
+  }
+  
+  .section-title {
+    @apply text-headline-sm font-bold text-brand-dark;
+  }
+  
+  .price-tag {
+    @apply bg-brand-primary text-white px-3 py-1 rounded-lg font-bold text-title-md;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFF5F0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #F05A28;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D94E22;
+}
+
+/* Menu tabs scrollbar - thin and gray */
+.menu-tabs-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Webkit overlay scrollbar */
+.menu-tabs-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* Firefox */
+.menu-tabs-scroll {
+  scrollbar-width: none;
+}
+
+/* Smooth scroll + scrollbar sempre visibile per evitare shift */
+html {
+  scroll-behavior: smooth;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
