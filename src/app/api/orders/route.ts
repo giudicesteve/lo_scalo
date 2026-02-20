@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { stripe } from "@/lib/stripe"
+import * as fs from "fs"
+
+// Helper per logging su file
+function logToFile(message: string) {
+  const timestamp = new Date().toISOString()
+  fs.appendFileSync("orders-debug.log", `[${timestamp}] ${message}\n`)
+}
 
 // Validazione email
 function isValidEmail(email: string): boolean {
@@ -7,7 +15,7 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email)
 }
 
-// Validazione telefono - solo formato base (prefisso + opzionale, cifre e separatori)
+// Validazione telefono
 function isValidPhone(phone: string): boolean {
   const phoneRegex = /^\+?[\d\s\-\(\)\.]{6,20}$/
   return phoneRegex.test(phone)
@@ -31,74 +39,83 @@ async function generateOrderNumber(): Promise<string> {
 }
 
 export async function POST(req: Request) {
+  logToFile("=".repeat(50))
+  logToFile("🛒 NUOVO ORDINE RICEVUTO")
+  
   try {
     const body = await req.json()
+    logToFile(`Body ricevuto: ${JSON.stringify(body)}`)
+    
     const { email, phone, items, total, type } = body
+    
+    logToFile(`Dati: email=${email}, phone=${phone}, items=${items?.length}, total=${total}, type=${type}`)
 
     // Validazione campi obbligatori
     if (!email?.trim()) {
-      return NextResponse.json(
-        { error: "L'email è obbligatoria" },
-        { status: 400 }
-      )
+      logToFile("❌ Errore: Email mancante")
+      return NextResponse.json({ error: "L'email è obbligatoria" }, { status: 400 })
     }
 
     if (!phone?.trim()) {
-      return NextResponse.json(
-        { error: "Il numero di telefono è obbligatorio" },
-        { status: 400 }
-      )
+      logToFile("❌ Errore: Telefono mancante")
+      return NextResponse.json({ error: "Il numero di telefono è obbligatorio" }, { status: 400 })
     }
 
-    // Validazione formato email
     if (!isValidEmail(email)) {
-      return NextResponse.json(
-        { error: "L'email non è valida" },
-        { status: 400 }
-      )
+      logToFile("❌ Errore: Email non valida")
+      return NextResponse.json({ error: "L'email non è valida" }, { status: 400 })
     }
 
-    // Validazione formato telefono
     if (!isValidPhone(phone)) {
-      return NextResponse.json(
-        { error: "Il numero di telefono non è valido" },
-        { status: 400 }
-      )
+      logToFile("❌ Errore: Telefono non valido")
+      return NextResponse.json({ error: "Il numero di telefono non è valido" }, { status: 400 })
     }
 
     // Separa prodotti e gift card
     const productItems = items.filter((item: { type: string }) => item.type === "product")
     const giftCardItems = items.filter((item: { type: string }) => item.type === "gift-card")
+    logToFile(`Prodotti: ${productItems.length}, Gift Card: ${giftCardItems.length}`)
+
+    // Genera numero ordine FUORI dalla transazione
+    logToFile("📝 Generando numero ordine...")
+    const orderNumber = await generateOrderNumber()
+    logToFile(`✅ Numero ordine: ${orderNumber}`)
 
     // Usa una transazione per garantire atomicità
+    logToFile("💾 Inizio transazione...")
     const result = await prisma.$transaction(async (tx) => {
+      logToFile("  🔍 Verifica disponibilità prodotti...")
+      
       // 1. Verifica disponibilità per i prodotti
       for (const item of productItems) {
+        logToFile(`    Prodotto ${item.id} - qty: ${item.quantity}`)
         const product = await tx.product.findUnique({
           where: { id: item.id },
           include: { variants: true },
         })
 
         if (!product) {
+          logToFile(`    ❌ Prodotto ${item.id} non trovato`)
           throw { code: 'PRODUCT_NOT_FOUND', productId: item.id }
         }
 
         if (product.hasSizes && item.size) {
-          // Prodotto con taglie - verifica disponibilità specifica
           const variant = product.variants.find((v: { size: string }) => v.size === item.size)
+          logToFile(`    Taglia ${item.size} - disponibile: ${variant?.quantity || 0}`)
           if (!variant || variant.quantity < item.quantity) {
             throw { code: 'PRODUCT_UNAVAILABLE', productName: product.name }
           }
         } else {
-          // Prodotto senza taglie - verifica disponibilità generale
           const totalQuantity = product.variants.reduce((sum: number, v: { quantity: number }) => sum + v.quantity, 0)
+          logToFile(`    Senza taglie - disponibile: ${totalQuantity}`)
           if (totalQuantity < item.quantity) {
             throw { code: 'PRODUCT_UNAVAILABLE', productName: product.name }
           }
         }
       }
 
-      // 2. Decrementa disponibilità
+      logToFile("  ⬇️ Decremento disponibilità...")
+      // 2. Decrementa disponibilità (riserva prodotti)
       for (const item of productItems) {
         const product = await tx.product.findUnique({
           where: { id: item.id },
@@ -106,35 +123,33 @@ export async function POST(req: Request) {
         })
 
         if (product?.hasSizes && item.size) {
-          // Decrementa la taglia specifica
           const variant = product.variants.find((v: { size: string }) => v.size === item.size)
           if (variant) {
             await tx.productVariant.update({
               where: { id: variant.id },
               data: { quantity: { decrement: item.quantity } },
             })
+            logToFile(`    Decrementato variant ${variant.id} di ${item.quantity}`)
           }
         } else if (product && !product.hasSizes) {
-          // Prodotto senza taglie - decrementa la prima variante (o crea logica appropriata)
           const variant = product.variants[0]
           if (variant) {
             await tx.productVariant.update({
               where: { id: variant.id },
               data: { quantity: { decrement: item.quantity } },
             })
+            logToFile(`    Decrementato variant ${variant.id} di ${item.quantity}`)
           }
         }
       }
 
-      // 3. Determina stato ordine
-      const initialStatus = productItems.length === 0 && giftCardItems.length > 0 ? "DELIVERED" : "PENDING"
-
-      // 4. Crea l'ordine
+      logToFile("  📝 Creazione ordine...")
+      // 3. Crea l'ordine
       const order = await tx.order.create({
         data: {
-          orderNumber: await generateOrderNumber(),
+          orderNumber: orderNumber,
           type,
-          status: initialStatus,
+          status: "PENDING_PAYMENT",
           email,
           phone,
           total,
@@ -148,26 +163,71 @@ export async function POST(req: Request) {
             })),
           },
         },
-        include: {
-          items: true,
-        },
+        include: { items: true },
       })
+      logToFile(`  ✅ Ordine creato: ${order.id}`)
 
-      // 5. Crea gift card (usa item.price come valore iniziale)
+      logToFile("  🎁 Creazione gift card...")
+      // 4. Crea gift card (in stato pending)
+      // NOTA: Se quantity > 1, creiamo N gift card separate
+      let giftCardsCreated = 0
       for (const item of giftCardItems) {
-        await tx.giftCard.create({
-          data: {
-            code: `GC${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-            initialValue: item.price,
-            remainingValue: item.price,
-            orderId: order.id,
-          },
-        })
+        const qty = item.quantity || 1
+        for (let i = 0; i < qty; i++) {
+          await tx.giftCard.create({
+            data: {
+              code: `GC${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+              initialValue: item.price,
+              remainingValue: item.price,
+              orderId: order.id,
+              isActive: false,
+            },
+          })
+          giftCardsCreated++
+        }
       }
+      logToFile(`  ✅ Gift card create: ${giftCardsCreated}`)
 
       return order
     })
+    logToFile("✅ Transazione completata!")
 
+    logToFile("💳 Creazione sessione Stripe...")
+    // 5. Crea sessione Stripe Checkout con scadenza 15 minuti
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lineItems = items.map((item: any) => ({
+      price_data: {
+        currency: "eur",
+        product_data: {
+          name: item.name,
+          description: item.type === "gift-card" ? "Gift Card Lo Scalo" : undefined,
+        },
+        unit_amount: Math.round(item.price * 100),
+      },
+      quantity: item.quantity,
+    }))
+
+    // Scadenza: 30 minuti da ora (minimo richiesto da Stripe)
+    const expiresAt = Math.floor(Date.now() / 1000) + (30 * 60)
+    logToFile(`   Scadenza sessione: ${new Date(expiresAt * 1000).toISOString()}`)
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: "payment",
+      expires_at: expiresAt,
+      success_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart?success=true&order=${result.orderNumber}`,
+      cancel_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart?canceled=true&order=${result.orderNumber}`,
+      customer_email: email,
+      metadata: {
+        orderId: result.id,
+        orderNumber: result.orderNumber,
+        phone: phone || "",
+      },
+    })
+    logToFile(`✅ Sessione Stripe creata: ${session.id}`)
+
+    logToFile("🎉 ORDINE COMPLETATO!")
     return NextResponse.json({
       success: true,
       order: {
@@ -175,29 +235,24 @@ export async function POST(req: Request) {
         orderNumber: result.orderNumber,
         status: result.status,
       },
+      stripeUrl: session.url,
     })
   } catch (error: unknown) {
+    logToFile(`❌ ERRORE: ${JSON.stringify(error)}`)
     console.error("Error creating order:", error)
     
-    // Gestione errori strutturati (disponibilità prodotto)
     if (typeof error === 'object' && error !== null && 'code' in error) {
       const typedError = error as { code: string; productName?: string; productId?: string }
       
       if (typedError.code === 'PRODUCT_UNAVAILABLE') {
         return NextResponse.json(
-          { 
-            error: 'PRODUCT_UNAVAILABLE',
-            productName: typedError.productName 
-          },
+          { error: 'PRODUCT_UNAVAILABLE', productName: typedError.productName },
           { status: 400 }
         )
       }
       
       if (typedError.code === 'PRODUCT_NOT_FOUND') {
-        return NextResponse.json(
-          { error: 'Prodotto non trovato' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Prodotto non trovato' }, { status: 400 })
       }
     }
     

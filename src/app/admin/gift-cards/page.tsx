@@ -53,6 +53,15 @@ export default function AdminGiftCardsPage() {
     fetchGiftCards()
   }, [])
 
+  // Ricarica quando la pagina prende focus (utente torna sulla tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchGiftCards()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
   const fetchGiftCards = async () => {
     try {
       const res = await fetch("/api/admin/gift-cards")
@@ -121,21 +130,28 @@ export default function AdminGiftCardsPage() {
     }
   }
 
-  const activeCount = giftCards.filter((gc) => !gc.isArchived).length
+  // Conta gift card attive (isActive=true, isArchived=false) e archiviate
+  const activeCount = giftCards.filter((gc) => gc.isActive && !gc.isArchived).length
   const archivedCount = giftCards.filter((gc) => gc.isArchived).length
 
   const filteredGiftCards = giftCards
-    .filter((gc) =>
-      activeTab === "active" ? !gc.isArchived : gc.isArchived
-    )
+    .filter((gc) => {
+      if (activeTab === "active") {
+        // Tab Attive: solo isActive=true AND isArchived=false
+        return gc.isActive && !gc.isArchived
+      } else {
+        // Tab Archiviate: isArchived=true
+        return gc.isArchived
+      }
+    })
     .filter(
       (gc) =>
         gc.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gc.order.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gc.order.orderNumber
+        gc.order?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        gc.order?.orderNumber
           .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
-        (gc.order.phone &&
+        (gc.order?.phone &&
           gc.order.phone.toLowerCase().includes(searchQuery.toLowerCase()))
     )
 
@@ -174,10 +190,17 @@ export default function AdminGiftCardsPage() {
           />
           <button
             onClick={() => setShowScanner(true)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+            className="absolute right-12 top-1/2 -translate-y-1/2 p-2 text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
             title="Scansiona QR Code"
           >
             <QrCode className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => fetchGiftCards()}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-brand-primary hover:bg-brand-primary/10 rounded-full transition-colors"
+            title="Aggiorna"
+          >
+            <RotateCcw className="w-5 h-5" />
           </button>
         </div>
 
@@ -232,18 +255,17 @@ export default function AdminGiftCardsPage() {
               <div className="space-y-1 mb-3">
                 <p className="text-body-sm text-brand-dark">
                   <span className="text-brand-gray">Cliente:</span>{" "}
-                  {gc.order.email}
+                  {gc.order?.email}
                 </p>
-                {gc.order.phone && (
+                {gc.order?.phone && (
                   <p className="text-body-sm text-brand-dark">
                     <span className="text-brand-gray">Tel:</span>{" "}
                     {gc.order.phone}
                   </p>
                 )}
                 <p className="text-body-sm text-brand-dark">
-                  <span className="text-brand-gray">Ordine:</span> #
-                  {gc.order.orderNumber} •{" "}
-                  {new Date(gc.purchasedAt).toLocaleDateString("it-IT")}
+                  <span className="text-brand-gray">Ordine:</span> #{gc.order?.orderNumber}
+                  {gc.purchasedAt && ` • ${new Date(gc.purchasedAt).toLocaleDateString("it-IT")}`}
                 </p>
               </div>
 

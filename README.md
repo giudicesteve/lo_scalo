@@ -166,6 +166,17 @@ RESEND_API_KEY="your-resend-api-key"
 - Il mock di Stripe è attivo per i test
 - Le immagini dei prodotti vanno inserite in `public/resources/`
 
+## Dati per test
+Se si deve manipolare il DB
+ - cd lo-scalo
+ - npx prisma studio
+
+Carte di test Stripe:
+ - Pagamento OK:        4242424242424242 - data futura - numero random
+ - Card declined:       4000000000006975 - data futura - numero random
+ - Generic declined:    4000000000000002 - data futura - numero random
+ - Insufficient found:  4000000000009995 - data futura - numero random
+
 ## Licenza
 
-Proprietà di Lo Scalo.
+Proprietà di Lo Scalo e Steve Giudice.
