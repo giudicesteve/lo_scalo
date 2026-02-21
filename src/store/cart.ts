@@ -43,6 +43,8 @@ export const useCart = create<CartStore>()(
       },
       
       clearCart: () => set({ items: [] }),
+      
+      setItems: (items: CartItem[]) => set({ items }),
     }),
     {
       name: 'lo-scalo-cart',

@@ -89,9 +89,6 @@ export default function GiftCardPage() {
       {/* Content */}
       <div className="p-4 pb-8">
         <div className="text-center mb-6">
-          <h1 className="text-headline-lg font-bold text-brand-dark mb-2">
-            {t("giftcard.title")}
-          </h1>
           <p className="text-body-md text-brand-gray">
             {t("giftcard.subtitle")}
           </p>

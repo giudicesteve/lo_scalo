@@ -144,8 +144,10 @@ model Order {
   phone           String?
   total           Float
   customerName    String?
-  stripePaymentId String?
+  stripePaymentId       String?  // ID della checkout session (cs_...)
+  stripePaymentIntentId String?  // ID del payment intent (pi_...)
   isArchived      Boolean   @default(false)
+  emailSent       Boolean   @default(false)  // Previene invio doppio email
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   

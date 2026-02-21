@@ -7,6 +7,7 @@ export interface CartItem {
   quantity: number
   size?: string
   image?: string
+  maxStock?: number // Per prodotti: disponibilità massima (considerando carrello)
 }
 
 export interface CartStore {
@@ -15,6 +16,7 @@ export interface CartStore {
   removeItem: (id: string, size?: string) => void
   updateQuantity: (id: string, quantity: number, size?: string) => void
   clearCart: () => void
+  setItems: (items: CartItem[]) => void
 }
 
 // Tipi per le traduzioni

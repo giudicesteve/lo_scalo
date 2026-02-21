@@ -106,29 +106,23 @@ export default function MenuPage() {
 
   const fetchSiteConfig = async () => {
     try {
-      const cached = localStorage.getItem('menu-site-config-v2')
-      if (cached) {
-        setSiteConfig(JSON.parse(cached))
-      }
-
-      const res = await fetch("/api/site-config", { cache: 'no-store' })
+      const res = await fetch("/api/site-config?key=MENU_ENABLED", { cache: 'no-store' })
       const data = await res.json()
-      const config: SiteConfig = {
-        menuEnabled: data.menuEnabled,
-        menuClosedMessageIt: data.menuClosedMessageIt,
-        menuClosedMessageEn: data.menuClosedMessageEn,
-      }
-      setSiteConfig(config)
-      localStorage.setItem('menu-site-config-v2', JSON.stringify(config))
+      
+      setSiteConfig(prev => ({
+        ...prev,
+        menuEnabled: data.value === 'true'
+      }))
     } catch (error) {
       console.error("Error fetching site config:", error)
     }
   }
 
   const activeCat = categories.find((c) => c.id === activeCategory)
+  const [showPreviousMenu, setShowPreviousMenu] = useState(false)
 
-  // Se il menu è spento, mostra solo il messaggio di chiusura
-  if (!siteConfig.menuEnabled) {
+  // Se il menu è spento e non si vuole vedere il menu precedente, mostra il messaggio di chiusura
+  if (!siteConfig.menuEnabled && !showPreviousMenu) {
     return (
       <main className="min-h-screen bg-brand-cream flex flex-col">
         {/* Header */}
@@ -160,7 +154,7 @@ export default function MenuPage() {
             </p>
             
             {/* Social Links */}
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-6 mb-8">
               <a
                 href="https://www.instagram.com/lo_scalo_craftdrinksbythelake/"
                 target="_blank"
@@ -171,11 +165,28 @@ export default function MenuPage() {
                 <span className="text-label-sm">Instagram</span>
               </a>
             </div>
+
+            {/* Button to view previous season menu */}
+            <div className="flex justify-center flex-col items-center gap-4">
+            <button 
+              onClick={() => setShowPreviousMenu(true)}
+              className="text-title-md font-medium flex items-center justify-start gap-4 px-6 py-4 rounded-full border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-all duration-200 group"
+            >
+              {t('menu.view-previous')}
+            </button>
+            </div>
+          </div>
+          <div className="flex justify-center gap-6 p-8">
+            <Link href="/home" className="btn-primary">
+              {t("menu.back-to-menu")}
+            </Link>
           </div>
         </div>
       </main>
     )
   }
+
+
 
   return (
     <main className="min-h-screen bg-brand-cream/95">

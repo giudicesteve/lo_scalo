@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Logo } from "@/components/Logo"
 import { useLanguage } from "@/store/language"
@@ -30,6 +31,7 @@ const SIZES = ["XS", "S", "M", "L", "XL", "XXL"]
 
 export default function ShopProductsPage() {
   const { lang, t } = useLanguage()
+  const router = useRouter()
   const { addItem, items } = useCart()
   const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -41,8 +43,21 @@ export default function ShopProductsPage() {
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0)
 
   useEffect(() => {
+    // Verifica se lo shop è aperto
+    const checkShopStatus = async () => {
+      try {
+        const res = await fetch("/api/site-config?key=SHOP_ENABLED")
+        const data = await res.json()
+        if (data.value === 'false') {
+          router.replace("/shop") // Reindirizza alla pagina di chiusura
+        }
+      } catch (error) {
+        console.error("Error checking shop status:", error)
+      }
+    }
+    checkShopStatus()
     fetchProducts()
-  }, [])
+  }, [router])
 
   const fetchProducts = async () => {
     try {
@@ -68,6 +83,13 @@ export default function ShopProductsPage() {
     if (selectedProduct.hasSizes) {
       // Prodotto con taglie - richiede selezione
       if (!selectedSize) return
+
+      // Controlla disponibilità
+      const available = getAvailableStock(selectedProduct, selectedSize)
+      if (available <= 0) {
+        alert(t('shop.max-stock-reached'))
+        return
+      }
       
       addItem({
         id: selectedProduct.id,
@@ -77,6 +99,7 @@ export default function ShopProductsPage() {
         quantity: 1,
         size: selectedSize,
         image: selectedProduct.image,
+        maxStock: available, // Salva disponibilità per controllo nel carrello
       })
       
       showAddedToast(`${selectedProduct.name} (${selectedSize})`)
@@ -84,6 +107,13 @@ export default function ShopProductsPage() {
       setSelectedSize("")
     } else {
       // Prodotto senza taglie - aggiungi direttamente
+      // Controlla disponibilità
+      const available = getAvailableStock(selectedProduct)
+      if (available <= 0) {
+        alert(t('shop.max-stock-reached'))
+        return
+      }
+
       addItem({
         id: selectedProduct.id,
         type: "product",
@@ -91,6 +121,7 @@ export default function ShopProductsPage() {
         price: selectedProduct.price,
         quantity: 1,
         image: selectedProduct.image,
+        maxStock: available, // Salva disponibilità per controllo nel carrello
       })
       
       showAddedToast(selectedProduct.name)
@@ -104,6 +135,13 @@ export default function ShopProductsPage() {
       setSelectedProduct(product)
       setSelectedSize("")
     } else {
+      // Controlla disponibilità prima di aggiungere
+      const available = getAvailableStock(product)
+      if (available <= 0) {
+        alert(t('shop.max-stock-reached'))
+        return
+      }
+
       // Aggiungi direttamente
       addItem({
         id: product.id,
@@ -112,6 +150,7 @@ export default function ShopProductsPage() {
         price: product.price,
         quantity: 1,
         image: product.image,
+        maxStock: available, // Salva disponibilità per controllo nel carrello
       })
       showAddedToast(product.name)
     }
@@ -129,6 +168,25 @@ export default function ShopProductsPage() {
       return product.variants.reduce((sum, v) => sum + v.quantity, 0)
     }
     return product.variants[0]?.quantity || 0
+  }
+
+  // Ottieni quantità già nel carrello per un prodotto (e taglia specifica)
+  const getQuantityInCart = (productId: string, size?: string) => {
+    const cartItem = items.find(item => item.id === productId && item.size === size)
+    return cartItem?.quantity || 0
+  }
+
+  // Calcola disponibilità residua (stock - carrello)
+  const getAvailableStock = (product: Product, size?: string) => {
+    const inCart = getQuantityInCart(product.id, size)
+    
+    if (product.hasSizes && size) {
+      const variant = product.variants.find(v => v.size === size)
+      return Math.max(0, (variant?.quantity || 0) - inCart)
+    } else {
+      const totalStock = product.variants[0]?.quantity || 0
+      return Math.max(0, totalStock - inCart)
+    }
   }
 
   return (
@@ -178,6 +236,9 @@ export default function ShopProductsPage() {
               const availableSizes = getAvailableSizes(product)
               const stock = getStock(product)
               const isAvailable = stock > 0
+              // Disponibilità residua (considerando carrello)
+              const availableStock = getAvailableStock(product)
+              const canAdd = availableStock > 0
               
               return (
                 <div
@@ -223,12 +284,14 @@ export default function ShopProductsPage() {
                       </span>
                       <button
                         onClick={() => handleQuickAdd(product)}
-                        disabled={!isAvailable}
+                        disabled={!isAvailable || !canAdd}
                         className="btn-primary text-label-lg py-2 px-4 disabled:opacity-50 transition-all active:scale-95"
                       >
-                        {isAvailable
-                          ? (product.hasSizes ? t('shop.select-size-btn') : t('shop.add-to-cart-btn'))
-                          : t('shop.sold-out')}
+                        {!isAvailable
+                          ? t('shop.sold-out')
+                          : !canAdd
+                          ? t('shop.max-in-cart')
+                          : (product.hasSizes ? t('shop.select-size-btn') : t('shop.add-to-cart-btn'))}
                       </button>
                     </div>
                   </div>
@@ -282,9 +345,19 @@ export default function ShopProductsPage() {
               })}
             </div>
 
+            {selectedSize && (
+              <p className="text-label-sm text-brand-gray mb-3 text-center">
+                {(() => {
+                  const available = selectedProduct ? getAvailableStock(selectedProduct, selectedSize) : 0
+                  return available > 0 
+                    ? `${t('shop.available')}: ${available}`
+                    : t('shop.max-stock-reached')
+                })()}
+              </p>
+            )}
             <button
               onClick={handleAddToCart}
-              disabled={!selectedSize}
+              disabled={!selectedSize || (selectedProduct && getAvailableStock(selectedProduct, selectedSize) <= 0)}
               className="btn-primary w-full mb-3 disabled:opacity-50"
             >
               {t('shop.add-to-cart-btn')}

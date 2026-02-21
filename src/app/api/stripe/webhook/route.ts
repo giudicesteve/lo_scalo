@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
+import { sendOrderConfirmation, sendAdminNotification, sendGiftCardEmail } from "@/lib/email"
 import Stripe from "stripe"
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ""
@@ -77,7 +78,10 @@ export async function POST(req: Request) {
         // Se un altro processo ha già modificato, count sarà 0
         const order = await prisma.order.findUnique({
           where: { id: orderId },
-          include: { items: true, giftCards: true }
+          include: { 
+            items: { include: { product: true } }, 
+            giftCards: true 
+          }
         })
 
         if (!order) {
@@ -90,13 +94,22 @@ export async function POST(req: Request) {
         const hasGiftCards = order.giftCards.length > 0
         const newStatus = (hasGiftCards && !hasProducts) ? "DELIVERED" : "COMPLETED"
 
+        // Estrai il Payment Intent ID (può essere stringa o oggetto)
+        const paymentIntentId = typeof session.payment_intent === 'string' 
+          ? session.payment_intent 
+          : session.payment_intent?.id
+
         // ATOMIC UPDATE: cambia stato solo se è PENDING_PAYMENT
         const updateResult = await prisma.order.updateMany({
           where: { 
             id: orderId, 
             status: "PENDING_PAYMENT"  // clausola di guardia
           },
-          data: { status: newStatus }
+          data: { 
+            status: newStatus,
+            stripePaymentId: session.id,           // ID sessione (cs_...)
+            stripePaymentIntentId: paymentIntentId // ID payment (pi_...)
+          }
         })
 
         if (updateResult.count === 0) {
@@ -110,6 +123,68 @@ export async function POST(req: Request) {
             where: { orderId: orderId },
             data: { isActive: true, activatedAt: new Date() }
           })
+        }
+
+        // Invia email solo se non già inviate (idempotenza)
+        if (!order.emailSent) {
+          const orderDetails = {
+            orderNumber: order.orderNumber,
+            email: order.email,
+            phone: order.phone || undefined,
+            total: order.total,
+            items: order.items.map(item => ({
+              name: item.product.name,
+              quantity: item.quantity,
+              size: item.size || undefined,
+              totalPrice: item.totalPrice
+            })),
+            giftCards: order.giftCards.map(gc => ({
+              code: gc.code,
+              initialValue: gc.initialValue
+            })),
+            createdAt: order.createdAt
+          }
+
+          try {
+            // Invia email sequenzialmente con delay per rispettare rate limit (2 req/sec)
+            const results = []
+            
+            // 1. Email cliente (sempre)
+            results.push(await sendOrderConfirmation(orderDetails))
+            await new Promise(r => setTimeout(r, 600)) // 600ms delay
+            
+            // 2. Email admin
+            results.push(await sendAdminNotification(orderDetails))
+            await new Promise(r => setTimeout(r, 600)) // 600ms delay
+            
+            // 3. Email gift card (se presenti)
+            if (order.giftCards.length > 0) {
+              results.push(await sendGiftCardEmail(orderDetails))
+            } else {
+              results.push({ success: true })
+            }
+
+            console.log('Email sending results:', {
+              customer: results[0].success,
+              admin: results[1].success,
+              giftCard: results[2].success
+            })
+
+            // Segna come inviato solo se almeno l'email cliente è andata a buon fine
+            if (results[0].success) {
+              await prisma.order.update({
+                where: { id: orderId },
+                data: { emailSent: true }
+              })
+              console.log(`📧 Emails marked as sent for order ${orderId}`)
+            }
+          } catch (err) {
+            // Non bloccare il webhook se le email falliscono
+            // Verranno ritentate dalla pagina di success o dal prossimo webhook
+            console.error('Error sending emails (will retry later):', err)
+          }
+        } else {
+          console.log(`📧 Emails already sent for order ${orderId}, skipping`)
         }
 
         console.log(`✅ Order ${orderId} completed successfully`)

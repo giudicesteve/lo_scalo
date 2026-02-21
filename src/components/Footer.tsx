@@ -31,7 +31,7 @@ export function Footer() {
     <footer className="bg-brand-dark text-white py-8 mt-auto">
       <div className="max-w-6xl mx-auto px-4">
         {/* Grid principale */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Colonna 1 - Contatti */}
           <div className="space-y-3">
             <h3 className="text-label-md font-bold text-brand-primary mb-4">
@@ -94,7 +94,29 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Colonna 3 - Legale */}
+          {/* Colonna 3 - Info e Assistenza */}
+          <div className="space-y-3">
+            <h3 className="text-label-md font-bold text-brand-primary mb-4">
+              {t('footer.support')}
+            </h3>
+            <a 
+              href="mailto:support@loscalo.it"
+              className="flex items-center gap-2 text-body-sm text-brand-light-gray hover:text-white transition-colors"
+            >
+              <Mail className="w-4 h-4 flex-shrink-0" />
+              <span>support@loscalo.it</span>
+            </a>
+            <div className="flex flex-col gap-2 mt-2">
+              <Link 
+                href="/faq"
+                className="text-label-sm text-brand-gray hover:text-white transition-colors"
+              >
+                {t('footer.faq')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Colonna 4 - Legale */}
           <div className="space-y-3">
             <h3 className="text-label-md font-bold text-brand-primary mb-4">
               {t('footer.legal')}
@@ -103,6 +125,12 @@ export function Footer() {
               P.IVA: IT03661710131
             </p>
             <div className="flex flex-col gap-2">
+              <Link 
+                href="/terms"
+                className="text-label-sm text-brand-gray hover:text-white transition-colors"
+              >
+                {t('footer.terms')}
+              </Link>
               <Link 
                 href="/privacy"
                 className="text-label-sm text-brand-gray hover:text-white transition-colors"

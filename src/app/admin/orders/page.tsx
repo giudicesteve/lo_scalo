@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { Logo } from "@/components/Logo"
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X } from "lucide-react"
 
 interface OrderItem {
   id: string
@@ -33,6 +33,8 @@ interface Order {
   total: number
   createdAt: string
   isArchived: boolean
+  stripePaymentId?: string
+  stripePaymentIntentId?: string
   items: OrderItem[]
   giftCards: GiftCard[]
 }
@@ -83,6 +85,15 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
+  }, [fetchOrders])
+
+  // Ricarica quando la pagina prende focus (utente torna sulla tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchOrders()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [fetchOrders])
 
   // Filtra ordini per tab (active/archived) e ricerca
@@ -187,9 +198,21 @@ export default function AdminOrdersPage() {
             placeholder="Cerca per numero ordine, email o telefono..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-12"
+            className="input-field pl-12 pr-10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50 rounded-full transition-colors"
+              title="Cancella"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
+
+        {/* Separatore tra area ricerca e tabs */}
+        <div className="border-b border-brand-light-gray mb-4" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
@@ -260,6 +283,31 @@ export default function AdminOrdersPage() {
                   })}
                 </p>
               </div>
+
+              {/* Stripe Payment Info */}
+              {(order.stripePaymentId || order.stripePaymentIntentId) && (
+                <div className="bg-gray-50 rounded-xl p-3 mb-3">
+                  <p className="text-label-sm text-brand-gray mb-1">Pagamento Stripe:</p>
+                  {order.stripePaymentIntentId && (
+                    <p className="text-body-xs font-mono text-brand-dark break-all">
+                      <span className="text-brand-gray">Payment:</span>{" "}
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_STRIPE_DASHBOARD_URL}${order.stripePaymentIntentId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-primary hover:underline"
+                      >
+                        {order.stripePaymentIntentId}
+                      </a>
+                    </p>
+                  )}
+                  {order.stripePaymentId && (
+                    <p className="text-body-xs font-mono text-brand-dark break-all">
+                      <span className="text-brand-gray">Session:</span> {order.stripePaymentId}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Articoli */}
               <div className="bg-brand-cream rounded-xl p-3 mb-3">

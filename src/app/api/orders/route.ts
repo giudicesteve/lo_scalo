@@ -22,20 +22,32 @@ function isValidPhone(phone: string): boolean {
 }
 
 async function generateOrderNumber(): Promise<string> {
+  const currentYear = new Date().getFullYear()
+  
+  // Trova l'ultimo ordine dell'anno corrente
   const lastOrder = await prisma.order.findFirst({
+    where: {
+      orderNumber: {
+        startsWith: currentYear.toString(),
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: { orderNumber: true },
   })
 
   let nextNumber = 1
   if (lastOrder) {
-    const lastNumber = parseInt(lastOrder.orderNumber, 10)
-    if (!isNaN(lastNumber)) {
-      nextNumber = lastNumber + 1
+    // Estrai il numero dopo il trattino (es: "2025-0023" → "0023" → 23)
+    const parts = lastOrder.orderNumber.split("-")
+    if (parts.length === 2) {
+      const lastNumber = parseInt(parts[1], 10)
+      if (!isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1
+      }
     }
   }
 
-  return nextNumber.toString().padStart(4, "0")
+  return `${currentYear}-${nextNumber.toString().padStart(4, "0")}`
 }
 
 export async function POST(req: Request) {
@@ -81,38 +93,70 @@ export async function POST(req: Request) {
     const orderNumber = await generateOrderNumber()
     logToFile(`✅ Numero ordine: ${orderNumber}`)
 
+    // Verifica disponibilità FUORI dalla transazione per raccogliere tutti gli errori
+    logToFile("🔍 Verifica disponibilità prodotti...")
+    const unavailableItems: Array<{
+      name: string
+      requested: number
+      available: number
+      size?: string
+    }> = []
+    
+    for (const item of productItems) {
+      logToFile(`    Prodotto ${item.id} - qty: ${item.quantity}`)
+      const product = await prisma.product.findUnique({
+        where: { id: item.id },
+        include: { variants: true },
+      })
+
+      if (!product) {
+        logToFile(`    ❌ Prodotto ${item.id} non trovato`)
+        unavailableItems.push({
+          name: item.name,
+          requested: item.quantity,
+          available: 0,
+          size: item.size,
+        })
+        continue
+      }
+
+      if (product.hasSizes && item.size) {
+        const variant = product.variants.find((v: { size: string }) => v.size === item.size)
+        const available = variant?.quantity || 0
+        logToFile(`    Taglia ${item.size} - disponibile: ${available}`)
+        if (!variant || available < item.quantity) {
+          unavailableItems.push({
+            name: product.name,
+            requested: item.quantity,
+            available,
+            size: item.size,
+          })
+        }
+      } else {
+        const available = product.variants.reduce((sum: number, v: { quantity: number }) => sum + v.quantity, 0)
+        logToFile(`    Senza taglie - disponibile: ${available}`)
+        if (available < item.quantity) {
+          unavailableItems.push({
+            name: product.name,
+            requested: item.quantity,
+            available,
+          })
+        }
+      }
+    }
+
+    // Se ci sono prodotti non disponibili, restituisci errore con lista completa
+    if (unavailableItems.length > 0) {
+      logToFile(`❌ Prodotti non disponibili: ${unavailableItems.length}`)
+      return NextResponse.json({
+        error: 'PRODUCTS_UNAVAILABLE',
+        items: unavailableItems,
+      }, { status: 400 })
+    }
+
     // Usa una transazione per garantire atomicità
     logToFile("💾 Inizio transazione...")
     const result = await prisma.$transaction(async (tx) => {
-      logToFile("  🔍 Verifica disponibilità prodotti...")
-      
-      // 1. Verifica disponibilità per i prodotti
-      for (const item of productItems) {
-        logToFile(`    Prodotto ${item.id} - qty: ${item.quantity}`)
-        const product = await tx.product.findUnique({
-          where: { id: item.id },
-          include: { variants: true },
-        })
-
-        if (!product) {
-          logToFile(`    ❌ Prodotto ${item.id} non trovato`)
-          throw { code: 'PRODUCT_NOT_FOUND', productId: item.id }
-        }
-
-        if (product.hasSizes && item.size) {
-          const variant = product.variants.find((v: { size: string }) => v.size === item.size)
-          logToFile(`    Taglia ${item.size} - disponibile: ${variant?.quantity || 0}`)
-          if (!variant || variant.quantity < item.quantity) {
-            throw { code: 'PRODUCT_UNAVAILABLE', productName: product.name }
-          }
-        } else {
-          const totalQuantity = product.variants.reduce((sum: number, v: { quantity: number }) => sum + v.quantity, 0)
-          logToFile(`    Senza taglie - disponibile: ${totalQuantity}`)
-          if (totalQuantity < item.quantity) {
-            throw { code: 'PRODUCT_UNAVAILABLE', productName: product.name }
-          }
-        }
-      }
 
       logToFile("  ⬇️ Decremento disponibilità...")
       // 2. Decrementa disponibilità (riserva prodotti)
@@ -216,8 +260,8 @@ export async function POST(req: Request) {
       line_items: lineItems,
       mode: "payment",
       expires_at: expiresAt,
-      success_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart?success=true&order=${result.orderNumber}`,
-      cancel_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart?canceled=true&order=${result.orderNumber}`,
+      success_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart/success?order=${result.orderNumber}&session={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/cart/canceled?order=${result.orderNumber}&session={CHECKOUT_SESSION_ID}`,
       customer_email: email,
       metadata: {
         orderId: result.id,

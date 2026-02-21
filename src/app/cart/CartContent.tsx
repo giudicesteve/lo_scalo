@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+
 
 import { Logo } from "@/components/Logo"
 import { useLanguage } from "@/store/language"
 import { useCart, calculateTotal } from "@/store/cart"
-import { ArrowLeft, X, Check, AlertCircle } from "lucide-react"
+import { ArrowLeft, X, AlertCircle } from "lucide-react"
 
 // Validazione email
 function isValidEmail(email: string): boolean {
@@ -24,51 +24,97 @@ function isValidPhone(phone: string): boolean {
 export default function CartContent() {
   const { t } = useLanguage()
   const { items, removeItem, updateQuantity, clearCart } = useCart()
-  const searchParams = useSearchParams()
 
   const [email, setEmail] = useState("")
+  const [emailConfirm, setEmailConfirm] = useState("")
   const [phone, setPhone] = useState("")
-  const [errors, setErrors] = useState<{ email?: string; phone?: string; general?: string }>({})
-  const [step, setStep] = useState<"cart" | "checkout" | "success">("cart")
-  const [orderNumber, setOrderNumber] = useState("")
+  const [errors, setErrors] = useState<{ 
+    email?: string; 
+    emailConfirm?: string; 
+    phone?: string; 
+    general?: string;
+    unavailableItems?: string;
+  }>({})
+  const [isCheckout, setIsCheckout] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Evita hydration mismatch - la lingua viene caricata dal localStorage solo sul client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Verifica e aggiorna disponibilità quando si torna al carrello
+  useEffect(() => {
+    if (!mounted || items.length === 0) return
+
+    async function checkStock() {
+      try {
+        // Carica prodotti aggiornati
+        const res = await fetch('/api/products')
+        if (!res.ok) return
+        
+        const products = await res.json()
+        let hasUpdates = false
+
+        // Verifica ogni item nel carrello
+        items.forEach(item => {
+          if (item.type !== 'product') return
+
+          const product = products.find((p: { id: string }) => p.id === item.id)
+          if (!product) return
+
+          let currentStock = 0
+          if (product.hasSizes && item.size) {
+            const variant = product.variants.find((v: { size: string }) => v.size === item.size)
+            currentStock = variant?.quantity || 0
+          } else {
+            currentStock = product.variants[0]?.quantity || 0
+          }
+
+          // Se lo stock è cambiato, aggiorna
+          if (currentStock !== item.maxStock) {
+            if (currentStock === 0) {
+              // Rimuovi se esaurito
+              removeItem(item.id, item.size)
+            } else if (item.quantity > currentStock) {
+              // Riduci alla disponibilità
+              updateQuantity(item.id, currentStock, item.size)
+            }
+            hasUpdates = true
+          }
+        })
+
+        if (hasUpdates) {
+          // Mostra notifica
+          setErrors(prev => ({
+            ...prev,
+            general: t('cart.stock-updated')
+          }))
+        }
+      } catch {
+        // Ignora errori silenziosamente
+      }
+    }
+
+    checkStock()
+  }, [mounted, items.length]) // Solo al mount e quando cambia il numero di items
 
   const total = calculateTotal(items)
 
-  // Gestisci ritorno da Stripe
-  useEffect(() => {
-    const success = searchParams.get("success")
-    const canceled = searchParams.get("canceled")
-    const order = searchParams.get("order")
-
-    if (success === "true" && order) {
-      setOrderNumber(order)
-      setStep("success")
-      localStorage.removeItem("pending-order")
-      window.history.replaceState({}, '', '/cart')
-    } else if (canceled === "true" && order) {
-      // Utente ha annullato il pagamento - ripristina disponibilità
-      fetch("/api/orders/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderNumber: order })
-      }).then(() => {
-        setErrors({ general: "Pagamento annullato. Puoi riprovare quando vuoi." })
-        window.history.replaceState({}, '', '/cart')
-      }).catch(() => {
-        setErrors({ general: "Pagamento annullato. Contatta il supporto se hai problemi." })
-        window.history.replaceState({}, '', '/cart')
-      })
-    }
-  }, [searchParams])
-
   const validateForm = (): boolean => {
-    const newErrors: { email?: string; phone?: string } = {}
+    const newErrors: { email?: string; emailConfirm?: string; phone?: string } = {}
 
     if (!email.trim()) {
       newErrors.email = t('cart.error.email-required')
     } else if (!isValidEmail(email)) {
       newErrors.email = t('cart.error.email-invalid')
+    }
+
+    if (!emailConfirm.trim()) {
+      newErrors.emailConfirm = t('cart.error.email-required')
+    } else if (email !== emailConfirm) {
+      newErrors.emailConfirm = t('cart.error.email-mismatch')
     }
 
     if (!phone.trim()) {
@@ -119,14 +165,49 @@ export default function CartContent() {
       const data = await res.json()
 
       if (data.success && data.stripeUrl) {
+        // Salva dettagli ordine per la pagina di successo
         localStorage.setItem('pending-order', JSON.stringify({
           orderNumber: data.order.orderNumber,
-          items: items.map(i => ({ name: i.name, quantity: i.quantity }))
+          items: items.map(i => ({ 
+            name: i.name, 
+            quantity: i.quantity, 
+            type: i.type,
+            price: i.price,
+            size: i.size 
+          })),
+          total: calculateTotal(items),
+          email: email
         }))
+        // Salva carrello per ripristino in caso di annullamento
+        localStorage.setItem('cart-backup', JSON.stringify(items))
         clearCart()
         window.location.href = data.stripeUrl
       } else {
-        if (data.error === 'PRODUCT_UNAVAILABLE' && data.productName) {
+        if (data.error === 'PRODUCTS_UNAVAILABLE' && data.items) {
+          // Errore con lista prodotti non disponibili
+          const unavailableItems = data.items as Array<{
+            name: string
+            requested: number
+            available: number
+            size?: string
+          }>
+          
+          // Aggiorna il carrello con le nuove disponibilità
+          unavailableItems.forEach((item) => {
+            const cartItem = items.find(i => 
+              i.name === (item.size ? `${item.name} - ${item.size}` : item.name)
+            )
+            if (cartItem && item.available > 0) {
+              // Aggiorna alla disponibilità massima
+              updateQuantity(cartItem.id, Math.min(item.available, cartItem.quantity), cartItem.size)
+            }
+          })
+          
+          setErrors({ 
+            general: t('cart.error.products-unavailable'),
+            unavailableItems: JSON.stringify(unavailableItems)
+          })
+        } else if (data.error === 'PRODUCT_UNAVAILABLE' && data.productName) {
           setErrors({ 
             general: t('cart.error.product-unavailable').replace('{product}', data.productName) 
           })
@@ -142,31 +223,16 @@ export default function CartContent() {
     }
   }
 
-  if (step === "success") {
+  // Previeni hydration mismatch mostrando un loader finché non è montato
+  if (!mounted) {
     return (
-      <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-headline-md font-bold text-brand-dark mb-4">
-            {t("cart.success")}
-          </h1>
-          <p className="text-body-md text-brand-gray mb-2">
-            {t("cart.order-number")} #{orderNumber}
-          </p>
-          <p className="text-body-md text-brand-gray mb-8">
-            {t("cart.success-message")}
-          </p>
-          <Link href="/home" className="btn-primary inline-block">
-            Torna alle sezioni
-          </Link>
-        </div>
+      <main className="min-h-screen bg-brand-cream flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
       </main>
     )
   }
 
-  if (items.length === 0 && step === "cart") {
+  if (items.length === 0 && !isCheckout) {
     return (
       <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
         <Logo variant="vertical" className="w-64 h-auto mb-6" />
@@ -198,7 +264,7 @@ export default function CartContent() {
       </header>
 
       <div className="p-4 pb-24">
-        {step === "cart" ? (
+        {!isCheckout ? (
           <>
             <h1 className="text-headline-sm font-bold text-brand-dark mb-6">
               {t("cart.title")}
@@ -219,20 +285,26 @@ export default function CartContent() {
                     <tr key={`${item.id}-${item.size}-${index}`} className="border-t border-brand-light-gray">
                       <td className="p-4 text-body-sm text-brand-dark">{item.name}</td>
                       <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
-                            className="w-6 h-6 rounded-full bg-brand-light-gray text-brand-dark"
-                          >
-                            -
-                          </button>
-                          <span className="text-body-md w-6">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
-                            className="w-6 h-6 rounded-full bg-brand-light-gray text-brand-dark"
-                          >
-                            +
-                          </button>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
+                              className="w-6 h-6 rounded-full bg-brand-light-gray text-brand-dark"
+                            >
+                              -
+                            </button>
+                            <span className="text-body-md w-6">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
+                              disabled={item.type === 'product' && item.maxStock !== undefined && item.quantity >= item.maxStock}
+                              className="w-6 h-6 rounded-full bg-brand-light-gray text-brand-dark disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              +
+                            </button>
+                          </div>
+                          {item.type === 'product' && item.maxStock !== undefined && item.quantity >= item.maxStock && (
+                            <span className="text-label-xs text-red-500">{t('cart.max-stock')}</span>
+                          )}
                         </div>
                       </td>
                       <td className="p-4 text-right text-body-sm font-medium text-brand-dark">
@@ -254,7 +326,7 @@ export default function CartContent() {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep("checkout")} className="btn-primary flex-1">
+              <button onClick={() => setIsCheckout(true)} className="btn-primary flex-1">
                 {t("cart.checkout")}
               </button>
               <button onClick={clearCart} className="btn-secondary">
@@ -267,9 +339,39 @@ export default function CartContent() {
             <h1 className="text-headline-sm font-bold text-brand-dark mb-6">{t("cart.title")}</h1>
 
             {errors.general && (
-              <div className="bg-red-100 text-red-700 p-4 rounded-xl mb-6 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                {errors.general}
+              <div className="bg-red-100 text-red-700 p-4 rounded-xl mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-bold">{errors.general}</span>
+                </div>
+                {errors.unavailableItems && (
+                  <div className="mt-3 space-y-2 text-body-sm">
+                    {(() => {
+                      const items = JSON.parse(errors.unavailableItems) as Array<{
+                        name: string
+                        requested: number
+                        available: number
+                        size?: string
+                      }>
+                      return items.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-white/50 rounded-lg p-2">
+                          <span>
+                            {item.size ? `${item.name} (${item.size})` : item.name}
+                          </span>
+                          <span className="text-label-sm">
+                            {item.available === 0 
+                              ? t('cart.error.sold-out')
+                              : `${t('cart.error.available-now')}: ${item.available}`
+                            }
+                          </span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                )}
+                <p className="mt-3 text-body-sm">
+                  {t('cart.error.go-back-update')}
+                </p>
               </div>
             )}
 
@@ -301,6 +403,30 @@ export default function CartContent() {
 
                 <div>
                   <label className="block text-label-md text-brand-gray mb-2">
+                    {t('cart.label.confirm-email')} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={emailConfirm}
+                    onChange={(e) => {
+                      setEmailConfirm(e.target.value)
+                      if (errors.emailConfirm) setErrors({ ...errors, emailConfirm: undefined })
+                    }}
+                    placeholder={t("cart.email-placeholder")}
+                    className={`input-field ${errors.emailConfirm ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                  />
+                  {errors.emailConfirm ? (
+                    <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.emailConfirm}
+                    </p>
+                  ) : (
+                    <p className="text-label-sm text-brand-gray mt-1">{t("cart.email-confirm-help")}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-label-md text-brand-gray mb-2">
                     {t('cart.label.phone')} <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -313,11 +439,13 @@ export default function CartContent() {
                     placeholder="+39 123 456 7890"
                     className={`input-field ${errors.phone ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                   />
-                  {errors.phone && (
+                  {errors.phone ? (
                     <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {errors.phone}
                     </p>
+                  ) : (
+                    <p className="text-label-sm text-brand-gray mt-1">{t("cart.phone-help")}</p>
                   )}
                 </div>
               </div>
