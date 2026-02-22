@@ -3,10 +3,19 @@ import { prisma } from "@/lib/prisma"
 import { stripe } from "@/lib/stripe"
 import * as fs from "fs"
 
-// Helper per logging su file
+// Helper per logging (su Vercel usa console, in locale usa file)
 function logToFile(message: string) {
   const timestamp = new Date().toISOString()
-  fs.appendFileSync("orders-debug.log", `[${timestamp}] ${message}\n`)
+  console.log(`[${timestamp}] ${message}`)
+  
+  // Solo in locale scriviamo su file
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      fs.appendFileSync("orders-debug.log", `[${timestamp}] ${message}\n`)
+    } catch {
+      // Ignora errori di scrittura su Vercel
+    }
+  }
 }
 
 // Validazione email

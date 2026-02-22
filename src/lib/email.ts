@@ -11,8 +11,8 @@ const FROM_EMAIL = 'Lo Scalo <onboarding@resend.dev>'
 
 // Feature flag per modalità email
 // 'send' = invia email normalmente
-// 'save-only' = salva PDF in test-emails/ senza inviare
-const EMAIL_MODE = process.env.EMAIL_MODE || 'send'
+// 'save-only' = salva PDF in test-emails/ senza inviare (SOLO LOCALE)
+const EMAIL_MODE = process.env.NODE_ENV === 'production' ? 'send' : (process.env.EMAIL_MODE || 'send')
 const TEST_EMAILS_DIR = path.join(process.cwd(), 'test-emails')
 
 // Brand colors
@@ -83,16 +83,18 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
   
-  // Load and embed logo PNG
+  // Load and embed logo PNG (usa fetch per funzionare su Vercel)
   let logoImage = null
   let logoDims = null
   try {
-    const logoPath = path.join(process.cwd(),'public', 'resources' , 'Lo_Scalo_vertical_black.png')
-    console.log(logoPath)
-    if (fs.existsSync(logoPath)) {
-      const logoBytes = fs.readFileSync(logoPath)
-      logoImage = await pdfDoc.embedPng(logoBytes)
+    const logoUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/resources/Lo_Scalo_vertical_black.png`
+    const response = await fetch(logoUrl)
+    if (response.ok) {
+      const logoBytes = await response.arrayBuffer()
+      logoImage = await pdfDoc.embedPng(Buffer.from(logoBytes))
       logoDims = logoImage.scale(0.6) // Regola scala qui
+    } else {
+      console.log('Logo not found at:', logoUrl)
     }
   } catch (err) {
     console.error('Error loading logo:', err)

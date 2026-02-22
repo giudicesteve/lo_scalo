@@ -247,7 +247,7 @@ export default function ShopProductsPage() {
                 >
                   <div className="relative aspect-square bg-brand-light-gray ">
                     <img
-                      src={`${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
+                      src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />

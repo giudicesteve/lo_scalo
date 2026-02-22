@@ -218,7 +218,7 @@ export default function AdminShopPage() {
             <div key={product.id} className={`bg-white rounded-2xl shadow-card overflow-hidden ${!product.isActive ? 'opacity-60' : ''}`}>
               <div className="relative aspect-square bg-brand-light-gray">
                 <img
-                  src={`${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
+                  src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
