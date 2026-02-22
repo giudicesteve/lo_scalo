@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
-import { mkdir } from "fs/promises"
 import sharp from "sharp"
-import path from "path"
 
 // Formati supportati
 const ALLOWED_TYPES = [
@@ -39,28 +37,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File troppo grande (max 5MB)" }, { status: 400 })
     }
 
-    // Crea cartella
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products")
-    await mkdir(uploadDir, { recursive: true })
-    console.log(`Upload dir: ${uploadDir}`)
-
-    // Nome file
-    const timestamp = Date.now()
-    const originalName = file.name.replace(/\.[^/.]+$/, "")
-    const safeName = originalName.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 50)
-    const filename = `${timestamp}-${safeName}.jpg`
-    const filepath = path.join(uploadDir, filename)
-    console.log(`Saving to: ${filepath}`)
-
     // Leggi buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     console.log(`Buffer size: ${buffer.length} bytes`)
 
-    // Processa con sharp
+    // Processa con sharp e converti in base64
     try {
-      await sharp(buffer, {
-        // Fallback se il formato non è riconosciuto
+      const processedBuffer = await sharp(buffer, {
         failOnError: false
       })
         .resize(600, 600, { 
@@ -73,24 +57,25 @@ export async function POST(req: Request) {
           progressive: true,
           mozjpeg: true
         })
-        .toFile(filepath)
+        .toBuffer()
       
-      console.log(`File saved successfully: ${filename}`)
+      // Converti in base64
+      const base64String = processedBuffer.toString('base64')
+      const dataUrl = `data:image/jpeg;base64,${base64String}`
+      
+      console.log(`Image processed, base64 length: ${dataUrl.length} chars`)
+
+      return NextResponse.json({ 
+        success: true, 
+        path: dataUrl,
+        base64: dataUrl
+      })
     } catch (sharpError) {
       console.error("Sharp processing error:", sharpError)
       return NextResponse.json({ 
         error: "Errore nel processamento immagine" 
       }, { status: 500 })
     }
-
-    const publicPath = `/uploads/products/${filename}`
-    console.log(`Public path: ${publicPath}`)
-
-    return NextResponse.json({ 
-      success: true, 
-      path: publicPath,
-      filename 
-    })
   } catch (error) {
     console.error("Upload error:", error)
     return NextResponse.json({ 
