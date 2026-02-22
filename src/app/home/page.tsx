@@ -38,6 +38,13 @@ export default function HomePage() {
       <div className="flex flex-col items-center">
         <Logo variant="vertical" className="w-64 h-auto mb-12" />        
         
+        {/* Banner Test Site */}
+        <div className="w-full max-w-md mb-6 px-4 py-3 bg-red-500 text-white text-center rounded-xl">
+          <p className="text-label-md font-bold uppercase tracking-wide">
+            🚧 SITO DI TEST / TEST SITE 🚧
+          </p>
+        </div>
+
         {/* Menu principale */}
         <nav className="flex flex-col items-center space-y-4 mb-12">
           <Link
