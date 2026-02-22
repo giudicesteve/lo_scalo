@@ -33,20 +33,7 @@ export default function StoryPage() {
   return (
     <main className="min-h-screen bg-brand-cream flex flex-col">
       {/* Header */}
-      {/* <header className="sticky top-0 z-50 bg-brand-cream/95 backdrop-blur-sm border-b border-brand-light-gray/20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link 
-            href="/home"
-            className="flex items-center gap-2 text-brand-dark hover:text-brand-primary transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-title-sm font-medium">{t('common.back')}</span>
-          </Link>
-          <h1 className="text-title-md font-bold text-brand-dark">{t('home.story.title')}</h1>
-          <div className="w-20"></div>
-        </div>
-      </header>
-      */}
+      {}
 
 
       {/* Content */}

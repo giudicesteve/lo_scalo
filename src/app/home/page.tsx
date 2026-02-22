@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Logo } from "@/components/Logo"
 import { useLanguage } from "@/store/language"
-import { BookOpen, MapPin } from "lucide-react"
+import { BookOpen, MapPin, Music } from "lucide-react"
 
 export default function HomePage() {
   const { t } = useLanguage()
@@ -70,6 +70,14 @@ export default function HomePage() {
           >
             <BookOpen className="w-6 h-6 group-hover:text-white" strokeWidth={1.5} />
             <span className="text-title-md font-medium">{t("nav.story")}</span>
+          </Link>
+
+          <Link
+            href="/playlist"
+            className="flex items-center justify-start gap-4 w-64 px-6 py-4 rounded-full border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-all duration-200 group"
+          >
+            <Music className="w-6 h-6 group-hover:text-white" strokeWidth={1.5} />
+            <span className="text-title-md font-medium">{t("nav.playlist")}</span>
           </Link>
 
           <a

@@ -13,6 +13,7 @@ async function main() {
       email: "admin@loscalo.it",
       name: "Admin",
       receiveNotifications: true,
+      canManageAdmins: true,
     },
   })
   console.log("✅ Admin ready")

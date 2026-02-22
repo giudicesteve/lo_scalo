@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -12,6 +13,7 @@ import {
   Wallet,
   LogOut,
   User,
+  Shield,
 } from "lucide-react"
 
 const menuItems = [
@@ -29,6 +31,14 @@ export default function AdminLayout({
 }) {
   const { data: session, status } = useSession()
   const pathname = usePathname()
+  const [canManageAdmins, setCanManageAdmins] = useState(false)
+
+  useEffect(() => {
+    // Verifica se l'admin può gestire altri admin
+    fetch("/api/admin/admins")
+      .then(res => res.ok ? setCanManageAdmins(true) : setCanManageAdmins(false))
+      .catch(() => setCanManageAdmins(false))
+  }, [])
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/login" })
@@ -61,6 +71,19 @@ export default function AdminLayout({
                   {item.label}
                 </Link>
               ))}
+              {canManageAdmins && (
+                <Link
+                  href="/admin/admins"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                    pathname === "/admin/admins"
+                      ? "bg-brand-primary/10 text-brand-primary"
+                      : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                  }`}
+                >
+                  <Shield className="w-4 h-4" />
+                  Gestione Admin
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -107,6 +130,19 @@ export default function AdminLayout({
               {item.label}
             </Link>
           ))}
+          {canManageAdmins && (
+            <Link
+              href="/admin/admins"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
+                pathname === "/admin/admins"
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Gestione Admin
+            </Link>
+          )}
         </nav>
       </header>
 

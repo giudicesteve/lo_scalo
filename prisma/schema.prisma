@@ -14,6 +14,7 @@ model Admin {
   name                 String?
   image                String?
   receiveNotifications Boolean   @default(true)
+  canManageAdmins      Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 }

@@ -20,6 +20,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.shop': 'Negozio',
     'nav.giftcard': 'Gift Card',
     'nav.story': 'La nostra storia',
+    'nav.playlist': 'Le nostre playlist',
     'nav.directions': 'Come arrivare',
     'nav.cart': 'Carrello',
     
@@ -161,6 +162,13 @@ const translations: Record<Language, Record<string, string>> = {
     'home.story.title': 'La nostra storia',
     'home.story.content': 'Lo Scalo è un cocktail bar sul Lago di Como, nato dalla passione per i drink artigianali e la natura che ci circonda. Ogni cocktail è una creazione unica, preparata con ingredienti freschi e locali. Vieni a scoprire un angolo di paradiso dove il lago incontra il gusto.',
     
+    // Playlist
+    'playlist.title': 'Le nostre playlist',
+    'playlist.intro': 'La musica è parte integrante dell\'esperienza Lo Scalo. Ogni stagione curiamo playlist selezionate che accompagnano i momenti al nostro bancone, dal tramonto all\'ora dell\'aperitivo. Scopri i suoni che hanno fatto da colonna sonora ai ricordi condivisi qui.',
+    'playlist.open-spotify': 'Apri su Spotify',
+    'playlist.fallback-title': 'Playlist',
+    'playlist.fallback-desc': 'Colonna sonora stagionale',
+    
     // Home - Indicazioni
     'home.directions.title': 'Come arrivare',
     'home.directions.content': 'Ci troviamo a Cremia, sulle sponde del Lago di Como. Segui le indicazioni per la strada statale del Lago di Como (SS340) e troverai il nostro locale con vista panoramica sul lago.',
@@ -189,6 +197,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.shop': 'Shop',
     'nav.giftcard': 'Gift Card',
     'nav.story': 'Our story',
+    'nav.playlist': 'Our playlists',
     'nav.directions': 'Directions',
     'nav.cart': 'Cart',
     
@@ -329,6 +338,13 @@ const translations: Record<Language, Record<string, string>> = {
     // Home - Story
     'home.story.title': 'Our Story',
     'home.story.content': 'Lo Scalo is a cocktail bar on Lake Como, born from a passion for craft drinks and the nature that surrounds us. Each cocktail is a unique creation, prepared with fresh, local ingredients. Come discover a corner of paradise where the lake meets taste.',
+    
+    // Playlist
+    'playlist.title': 'Our playlists',
+    'playlist.intro': 'Music is an integral part of the Lo Scalo experience. Each season we curate selected playlists that accompany moments at our bar, from sunset to aperitif time. Discover the sounds that provided the soundtrack to memories shared here.',
+    'playlist.open-spotify': 'Open on Spotify',
+    'playlist.fallback-title': 'Playlist',
+    'playlist.fallback-desc': 'Seasonal soundtrack',
     
     // Home - Directions
     'home.directions.title': 'How to get here',

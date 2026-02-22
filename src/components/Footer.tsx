@@ -149,8 +149,17 @@ export function Footer() {
 
         {/* Divider */}
         <div className="border-t border-white/10 pt-6">
-          <p className="text-center text-label-sm text-brand-gray">
+          <p className="text-center text-label-sm text-brand-gray mb-2">
             © 2026 Lo Scalo - {t('footer.tagline')}
+          </p>
+          <p className="text-center text-[10px] text-brand-gray/60">
+            Developed by{' '}
+            <a 
+              href="mailto:giudice.steve@gmail.com" 
+              className="hover:text-brand-primary transition-colors"
+            >
+              Steve Giudice
+            </a>
           </p>
         </div>
       </div>
