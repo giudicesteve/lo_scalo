@@ -104,22 +104,22 @@ export default function PlaylistPage() {
 
   return (
     <main className="min-h-screen bg-brand-cream flex flex-col relative">
-      {/* Freccia indietro */}
-      <Link 
-        href="/home" 
-        className="absolute top-6 left-6 z-10 p-2 text-brand-dark"
-      >
-        <ArrowLeft className="w-6 h-6" />
-      </Link>
+      <header className="sticky top-0 z-40 bg-brand-cream/95 backdrop-blur-sm drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.2)]">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Link href="/home" className="p-2 -ml-2">
+            <ArrowLeft className="w-6 h-6 text-brand-dark" />
+          </Link>
+          <Link href="/home">
+            <Logo variant="solo" className="h-8 w-auto" />
+          </Link>
+          <div className="w-10" />
+        </div>
+      </header>
 
       {/* Content */}
       <div className="flex-1 py-12 px-6">
         <div className="max-w-6xl mx-auto">
-          {/* Header con Logo */}
           <div className="flex flex-col items-center mb-8">
-            <Logo variant="vertical" className="w-64 h-auto mb-12" />
-            
-           
             {/* Introduzione */}
             <p className="text-body-lg text-brand-gray text-center max-w-2xl leading-relaxed">
               {t('playlist.intro')}
