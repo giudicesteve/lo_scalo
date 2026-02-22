@@ -35,15 +35,17 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center">
-        <Logo variant="vertical" className="w-64 h-auto mb-12" />        
-        
-        {/* Banner Test Site */}
-        <div className="w-full max-w-md mb-6 px-4 py-3 bg-red-500 text-white text-center rounded-xl">
-          <p className="text-label-md font-bold uppercase tracking-wide">
-            🚧 SITO DI TEST / TEST SITE 🚧
-          </p>
+
+      <div className="absolute w-full h-64 items-center justify-center overflow-hidden z-[0] pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-[0] pointer-events-none">
+          <span className="text-2xl md:text-5xl font-black uppercase tracking-widest text-red-600/65 -rotate-12 border-8 border-red-600/65 px-4 py-2 rounded-xl transform z-[0] pointer-events-none">
+            SITO DI TEST/TEST SITE
+          </span>
         </div>
+      </div>
+
+      <div className="flex flex-col items-center z-[1]">
+        <Logo variant="vertical" className="w-64 h-auto mb-12" />        
 
         {/* Menu principale */}
         <nav className="flex flex-col items-center space-y-4 mb-12">
