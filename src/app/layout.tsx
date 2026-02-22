@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Footer } from "@/components/Footer";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const euclid = localFont({
   src: [
@@ -27,10 +28,12 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={`${euclid.variable} font-sans antialiased min-h-screen flex flex-col`}>
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        <SessionProvider>
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </SessionProvider>
       </body>
     </html>
   );

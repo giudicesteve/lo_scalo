@@ -12,6 +12,7 @@ async function main() {
     create: {
       email: "admin@loscalo.it",
       name: "Admin",
+      receiveNotifications: true,
     },
   })
   console.log("✅ Admin ready")

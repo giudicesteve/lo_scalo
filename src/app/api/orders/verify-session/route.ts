@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
-import { sendOrderConfirmation, sendAdminNotification, sendGiftCardEmail } from "@/lib/email"
+import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email"
 
 // POST - Verifica sessione Stripe e completa ordine se necessario
 export async function POST(req: Request) {
@@ -35,7 +35,6 @@ export async function POST(req: Request) {
     if (order.status !== "PENDING_PAYMENT") {
       // Se email non inviate (fallback se webhook ha fallito), invia ora
       if (!order.emailSent) {
-        const hasGiftCards = order.giftCards.length > 0
         const orderDetails = {
           orderNumber: order.orderNumber,
           email: order.email,
@@ -58,17 +57,12 @@ export async function POST(req: Request) {
           // Invia email sequenzialmente con delay per rate limit
           const results = []
           
+          // Email cliente (include gift card se presenti)
           results.push(await sendOrderConfirmation(orderDetails))
           await new Promise(r => setTimeout(r, 600))
           
+          // Email admin
           results.push(await sendAdminNotification(orderDetails))
-          await new Promise(r => setTimeout(r, 600))
-          
-          if (hasGiftCards) {
-            results.push(await sendGiftCardEmail(orderDetails))
-          } else {
-            results.push({ success: true })
-          }
 
           if (results[0].success) {
             await prisma.order.update({
@@ -171,17 +165,12 @@ export async function POST(req: Request) {
         // Invia email sequenzialmente con delay per rate limit (2 req/sec)
         const results = []
         
+        // Email cliente (include gift card se presenti)
         results.push(await sendOrderConfirmation(orderDetails))
         await new Promise(r => setTimeout(r, 600))
         
+        // Email admin
         results.push(await sendAdminNotification(orderDetails))
-        await new Promise(r => setTimeout(r, 600))
-        
-        if (hasGiftCards) {
-          results.push(await sendGiftCardEmail(orderDetails))
-        } else {
-          results.push({ success: true })
-        }
 
         if (results[0].success) {
           await prisma.order.update({

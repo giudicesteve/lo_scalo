@@ -1953,3 +1953,25 @@
 [2026-02-21T21:34:14.738Z]    Scadenza sessione: 2026-02-21T22:04:14.000Z
 [2026-02-21T21:34:15.420Z] ✅ Sessione Stripe creata: cs_test_b1MPEtLrSmfFHy9E6MRpARFGhjtRw8uKGiJPYpfyHDqRHtpyJgso47UzwN
 [2026-02-21T21:34:15.420Z] 🎉 ORDINE COMPLETATO!
+[2026-02-22T18:17:05.370Z] ==================================================
+[2026-02-22T18:17:05.373Z] 🛒 NUOVO ORDINE RICEVUTO
+[2026-02-22T18:17:05.374Z] Body ricevuto: {"email":"giudice.steve@gmail.com","phone":"+3165489613","items":[{"id":"cmluycts4000fdg7oeu7ub6lk","type":"product","name":"Maglietta \"Lo Scalo\" - XS","price":25,"quantity":1,"size":"XS","image":"/uploads/products/1771595922683-Maglietta_lo_scalo.jpg","maxStock":5},{"id":"cmlw7jluf004a48pmpwh6klt3","type":"gift-card","name":"Gift Card 25€","price":25,"quantity":1},{"id":"cmluy8kx40001x48poyrejtd1","type":"gift-card","name":"Gift Card 50€","price":50,"quantity":1}],"total":100,"type":"MIXED"}
+[2026-02-22T18:17:05.374Z] Dati: email=giudice.steve@gmail.com, phone=+3165489613, items=3, total=100, type=MIXED
+[2026-02-22T18:17:05.375Z] Prodotti: 1, Gift Card: 2
+[2026-02-22T18:17:05.375Z] 📝 Generando numero ordine...
+[2026-02-22T18:17:05.377Z] ✅ Numero ordine: 2026-0044
+[2026-02-22T18:17:05.377Z] 🔍 Verifica disponibilità prodotti...
+[2026-02-22T18:17:05.378Z]     Prodotto cmluycts4000fdg7oeu7ub6lk - qty: 1
+[2026-02-22T18:17:05.381Z]     Taglia XS - disponibile: 5
+[2026-02-22T18:17:05.382Z] 💾 Inizio transazione...
+[2026-02-22T18:17:05.387Z]   ⬇️ Decremento disponibilità...
+[2026-02-22T18:17:05.391Z]     Decrementato variant cmlw7d34r004548pmuykb01k7 di 1
+[2026-02-22T18:17:05.391Z]   📝 Creazione ordine...
+[2026-02-22T18:17:05.394Z]   ✅ Ordine creato: cmly2kxv60003131f86wlnjop
+[2026-02-22T18:17:05.395Z]   🎁 Creazione gift card...
+[2026-02-22T18:17:05.397Z]   ✅ Gift card create: 2
+[2026-02-22T18:17:05.402Z] ✅ Transazione completata!
+[2026-02-22T18:17:05.402Z] 💳 Creazione sessione Stripe...
+[2026-02-22T18:17:05.403Z]    Scadenza sessione: 2026-02-22T18:47:05.000Z
+[2026-02-22T18:17:06.070Z] ✅ Sessione Stripe creata: cs_test_b1Go576Ij2yfPM8mTlmoJWFJseumZsADRarm0QvR6np4aj0tMsicWds5M3
+[2026-02-22T18:17:06.070Z] 🎉 ORDINE COMPLETATO!

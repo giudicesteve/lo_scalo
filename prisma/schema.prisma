@@ -9,12 +9,13 @@ datasource db {
 
 // Utenti Admin
 model Admin {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  name                 String?
+  image                String?
+  receiveNotifications Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 // Configurazione globale del sito

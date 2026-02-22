@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
-import { sendOrderConfirmation, sendAdminNotification, sendGiftCardEmail } from "@/lib/email"
+import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email"
 import Stripe from "stripe"
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ""
@@ -149,25 +149,17 @@ export async function POST(req: Request) {
             // Invia email sequenzialmente con delay per rispettare rate limit (2 req/sec)
             const results = []
             
-            // 1. Email cliente (sempre)
+            // 1. Email cliente (sempre) - include gift card se presenti
             results.push(await sendOrderConfirmation(orderDetails))
             await new Promise(r => setTimeout(r, 600)) // 600ms delay
             
             // 2. Email admin
             results.push(await sendAdminNotification(orderDetails))
-            await new Promise(r => setTimeout(r, 600)) // 600ms delay
-            
-            // 3. Email gift card (se presenti)
-            if (order.giftCards.length > 0) {
-              results.push(await sendGiftCardEmail(orderDetails))
-            } else {
-              results.push({ success: true })
-            }
 
             console.log('Email sending results:', {
               customer: results[0].success,
               admin: results[1].success,
-              giftCard: results[2].success
+              attachments: results[0].attachments || 0
             })
 
             // Segna come inviato solo se almeno l'email cliente è andata a buon fine

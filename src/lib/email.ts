@@ -3,11 +3,11 @@ import QRCode from 'qrcode'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import fs from 'fs'
 import path from 'path'
+import { prisma } from './prisma'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = 'Lo Scalo <onboarding@resend.dev>'
-const ADMIN_EMAIL = 'giudice.steve@gmail.com' // TODO: cambiare con l'email admin di produzione
 
 // Feature flag per modalità email
 // 'send' = invia email normalmente
@@ -41,6 +41,16 @@ interface OrderDetails {
   items: OrderItem[]
   giftCards: GiftCardInfo[]
   createdAt: Date
+}
+
+interface EmailResult {
+  success: boolean
+  id?: string
+  saved?: boolean
+  attachments?: number
+  recipients?: string[]
+  message?: string
+  error?: unknown
 }
 
 /**
@@ -257,9 +267,31 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
 }
 
 /**
- * Invia email di conferma ordine al cliente
+ * Genera allegati PDF per le gift card
  */
-export async function sendOrderConfirmation(order: OrderDetails) {
+async function generateGiftCardAttachments(order: OrderDetails): Promise<{ filename: string; content: Buffer }[]> {
+  const attachments: { filename: string; content: Buffer }[] = []
+  
+  for (const gc of order.giftCards) {
+    try {
+      const pdfBuffer = await generateGiftCardPDF(gc)
+      attachments.push({
+        filename: `Lo Scalo - ${gc.initialValue.toFixed(0)}EUR - ${gc.code}.pdf`,
+        content: pdfBuffer
+      })
+    } catch (err) {
+      console.error(`Error generating PDF for ${gc.code}:`, err)
+    }
+  }
+  
+  return attachments
+}
+
+/**
+ * Invia email di conferma ordine al cliente
+ * Se ci sono gift card, include i PDF allegati
+ */
+export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailResult> {
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
 
@@ -276,12 +308,16 @@ export async function sendOrderConfirmation(order: OrderDetails) {
     : ''
 
   const giftCardInstructions = hasGiftCards
-    ? `\n🎁 GIFT CARD\nRiceverai un'altra email con le tue Gift Card in formato PDF contenente i QR code da presentare al locale.`
+    ? `\n🎁 GIFT CARD\nTrovi le tue Gift Card in formato PDF in allegato a questa email.
+Presenta il QR code al locale per utilizzarle.`
     : ''
 
-  const htmlContent = generateOrderConfirmationHtml(order)
+  // Genera allegati se ci sono gift card
+  const attachments = hasGiftCards ? await generateGiftCardAttachments(order) : []
+  
+  const htmlContent = generateOrderConfirmationHtml(order, attachments.length > 0)
 
-  // MODALITÀ SAVE-ONLY: salva HTML su disco
+  // MODALITÀ SAVE-ONLY: salva HTML e PDF su disco
   if (EMAIL_MODE === 'save-only') {
     try {
       if (!fs.existsSync(TEST_EMAILS_DIR)) {
@@ -292,9 +328,16 @@ export async function sendOrderConfirmation(order: OrderDetails) {
       fs.writeFileSync(htmlPath, htmlContent)
       console.log(`💾 Order confirmation HTML salvato: ${htmlPath}`)
 
-      return { success: true, saved: true }
+      // Salva anche i PDF delle gift card
+      for (const attachment of attachments) {
+        const pdfPath = path.join(TEST_EMAILS_DIR, attachment.filename)
+        fs.writeFileSync(pdfPath, attachment.content)
+        console.log(`💾 Gift Card PDF salvato: ${pdfPath}`)
+      }
+
+      return { success: true, saved: true, attachments: attachments.length }
     } catch (err) {
-      console.error('Error saving test file:', err)
+      console.error('Error saving test files:', err)
       return { success: false, error: err }
     }
   }
@@ -333,6 +376,7 @@ Lo Scalo Team
       subject: `Conferma ordine #${order.orderNumber} - Lo Scalo`,
       text,
       html: htmlContent,
+      attachments: attachments.length > 0 ? attachments : undefined,
     })
 
     if (error) {
@@ -340,8 +384,8 @@ Lo Scalo Team
       return { success: false, error }
     }
 
-    console.log('Order confirmation sent:', data?.id)
-    return { success: true, id: data?.id }
+    console.log('Order confirmation sent:', data?.id, attachments.length > 0 ? `con ${attachments.length} allegati` : '')
+    return { success: true, id: data?.id, attachments: attachments.length }
   } catch (err) {
     console.error('Exception sending order confirmation:', err)
     return { success: false, error: err }
@@ -349,10 +393,23 @@ Lo Scalo Team
 }
 
 /**
- * Invia notifica admin per nuovo ordine - versione tabellare compatta
+ * Invia notifica admin per nuovo ordine a tutti gli admin abilitati
  */
-export async function sendAdminNotification(order: OrderDetails) {
+export async function sendAdminNotification(order: OrderDetails): Promise<EmailResult> {
   const hasGiftCards = order.giftCards.length > 0
+
+  // Recupera tutti gli admin che devono ricevere le notifiche
+  const admins = await prisma.admin.findMany({
+    where: { receiveNotifications: true }
+  })
+
+  if (admins.length === 0) {
+    console.log('Nessun admin abilitato a ricevere notifiche')
+    return { success: true, message: 'Nessun destinatario' }
+  }
+
+  const adminEmails = admins.map(a => a.email)
+  console.log(`Invio notifica admin a ${adminEmails.length} indirizzi:`, adminEmails)
 
   const html = `
 <!DOCTYPE html>
@@ -424,15 +481,16 @@ export async function sendAdminNotification(order: OrderDetails) {
       const htmlPath = path.join(TEST_EMAILS_DIR, `admin-notification-${order.orderNumber}.html`)
       fs.writeFileSync(htmlPath, html)
       console.log(`Admin notification HTML salvato: ${htmlPath}`)
+      console.log(`Destinatari che avrebbero ricevuto: ${adminEmails.join(', ')}`)
 
-      return { success: true, saved: true }
+      return { success: true, saved: true, recipients: adminEmails }
     } catch (err) {
       console.error('Error saving test file:', err)
       return { success: false, error: err }
     }
   }
 
-  // MODALITÀ SEND: invia email
+  // MODALITÀ SEND: invia email a tutti gli admin abilitati
   const text = `
 🛒 NUOVO ORDINE #${order.orderNumber}
 
@@ -452,9 +510,13 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
 `
 
   try {
+    // Usa il primo admin come "to" e tutti gli altri come "bcc" per privacy
+    const [firstAdmin, ...otherAdmins] = adminEmails
+    
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
+      to: firstAdmin,
+      bcc: otherAdmins.length > 0 ? otherAdmins : undefined,
       subject: `🛒 #${order.orderNumber} - €${order.total.toFixed(2)}`,
       text,
       html,
@@ -465,8 +527,8 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
       return { success: false, error }
     }
 
-    console.log('Admin notification sent:', data?.id)
-    return { success: true, id: data?.id }
+    console.log(`Admin notification sent to ${adminEmails.length} admins:`, data?.id)
+    return { success: true, id: data?.id, recipients: adminEmails }
   } catch (err) {
     console.error('Exception sending admin notification:', err)
     return { success: false, error: err }
@@ -476,7 +538,7 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
 /**
  * Invia email con Gift Card - include QR code e PDF allegati
  */
-export async function sendGiftCardEmail(order: OrderDetails) {
+export async function sendGiftCardEmail(order: OrderDetails): Promise<EmailResult> {
   if (order.giftCards.length === 0) return { success: true }
 
   // Genera QR codes per ogni gift card
@@ -520,7 +582,7 @@ export async function sendGiftCardEmail(order: OrderDetails) {
       fs.writeFileSync(htmlPath, htmlContent)
       console.log(`💾 HTML salvato: ${htmlPath}`)
 
-      return { success: true, saved: true, count: attachments.length }
+      return { success: true, saved: true, attachments: attachments.length }
     } catch (err) {
       console.error('Error saving test files:', err)
       return { success: false, error: err }
@@ -562,7 +624,7 @@ Problemi? support@loscalo.it
     }
 
     console.log('Gift card email sent with', attachments.length, 'PDFs')
-    return { success: true, id: data?.id }
+    return { success: true, id: data?.id, attachments: attachments.length }
   } catch (err) {
     console.error('Exception sending gift card email:', err)
     return { success: false, error: err }
@@ -573,7 +635,7 @@ Problemi? support@loscalo.it
 const LOGO_URL = 'https://i.ibb.co/JjXJtRjT/Lo-Scalo-vertical-orange.png'
 
 // HTML template per conferma ordine - CSS INLINE per compatibilità email
-function generateOrderConfirmationHtml(order: OrderDetails): string {
+function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false): string {
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
 
@@ -642,7 +704,7 @@ function generateOrderConfirmationHtml(order: OrderDetails): string {
       ${hasGiftCards ? `
       <div style="background-color: rgba(240,90,40,0.1); border-radius: 16px; padding: 16px; margin-top: 16px;">
         <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: ${BRAND_ORANGE};">🎁 Le tue Gift Card sono pronte!</div>
-        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">Riceverai un'altra email con i PDF contenenti i QR code scansionabili. Le gift card sono già attive e utilizzabili da subito presso il nostro locale.</p>
+        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">${hasAttachments ? 'Trovi le tue Gift Card in formato PDF in allegato a questa email. Presenta il QR code al locale per utilizzarle.' : 'Riceverai un\'altra email con i PDF contenenti i QR code scansionabili.'} Le gift card sono già attive e utilizzabili da subito presso il nostro locale.</p>
       </div>
       ` : ''}
 

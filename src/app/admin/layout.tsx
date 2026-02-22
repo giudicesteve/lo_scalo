@@ -1,0 +1,117 @@
+"use client"
+
+import { useSession, signOut } from "next-auth/react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Logo } from "@/components/Logo"
+import {
+  ShoppingBag,
+  Wine,
+  Store,
+  Gift,
+  Wallet,
+  LogOut,
+  User,
+} from "lucide-react"
+
+const menuItems = [
+  { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
+  { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet },
+  { href: "/admin/menu", label: "Menu", icon: Wine },
+  { href: "/admin/shop", label: "Negozio", icon: Store },
+  { href: "/admin/gift-card-templates", label: "Tagli Gift Card", icon: Gift },
+]
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { data: session, status } = useSession()
+  const pathname = usePathname()
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: "/login" })
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-cream">
+      {/* Header */}
+      <header className="bg-white border-b border-brand-light-gray sticky top-0 z-50">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Logo + Navigation */}
+          <div className="flex items-center gap-6">
+            <Link href="/admin" className="flex items-center gap-2">
+              <Logo variant="vertical" className="h-6 w-auto" />
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-1">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                    pathname === item.href || pathname.startsWith(item.href + "/")
+                      ? "bg-brand-primary/10 text-brand-primary"
+                      : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Right: User Info + Logout */}
+          <div className="flex items-center gap-4">
+            {status === "loading" ? (
+              <div className="w-8 h-8 bg-brand-light-gray rounded-full animate-pulse" />
+            ) : session?.user ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-body-sm text-brand-gray">
+                  <div className="w-8 h-8 bg-brand-primary/10 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-brand-primary" />
+                  </div>
+                  <span className="max-w-[150px] truncate">
+                    {session.user.name || session.user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-3 py-2 text-body-sm text-brand-gray hover:text-red-500 transition-colors"
+                  title="Esci"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Esci</span>
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <nav className="md:hidden flex overflow-x-auto gap-1 px-4 pb-3 -mt-1">
+          {menuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
+                pathname === item.href || pathname.startsWith(item.href + "/")
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <main>{children}</main>
+    </div>
+  )
+}
