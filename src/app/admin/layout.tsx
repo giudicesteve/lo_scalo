@@ -14,6 +14,8 @@ import {
   LogOut,
   User,
   Shield,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react"
 
 const menuItems = [
@@ -72,17 +74,29 @@ export default function AdminLayout({
                 </Link>
               ))}
               {canManageAdmins && (
-                <Link
-                  href="/admin/admins"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
-                    pathname === "/admin/admins"
-                      ? "bg-brand-primary/10 text-brand-primary"
-                      : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
-                  }`}
-                >
-                  <Shield className="w-4 h-4" />
-                  Gestione Admin
-                </Link>
+                <>
+                  <Link
+                    href="/admin/admins"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                      pathname === "/admin/admins"
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                    }`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Gestione Admin
+                  </Link>
+                  <a
+                    href="https://dashboard.stripe.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium text-brand-gray hover:text-[#635BFF] hover:bg-[#635BFF]/10 transition-colors"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Stripe
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </>
               )}
             </nav>
           </div>
@@ -131,17 +145,29 @@ export default function AdminLayout({
             </Link>
           ))}
           {canManageAdmins && (
-            <Link
-              href="/admin/admins"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
-                pathname === "/admin/admins"
-                  ? "bg-brand-primary/10 text-brand-primary"
-                  : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              Gestione Admin
-            </Link>
+            <>
+              <Link
+                href="/admin/admins"
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
+                  pathname === "/admin/admins"
+                    ? "bg-brand-primary/10 text-brand-primary"
+                    : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Gestione Admin
+              </Link>
+              <a
+                href="https://dashboard.stripe.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap text-brand-gray hover:text-[#635BFF] hover:bg-[#635BFF]/10 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Stripe
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </>
           )}
         </nav>
       </header>

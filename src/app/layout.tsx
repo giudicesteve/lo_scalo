@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Footer } from "@/components/Footer";
+import { FooterWrapper } from "@/components/FooterWrapper";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const euclid = localFont({
@@ -32,7 +32,7 @@ export default function RootLayout({
           <main className="flex-1">
             {children}
           </main>
-          <Footer />
+          <FooterWrapper />
         </SessionProvider>
       </body>
     </html>

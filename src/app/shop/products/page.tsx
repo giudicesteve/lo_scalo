@@ -218,7 +218,7 @@ export default function ShopProductsPage() {
       </div>
 
       {/* Products */}
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 max-w-7xl mx-auto">
         <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-4 mb-6">
           <p className="text-body-sm text-brand-dark">
             <span className="font-bold">{t("shop.warning")}:</span>{" "}
@@ -231,7 +231,7 @@ export default function ShopProductsPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((product) => {
               const availableSizes = getAvailableSizes(product)
               const stock = getStock(product)

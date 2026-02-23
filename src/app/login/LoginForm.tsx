@@ -4,7 +4,8 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Logo } from "@/components/Logo"
-import { Chrome, AlertCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react"
+import Image from "next/image"
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -67,7 +68,13 @@ export function LoginForm() {
           {isLoading ? (
             <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Chrome className="w-5 h-5 text-blue-500" />
+            <Image
+              src="/resources/Google logo.svg"
+              alt="Google"
+              width={20}
+              height={20}
+              className="w-5 h-5"
+            />
           )}
           {isLoading ? "Accesso in corso..." : "Accedi con Google"}
         </button>

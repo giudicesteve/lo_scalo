@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Package, Power } from "lucide-react"
 import { ImageUpload } from "@/components/ImageUpload"
 
@@ -160,11 +159,10 @@ export default function AdminShopPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Negozio
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 
-      <div className="p-4">
+      <div className="p-4 max-w-7xl mx-auto">
         {/* Shop Toggle */}
         <div className="bg-white rounded-2xl shadow-card p-4 mb-6">
           <div className="flex items-center justify-between">
@@ -213,7 +211,7 @@ export default function AdminShopPage() {
         </button>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
             <div key={product.id} className={`bg-white rounded-2xl shadow-card overflow-hidden ${!product.isActive ? 'opacity-60' : ''}`}>
               <div className="relative aspect-square bg-brand-light-gray">

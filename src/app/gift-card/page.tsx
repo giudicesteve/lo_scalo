@@ -87,7 +87,7 @@ export default function GiftCardPage() {
       </div>
 
       {/* Content */}
-      <div className="p-4 pb-8">
+      <div className="p-4 pb-8 max-w-7xl mx-auto">
         <div className="text-center mb-6">
           <p className="text-body-md text-brand-gray">
             {t("giftcard.subtitle")}
@@ -106,7 +106,7 @@ export default function GiftCardPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {templates.map((template) => (
               <div
                 key={template.id}

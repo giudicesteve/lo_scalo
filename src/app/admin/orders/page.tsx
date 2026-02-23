@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, FileText, AlertTriangle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -231,11 +230,19 @@ export default function AdminOrdersPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Ordini
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 
       <div className="p-4">
+        {/* Daily Report Button */}
+        <Link
+          href="/admin/orders/daily-report"
+          className="w-full mb-3 py-3 px-4 rounded-xl text-title-sm font-medium flex items-center justify-center gap-2 bg-white text-brand-dark border-2 border-brand-light-gray hover:border-brand-primary hover:text-brand-primary transition-all"
+        >
+          <FileText className="w-5 h-5" />
+          Riepilogo Contabilità
+        </Link>
+
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
@@ -308,6 +315,21 @@ export default function AdminOrdersPage() {
                 </span>
               </div>
 
+              {/* Warning: Missing Stripe Payment ID */}
+              {["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-body-sm font-bold text-red-700">
+                      Stripe Payment ID mancante
+                    </p>
+                    <p className="text-label-sm text-red-600">
+                      Verificare su Stripe se il pagamento è andato a buon fine
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Info Cliente */}
               <div className="space-y-1 mb-3">
                 <p className="text-body-sm text-brand-dark">
@@ -363,7 +385,7 @@ export default function AdminOrdersPage() {
                     {order.items.map((item) => (
                       <div key={item.id} className="flex justify-between text-body-sm mb-1">
                         <span>
-                          {item.product.name} {item.size && `(${item.size})`} x{item.quantity}
+                          {item.quantity} x {item.product.name} {item.size && `(${item.size})`}
                         </span>
                         <span className="font-medium">{item.totalPrice.toFixed(2)}€</span>
                       </div>

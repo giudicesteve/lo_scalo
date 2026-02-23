@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from "lucide-react"
 
 interface GiftCardTemplate {
@@ -79,11 +78,10 @@ export default function AdminGiftCardTemplatesPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Tagli Gift Card
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 
-      <div className="p-4">
+      <div className="p-4 max-w-7xl mx-auto">
         <button
           onClick={() => setEditingTemplate({ value: 50, price: 50 })}
           className="btn-primary mb-6 flex items-center gap-2"
@@ -92,7 +90,7 @@ export default function AdminGiftCardTemplatesPage() {
           Nuovo Taglio
         </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {templates.map((template) => (
             <div
               key={template.id}

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
 import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
@@ -166,7 +165,6 @@ export default function AdminManagementPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Gestione Admin
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 

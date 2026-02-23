@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
 import { QRScanner } from "@/components/QRScanner"
 import {
   ArrowLeft,
@@ -173,7 +172,6 @@ export default function AdminGiftCardsPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Gest. Gift Card
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 
@@ -204,20 +202,20 @@ export default function AdminGiftCardsPage() {
             {/* Bottoni azione */}
             <div className="flex gap-2">
               <button
-                onClick={() => setShowScanner(true)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
-                title="Scansiona QR Code"
-              >
-                <QrCode className="w-5 h-5" />
-                <span className="sm:hidden text-body-sm">Scanner</span>
-              </button>
-              <button
                 onClick={() => fetchGiftCards()}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
                 title="Aggiorna"
               >
                 <RotateCcw className="w-5 h-5" />
                 <span className="sm:hidden text-body-sm">Aggiorna</span>
+              </button>
+              <button
+                onClick={() => setShowScanner(true)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
+                title="Scansiona QR Code"
+              >
+                <QrCode className="w-5 h-5" />
+                <span className="sm:hidden text-body-sm">Scanner</span>
               </button>
             </div>
           </div>
