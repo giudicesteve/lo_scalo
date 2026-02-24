@@ -15,7 +15,12 @@ import {
   AlertCircle,
   Camera,
   Receipt,
+  FileSpreadsheet,
+  Printer,
+  Download,
 } from "lucide-react"
+import * as XLSX from "xlsx"
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
 interface Transaction {
   id: string
@@ -57,6 +62,7 @@ export default function AdminGiftCardsPage() {
   const [useSuccess, setUseSuccess] = useState<string | null>(null)
   const [isUsing, setIsUsing] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+  const [fullscreenImage, setFullscreenImage] = useState<{url: string, receiptNumber: string | null} | null>(null)
 
   // Funzione per comprimere immagine e convertire in base64
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> => {
@@ -244,6 +250,342 @@ export default function AdminGiftCardsPage() {
     } catch {
       alert("Errore durante l'eliminazione")
     }
+  }
+
+  // Export Excel della gift card (senza foto)
+  const exportGiftCardToExcel = () => {
+    if (!selectedGiftCard) return
+
+    const rows: Record<string, string | number>[] = []
+    
+    // Header con dati gift card
+    rows.push({
+      "Tipo": "DATI GIFT CARD",
+      "Codice": selectedGiftCard.code,
+      "Valore Iniziale": selectedGiftCard.initialValue,
+      "Residuo": selectedGiftCard.remainingValue,
+      "Stato": selectedGiftCard.isArchived ? "Archiviata" : "Attiva",
+      "Data Acquisto": new Date(selectedGiftCard.purchasedAt).toLocaleDateString("it-IT"),
+      "Cliente": selectedGiftCard.order?.email || "",
+      "Telefono": selectedGiftCard.order?.phone || "",
+      "Ordine": selectedGiftCard.order?.orderNumber || "",
+    })
+    
+    // Riga vuota
+    rows.push({
+      "Tipo": "",
+      "Codice": "",
+      "Valore Iniziale": "",
+      "Residuo": "",
+      "Stato": "",
+      "Data Acquisto": "",
+      "Cliente": "",
+      "Telefono": "",
+      "Ordine": "",
+    })
+    
+    // Header transazioni
+    rows.push({
+      "Tipo": "TRANSAZIONE",
+      "Codice": "Data",
+      "Valore Iniziale": "Importo",
+      "Residuo": "Numero Scontrino",
+      "Stato": "Nota",
+      "Data Acquisto": "",
+      "Cliente": "",
+      "Telefono": "",
+      "Ordine": "",
+    })
+    
+    // Transazioni
+    selectedGiftCard.transactions.forEach((t) => {
+      rows.push({
+        "Tipo": "Utilizzo",
+        "Codice": new Date(t.createdAt).toLocaleString("it-IT"),
+        "Valore Iniziale": -t.amount,
+        "Residuo": t.receiptNumber || "",
+        "Stato": t.note || "",
+        "Data Acquisto": "",
+        "Cliente": "",
+        "Telefono": "",
+        "Ordine": "",
+      })
+    })
+    
+    // Riga totali
+    const totalUsed = selectedGiftCard.transactions.reduce((sum, t) => sum + t.amount, 0)
+    rows.push({
+      "Tipo": "TOTALE",
+      "Codice": "",
+      "Valore Iniziale": "",
+      "Residuo": "",
+      "Stato": "",
+      "Data Acquisto": "",
+      "Cliente": "",
+      "Telefono": "",
+      "Ordine": "",
+    })
+    rows.push({
+      "Tipo": "Totale Utilizzato",
+      "Codice": totalUsed,
+      "Valore Iniziale": "",
+      "Residuo": "",
+      "Stato": "",
+      "Data Acquisto": "",
+      "Cliente": "",
+      "Telefono": "",
+      "Ordine": "",
+    })
+    rows.push({
+      "Tipo": "Residuo Attuale",
+      "Codice": selectedGiftCard.remainingValue,
+      "Valore Iniziale": "",
+      "Residuo": "",
+      "Stato": "",
+      "Data Acquisto": "",
+      "Cliente": "",
+      "Telefono": "",
+      "Ordine": "",
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Gift Card")
+    
+    XLSX.writeFile(wb, `GiftCard_${selectedGiftCard.code}_${new Date().toISOString().split("T")[0]}.xlsx`)
+  }
+
+  // Export PDF della gift card (con foto scontrino)
+  const exportGiftCardToPDF = async () => {
+    if (!selectedGiftCard) return
+
+    const pdfDoc = await PDFDocument.create()
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    
+    let page = pdfDoc.addPage([595, 842]) // A4 Portrait
+    const { width, height } = page.getSize()
+    let y = height - 50
+    const margin = 40
+    const rowHeight = 18
+    
+    // Header
+    page.drawText("Lo Scalo - Gift Card", {
+      x: margin,
+      y,
+      size: 20,
+      font: fontBold,
+      color: rgb(0.2, 0.2, 0.2),
+    })
+    y -= 30
+    
+    // Dati Gift Card
+    page.drawText(`Codice: ${selectedGiftCard.code}`, {
+      x: margin,
+      y,
+      size: 14,
+      font: fontBold,
+    })
+    y -= 25
+    
+    page.drawText(`Cliente: ${selectedGiftCard.order?.email || "N/A"}`, {
+      x: margin,
+      y,
+      size: 11,
+      font,
+    })
+    y -= rowHeight
+    
+    page.drawText(`Telefono: ${selectedGiftCard.order?.phone || "N/A"}`, {
+      x: margin,
+      y,
+      size: 11,
+      font,
+    })
+    y -= rowHeight
+    
+    page.drawText(`Ordine: #${selectedGiftCard.order?.orderNumber || "N/A"}`, {
+      x: margin,
+      y,
+      size: 11,
+      font,
+    })
+    y -= rowHeight
+    
+    page.drawText(`Data Acquisto: ${new Date(selectedGiftCard.purchasedAt).toLocaleDateString("it-IT")}`, {
+      x: margin,
+      y,
+      size: 11,
+      font,
+    })
+    y -= rowHeight
+    
+    page.drawText(`Stato: ${selectedGiftCard.isArchived ? "Archiviata" : "Attiva"}`, {
+      x: margin,
+      y,
+      size: 11,
+      font,
+    })
+    y -= 30
+    
+    // Valori
+    page.drawText(`Valore Iniziale: ${selectedGiftCard.initialValue.toFixed(2)}€`, {
+      x: margin,
+      y,
+      size: 12,
+      font: fontBold,
+      color: rgb(0.2, 0.4, 0.8),
+    })
+    y -= rowHeight
+    
+    page.drawText(`Residuo Attuale: ${selectedGiftCard.remainingValue.toFixed(2)}€`, {
+      x: margin,
+      y,
+      size: 12,
+      font: fontBold,
+      color: selectedGiftCard.remainingValue > 0 ? rgb(0.2, 0.6, 0.2) : rgb(0.5, 0.5, 0.5),
+    })
+    y -= 40
+    
+    // Separator
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: width - margin, y },
+      thickness: 1,
+      color: rgb(0.8, 0.8, 0.8),
+    })
+    y -= 30
+    
+    // Transazioni
+    page.drawText("Transazioni", {
+      x: margin,
+      y,
+      size: 14,
+      font: fontBold,
+    })
+    y -= 25
+    
+    // Per ogni transazione, aggiungi una pagina se necessario
+    for (const transaction of selectedGiftCard.transactions) {
+      if (y < 150) {
+        page = pdfDoc.addPage([595, 842])
+        y = height - 50
+      }
+      
+      page.drawText(`${new Date(transaction.createdAt).toLocaleString("it-IT")}`, {
+        x: margin,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.4, 0.4, 0.4),
+      })
+      y -= rowHeight
+      
+      page.drawText(`Importo: -${transaction.amount.toFixed(2)}€`, {
+        x: margin,
+        y,
+        size: 11,
+        font: fontBold,
+        color: rgb(0.8, 0.2, 0.2),
+      })
+      y -= rowHeight
+      
+      if (transaction.receiptNumber) {
+        page.drawText(`Scontrino: ${transaction.receiptNumber}`, {
+          x: margin,
+          y,
+          size: 10,
+          font,
+        })
+        y -= rowHeight
+      }
+      
+      if (transaction.note) {
+        page.drawText(`Nota: ${transaction.note}`, {
+          x: margin,
+          y,
+          size: 10,
+          font,
+          color: rgb(0.4, 0.4, 0.4),
+        })
+        y -= rowHeight
+      }
+      
+      // Aggiungi immagine scontrino se presente
+      if (transaction.receiptImage) {
+        try {
+          // Estrai base64
+          const base64Data = transaction.receiptImage.split(',')[1]
+          if (base64Data) {
+            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+            const image = await pdfDoc.embedJpg(imageBytes).catch(() => 
+              pdfDoc.embedPng(imageBytes)
+            )
+            
+            const imgWidth = 200
+            const imgHeight = (image.height / image.width) * imgWidth
+            
+            if (y - imgHeight < 50) {
+              page = pdfDoc.addPage([595, 842])
+              y = height - 50
+            }
+            
+            page.drawImage(image, {
+              x: margin,
+              y: y - imgHeight,
+              width: imgWidth,
+              height: imgHeight,
+            })
+            y -= imgHeight + 20
+          }
+        } catch (e) {
+          console.error("Error embedding image:", e)
+        }
+      }
+      
+      y -= 15
+      
+      // Separator
+      page.drawLine({
+        start: { x: margin, y },
+        end: { x: width - margin, y },
+        thickness: 0.5,
+        color: rgb(0.9, 0.9, 0.9),
+      })
+      y -= 20
+    }
+    
+    // Totali
+    if (y < 100) {
+      page = pdfDoc.addPage([595, 842])
+      y = height - 50
+    }
+    
+    const totalUsed = selectedGiftCard.transactions.reduce((sum, t) => sum + t.amount, 0)
+    
+    page.drawText(`Totale Utilizzato: ${totalUsed.toFixed(2)}€`, {
+      x: margin,
+      y,
+      size: 12,
+      font: fontBold,
+    })
+    y -= rowHeight
+    
+    page.drawText(`Residuo: ${selectedGiftCard.remainingValue.toFixed(2)}€`, {
+      x: margin,
+      y,
+      size: 12,
+      font: fontBold,
+    })
+    
+    const pdfBytes = await pdfDoc.save()
+    const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `GiftCard_${selectedGiftCard.code}_${new Date().toISOString().split("T")[0]}.pdf`
+    link.click()
+    window.URL.revokeObjectURL(url)
   }
 
   // Conta gift card attive (isActive=true, isArchived=false) e archiviate
@@ -707,13 +1049,33 @@ export default function AdminGiftCardsPage() {
 
               {/* Transazioni */}
               <div className="space-y-3">
-                <h3 className="text-title-sm font-bold text-brand-dark flex items-center gap-2">
-                  <History className="w-4 h-4" />
-                  Storico Transazioni
-                  <span className="text-label-sm text-brand-gray font-normal">
-                    ({selectedGiftCard.transactions.length})
-                  </span>
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-title-sm font-bold text-brand-dark flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    Storico Transazioni
+                    <span className="text-label-sm text-brand-gray font-normal">
+                      ({selectedGiftCard.transactions.length})
+                    </span>
+                  </h3>
+                  {selectedGiftCard.transactions.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={exportGiftCardToExcel}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Export Excel"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={exportGiftCardToPDF}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Export PDF con foto"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {selectedGiftCard.transactions.length === 0 ? (
                   <p className="text-center text-brand-gray py-4 bg-brand-light-gray/30 rounded-xl">
@@ -769,7 +1131,10 @@ export default function AdminGiftCardsPage() {
                               src={transaction.receiptImage}
                               alt={`Scontrino ${transaction.receiptNumber || ''}`}
                               className="h-24 w-auto object-contain rounded-lg border border-brand-light-gray cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(transaction.receiptImage!, '_blank')}
+                              onClick={() => setFullscreenImage({ 
+                                url: transaction.receiptImage!, 
+                                receiptNumber: transaction.receiptNumber 
+                              })}
                             />
                           </div>
                         )}
@@ -789,6 +1154,50 @@ export default function AdminGiftCardsPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Immagine Scontrino Fullscreen */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-full max-h-full">
+            {/* Header con info e bottone chiudi */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+              <div>
+                <p className="text-white text-sm font-medium">
+                  {fullscreenImage.receiptNumber ? `Scontrino: ${fullscreenImage.receiptNumber}` : 'Foto Scontrino'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={fullscreenImage.url}
+                  download={`scontrino_${fullscreenImage.receiptNumber || 'giftcard'}_${new Date().toISOString().split("T")[0]}.jpg`}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm">Scarica</span>
+                </a>
+                <button
+                  onClick={() => setFullscreenImage(null)}
+                  className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Immagine */}
+            <img
+              src={fullscreenImage.url}
+              alt="Scontrino"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       )}
