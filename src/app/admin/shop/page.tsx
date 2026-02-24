@@ -52,6 +52,14 @@ export default function AdminShopPage() {
   const [editingTemplate, setEditingTemplate] = useState<Partial<GiftCardTemplate> | null>(null)
   
   const [loading, setLoading] = useState(true)
+  
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: 'product' | 'template'
+    id: string
+    name?: string
+    value?: number
+  } | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -142,16 +150,29 @@ export default function AdminShopPage() {
     }
   }
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Sei sicuro di voler eliminare questo prodotto?")) return
+  const handleDeleteProduct = (id: string, name: string) => {
+    setDeleteConfirm({ type: 'product', id, name })
+  }
 
-    const res = await fetch(`/api/admin/products?id=${id}`, {
-      method: "DELETE",
-    })
+  const handleDeleteTemplate = (id: string, value: number) => {
+    setDeleteConfirm({ type: 'template', id, value })
+  }
 
-    if (res.ok) {
-      fetchProducts()
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+
+    if (deleteConfirm.type === 'product') {
+      const res = await fetch(`/api/admin/products?id=${deleteConfirm.id}`, {
+        method: "DELETE",
+      })
+      if (res.ok) fetchProducts()
+    } else {
+      const res = await fetch(`/api/admin/gift-card-templates?id=${deleteConfirm.id}`, {
+        method: "DELETE",
+      })
+      if (res.ok) fetchTemplates()
     }
+    setDeleteConfirm(null)
   }
 
   const handleVariantChange = (size: string, quantity: number) => {
@@ -191,17 +212,7 @@ export default function AdminShopPage() {
     }
   }
 
-  const handleDeleteTemplate = async (id: string) => {
-    if (!confirm("Sei sicuro di voler eliminare questo taglio?")) return
 
-    const res = await fetch(`/api/admin/gift-card-templates?id=${id}`, {
-      method: "DELETE",
-    })
-
-    if (res.ok) {
-      fetchTemplates()
-    }
-  }
 
   if (loading) {
     return (
@@ -339,7 +350,7 @@ export default function AdminShopPage() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteProduct(product.id)}
+                          onClick={() => handleDeleteProduct(product.id, product.name)}
                           className="p-1.5 text-brand-gray hover:text-red-500"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -424,7 +435,7 @@ export default function AdminShopPage() {
                         <Edit2 className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteTemplate(template.id)}
+                        onClick={() => handleDeleteTemplate(template.id, template.value)}
                         className="p-2 text-brand-gray hover:text-red-500"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -682,6 +693,39 @@ export default function AdminShopPage() {
               >
                 <X className="w-5 h-5 inline mr-2" />
                 Annulla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-headline-sm font-bold text-brand-dark mb-2">
+                Elimina {deleteConfirm.type === 'product' ? 'Prodotto' : 'Taglio Gift Card'}
+              </h3>
+              <p className="text-body-md text-brand-gray">
+                Sei sicuro di voler eliminare <strong>{deleteConfirm.type === 'product' ? deleteConfirm.name : `Gift Card ${deleteConfirm.value}€`}</strong>? L'azione non può essere annullata.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-3 px-4 bg-brand-light-gray/50 text-brand-dark rounded-full font-medium hover:bg-brand-light-gray transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+              >
+                Elimina
               </button>
             </div>
           </div>

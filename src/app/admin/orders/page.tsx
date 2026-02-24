@@ -135,32 +135,34 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const handleArchive = async (orderId: string) => {
-    if (!confirm("Archiviare questo ordine?")) return
-
-    const res = await fetch("/api/admin/orders", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: orderId, isArchived: true }),
-    })
-
-    if (res.ok) {
-      fetchOrders()
-    }
+  const handleArchive = (orderId: string) => {
+    openActionDialog(orderId, 'archive')
   }
 
-  const handleRestore = async (orderId: string) => {
-    if (!confirm("Ripristinare questo ordine?")) return
+  const handleRestore = (orderId: string) => {
+    openActionDialog(orderId, 'restore')
+  }
 
+  const confirmAction = async () => {
+    if (!actionDialog.orderId || !actionDialog.action) return
+
+    if (actionDialog.action === 'resetStatus') {
+      await handleUpdateStatus(actionDialog.orderId, "COMPLETED")
+      closeActionDialog()
+      return
+    }
+
+    const isArchived = actionDialog.action === 'archive'
     const res = await fetch("/api/admin/orders", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: orderId, isArchived: false }),
+      body: JSON.stringify({ id: actionDialog.orderId, isArchived }),
     })
 
     if (res.ok) {
       fetchOrders()
     }
+    closeActionDialog()
   }
 
   const [sendingEmailOrderId, setSendingEmailOrderId] = useState<string | null>(null)
@@ -169,12 +171,26 @@ export default function AdminOrdersPage() {
     order: Order | null
   }>({ isOpen: false, order: null })
 
+  const [actionDialog, setActionDialog] = useState<{
+    isOpen: boolean
+    orderId: string | null
+    action: 'archive' | 'restore' | 'resetStatus' | null
+  }>({ isOpen: false, orderId: null, action: null })
+
   const openResendDialog = (order: Order) => {
     setConfirmDialog({ isOpen: true, order })
   }
 
   const closeResendDialog = () => {
     setConfirmDialog({ isOpen: false, order: null })
+  }
+
+  const openActionDialog = (orderId: string, action: 'archive' | 'restore' | 'resetStatus') => {
+    setActionDialog({ isOpen: true, orderId, action })
+  }
+
+  const closeActionDialog = () => {
+    setActionDialog({ isOpen: false, orderId: null, action: null })
   }
 
   const handleResendOrderEmail = async () => {
@@ -424,11 +440,7 @@ export default function AdminOrdersPage() {
                         {/* Mostra Ripristina solo se l'ordine ha prodotti (non solo gift card) */}
                         {order.items.length > 0 && (
                           <button
-                            onClick={() => {
-                              if (confirm("Ripristinare a 'Da ritirare'?")) {
-                                handleUpdateStatus(order.id, "COMPLETED")
-                              }
-                            }}
+                            onClick={() => openActionDialog(order.id, 'resetStatus')}
                             className="px-3 py-2 bg-orange-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-orange-600 transition-colors"
                           >
                             <Clock className="w-4 h-4" />
@@ -532,6 +544,61 @@ export default function AdminOrdersPage() {
         cancelLabel="Annulla"
         onConfirm={handleResendOrderEmail}
       />
+
+      {/* Dialog conferma azioni (archivia/ripristina) */}
+      {actionDialog.isOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                actionDialog.action === 'archive' ? 'bg-gray-100' : 'bg-orange-100'
+              }`}>
+                {actionDialog.action === 'archive' ? (
+                  <Archive className="w-8 h-8 text-gray-600" />
+                ) : actionDialog.action === 'restore' ? (
+                  <RotateCcw className="w-8 h-8 text-green-600" />
+                ) : (
+                  <Clock className="w-8 h-8 text-orange-600" />
+                )}
+              </div>
+              <h3 className="text-headline-sm font-bold text-brand-dark mb-2">
+                {actionDialog.action === 'archive' ? 'Archivia Ordine' : 
+                 actionDialog.action === 'restore' ? 'Ripristina Ordine' : 
+                 'Ripristina a Da ritirare'}
+              </h3>
+              <p className="text-body-md text-brand-gray">
+                {actionDialog.action === 'archive' 
+                  ? "Sei sicuro di voler archiviare questo ordine? Potrai trovarlo nella sezione 'Archiviati'."
+                  : actionDialog.action === 'restore'
+                  ? "Sei sicuro di voler ripristinare questo ordine? Tornerà nella sezione 'Attivi'."
+                  : "Sei sicuro di voler ripristinare questo ordine allo stato 'Da ritirare'?"}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={closeActionDialog}
+                className="flex-1 py-3 px-4 bg-brand-light-gray/50 text-brand-dark rounded-full font-medium hover:bg-brand-light-gray transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmAction}
+                className={`flex-1 py-3 px-4 text-white rounded-full font-medium transition-colors ${
+                  actionDialog.action === 'archive' 
+                    ? 'bg-gray-600 hover:bg-gray-700' 
+                    : actionDialog.action === 'restore'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-orange-500 hover:bg-orange-600'
+                }`}
+              >
+                {actionDialog.action === 'archive' ? 'Archivia' : 
+                 actionDialog.action === 'restore' ? 'Ripristina' : 
+                 'Conferma'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast notification */}
       <Toast

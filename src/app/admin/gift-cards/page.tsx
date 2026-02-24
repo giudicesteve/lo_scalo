@@ -63,6 +63,7 @@ export default function AdminGiftCardsPage() {
   const [isUsing, setIsUsing] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{url: string, receiptNumber: string | null} | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{transactionId: string, giftCardId: string} | null>(null)
 
   // Funzione per comprimere immagine e convertire in base64
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> => {
@@ -211,18 +212,15 @@ export default function AdminGiftCardsPage() {
 
 
 
-  const handleDeleteTransaction = async (
-    transactionId: string,
-    giftCardId: string
-  ) => {
-    if (
-      !confirm(
-        "Sei sicuro di voler eliminare questa transazione? Il credito verrà ripristinato."
-      )
-    ) {
-      return
-    }
+  const handleDeleteTransaction = (transactionId: string, giftCardId: string) => {
+    setDeleteConfirm({ transactionId, giftCardId })
+  }
 
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    
+    const { transactionId, giftCardId } = deleteConfirm
+    
     try {
       const res = await fetch(
         `/api/admin/gift-cards/transactions/${transactionId}`,
@@ -249,6 +247,8 @@ export default function AdminGiftCardsPage() {
       }
     } catch {
       alert("Errore durante l'eliminazione")
+    } finally {
+      setDeleteConfirm(null)
     }
   }
 
@@ -1211,6 +1211,39 @@ export default function AdminGiftCardsPage() {
           }}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-headline-sm font-bold text-brand-dark mb-2">
+                Elimina Transazione
+              </h3>
+              <p className="text-body-md text-brand-gray">
+                Sei sicuro di voler eliminare questa transazione? Il credito verrà ripristinato.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-3 px-4 bg-brand-light-gray/50 text-brand-dark rounded-full font-medium hover:bg-brand-light-gray transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 px-4 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"
+              >
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )
