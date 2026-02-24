@@ -126,14 +126,16 @@ model GiftCard {
 
 // Transazioni sulle gift card
 model GiftCardTransaction {
-  id            String    @id @default(cuid())
-  amount        Float
-  type          String
-  note          String?
-  createdAt     DateTime  @default(now())
+  id             String    @id @default(cuid())
+  amount         Float
+  type           String
+  note           String?
+  receiptNumber  String?   // Numero scontrino fiscale
+  receiptImage   String?   // URL immagine scontrino
+  createdAt      DateTime  @default(now())
   
-  giftCard      GiftCard  @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
-  giftCardId    String
+  giftCard       GiftCard  @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  giftCardId     String
 }
 
 // Ordini
