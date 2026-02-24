@@ -67,9 +67,10 @@ export async function POST(req: Request) {
     const body = await req.json()
     logToFile(`Body ricevuto: ${JSON.stringify(body)}`)
     
-    const { email, phone, items, total, type } = body
+    const { email, phone, items, total, type, language } = body
+    const lang = language  // Il frontend invia 'language', noi usiamo 'lang'
     
-    logToFile(`Dati: email=${email}, phone=${phone}, items=${items?.length}, total=${total}, type=${type}`)
+    logToFile(`🌐 [ORDERS] Dati: email=${email}, phone=${phone}, items=${items?.length}, total=${total}, type=${type}, lang=${lang || 'NON SPECIFICATA (default: it)'}`)
 
     // Validazione campi obbligatori
     if (!email?.trim()) {
@@ -206,6 +207,7 @@ export async function POST(req: Request) {
           email,
           phone,
           total,
+          lang: lang || "it",  // Default a italiano se non specificato
           items: {
             create: productItems.map((item: { id: string; price: number; quantity: number; size?: string }) => ({
               quantity: item.quantity,

@@ -32,16 +32,17 @@ export async function POST(req: Request) {
     }
 
     // 2. Se già completato, controlla se email sono state inviate
-    console.log(`🔍 [VERIFY] Ordine ${orderNumber} - status: ${order.status}, emailSent: ${order.emailSent}`)
+    console.log(`🔍 [VERIFY] Ordine ${orderNumber} - status: ${order.status}, emailSent: ${order.emailSent}, lang: ${order.lang || 'it (default)'}`)
     if (order.status !== "PENDING_PAYMENT") {
       // Se email non inviate (fallback se webhook ha fallito), invia ora
       if (!order.emailSent) {
-        console.log(`📧 [VERIFY] 🚀 FALLBACK - Invio email per ordine già completato ${orderNumber}`)
+        console.log(`📧 [VERIFY] 🚀 FALLBACK - Invio email per ordine già completato ${orderNumber} (lang: ${order.lang || 'it'})`)
         const orderDetails = {
           orderNumber: order.orderNumber,
           email: order.email,
           phone: order.phone || undefined,
           total: order.total,
+          lang: order.lang,
           items: order.items.map(item => ({
             name: item.product?.name || "Prodotto",
             quantity: item.quantity,
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
           })),
           createdAt: order.createdAt
         }
+        console.log(`🌐 [VERIFY-FALLBACK] orderDetails.lang = ${orderDetails.lang || 'it (default)'}`)
 
         try {
           // Invia email sequenzialmente con delay per rate limit
@@ -147,12 +149,13 @@ export async function POST(req: Request) {
     // 5. Invia email se non già inviate (idempotenza)
     console.log(`📧 [VERIFY] Check invio: updateResult.count=${updateResult.count}, emailSent=${order.emailSent}`)
     if (updateResult.count > 0 && !order.emailSent) {
-      console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id}`)
+      console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id} (lang: ${order.lang || 'it'})`)
       const orderDetails = {
         orderNumber: order.orderNumber,
         email: order.email,
         phone: order.phone || undefined,
         total: order.total,
+        lang: order.lang,
         items: order.items.map(item => ({
           name: item.product?.name || "Prodotto",
           quantity: item.quantity,
@@ -165,6 +168,7 @@ export async function POST(req: Request) {
         })),
         createdAt: order.createdAt
       }
+      console.log(`🌐 [VERIFY] orderDetails.lang = ${orderDetails.lang || 'it (default)'}`)
 
       try {
         // Invia email sequenzialmente con delay per rate limit (2 req/sec)

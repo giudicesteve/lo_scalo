@@ -146,6 +146,7 @@ model Order {
   phone           String?
   total           Float
   customerName    String?
+  lang            String    @default("it")  // Lingua usata dall'utente durante l'ordine (it/en)
   stripePaymentId       String?  // ID della checkout session (cs_...)
   stripePaymentIntentId String?  // ID del payment intent (pi_...)
   isArchived      Boolean   @default(false)

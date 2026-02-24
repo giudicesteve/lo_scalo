@@ -126,14 +126,15 @@ export async function POST(req: Request) {
         }
 
         // Invia email solo se non già inviate (idempotenza)
-        console.log(`📧 [WEBHOOK] Check email for order ${orderId}: emailSent=${order.emailSent}`)
+        console.log(`📧 [WEBHOOK] Check email for order ${orderId}: emailSent=${order.emailSent}, lang=${order.lang || 'it (default)'}`)
         if (!order.emailSent) {
-          console.log(`📧 [WEBHOOK] 🚀 INVIO EMAIL per ordine ${orderId}`)
+          console.log(`📧 [WEBHOOK] 🚀 INVIO EMAIL per ordine ${orderId} (lang: ${order.lang || 'it'})`)
           const orderDetails = {
             orderNumber: order.orderNumber,
             email: order.email,
             phone: order.phone || undefined,
             total: order.total,
+            lang: order.lang,
             items: order.items.map(item => ({
               name: item.product.name,
               quantity: item.quantity,

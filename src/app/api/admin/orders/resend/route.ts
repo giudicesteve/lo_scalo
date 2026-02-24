@@ -59,6 +59,7 @@ export async function POST(req: Request) {
       email: order.email,
       phone: order.phone || undefined,
       total: order.total,
+      lang: order.lang,
       items: order.items.map(item => ({
         name: item.product.name,
         quantity: item.quantity,

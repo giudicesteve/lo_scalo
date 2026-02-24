@@ -33,6 +33,80 @@ interface OrderDetails {
   items: OrderItem[]
   giftCards: GiftCardInfo[]
   createdAt: Date
+  lang?: string  // 'it' | 'en'
+}
+
+// Traduzioni per le email (copia dal client)
+const emailTranslations: Record<string, Record<string, string>> = {
+  it: {
+    'email.order.subject': 'Conferma ordine #{orderNumber} - Lo Scalo',
+    'email.order.greeting': 'Grazie per il tuo ordine!',
+    'email.order.number': 'Ordine',
+    'email.order.date': 'Data',
+    'email.order.email': 'Email',
+    'email.order.phone': 'Telefono',
+    'email.order.products': 'Prodotti',
+    'email.order.noProducts': 'Nessun prodotto',
+    'email.order.giftcard': 'Gift Card',
+    'email.order.total': 'Totale',
+    'email.order.pickup.title': '📦 Ritiro in sede',
+    'email.order.pickup.message': 'Potrai ritirare i prodotti fra 24/48 ore. Controlla gli orari di apertura del locale per sapere quando passare da noi!',
+    'email.order.pickup.address': 'Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO)',
+    'email.order.giftcardReady.title': '🎁 Le tue Gift Card sono pronte!',
+    'email.order.giftcardReady.message': 'Trovi le tue Gift Card in formato PDF in allegato a questa email. Presenta il QR code al locale per utilizzarle.',
+    'email.order.giftcardReady.noAttach': 'Riceverai un\'altra email con i PDF contenenti i QR code scansionabili.',
+    'email.order.giftcardReady.active': 'Le gift card sono già attive e utilizzabili da subito presso il nostro locale.',
+    'email.order.support': 'Per problemi scrivi a',
+    'email.order.subjectLine': 'indicando il numero d\'ordine nell\'oggetto.',
+    'email.order.footer': '© 2026 Lo Scalo - Craft Drinks by the Lake',
+    'email.order.success-sent-to': 'Conferma inviata a:',
+    'email.order.thanks': 'Grazie per il tuo ordine!',
+    'email.order.orderDetails': 'Dettagli ordine',
+    'email.order.summary': 'Riepilogo ordine',
+    'email.order.size': 'Taglia',
+    'email.order.qty': 'Qtà',
+  },
+  en: {
+    'email.order.subject': 'Order confirmation #{orderNumber} - Lo Scalo',
+    'email.order.greeting': 'Thank you for your order!',
+    'email.order.number': 'Order',
+    'email.order.date': 'Date',
+    'email.order.email': 'Email',
+    'email.order.phone': 'Phone',
+    'email.order.products': 'Products',
+    'email.order.noProducts': 'No products',
+    'email.order.giftcard': 'Gift Card',
+    'email.order.total': 'Total',
+    'email.order.pickup.title': '📦 In-store pickup',
+    'email.order.pickup.message': 'You can pick up products within 24/48 hours. Check our opening hours to know when to visit us!',
+    'email.order.pickup.address': 'Address: Frazione San Vito, 9 - 22010 Cremia (CO)',
+    'email.order.giftcardReady.title': '🎁 Your Gift Cards are ready!',
+    'email.order.giftcardReady.message': 'You will find your Gift Cards in PDF format attached to this email. Present the QR code at the venue to use them.',
+    'email.order.giftcardReady.noAttach': 'You will receive another email with the PDFs containing scannable QR codes.',
+    'email.order.giftcardReady.active': 'Gift cards are already active and ready to use at our venue.',
+    'email.order.support': 'For issues, write to',
+    'email.order.subjectLine': 'indicating the order number in the subject.',
+    'email.order.footer': '© 2026 Lo Scalo - Craft Drinks by the Lake',
+    'email.order.success-sent-to': 'Confirmation sent to:',
+    'email.order.thanks': 'Thank you for your order!',
+    'email.order.orderDetails': 'Order details',
+    'email.order.summary': 'Order summary',
+  }
+}
+
+// Funzione di traduzione per email
+function t(key: string, language: string = 'it', replacements?: Record<string, string>): string {
+  const lang = language === 'en' ? 'en' : 'it'
+  let text = emailTranslations[lang][key] || key
+  
+  // Sostituisce i placeholder tipo {orderNumber}
+  if (replacements) {
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      text = text.replace(new RegExp(`{${placeholder}}`, 'g'), value)
+    })
+  }
+  
+  return text
 }
 
 interface EmailResult {
@@ -263,9 +337,11 @@ async function generateGiftCardAttachments(order: OrderDetails): Promise<{ filen
 export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailResult> {
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
+  const lang = order.lang || 'it'
+  console.log(`🌐 [EMAIL] sendOrderConfirmation - order.lang=${order.lang}, using lang=${lang}`)
 
   const itemsList = order.items
-    .map(item => `• ${item.name}${item.size ? ` (Taglia: ${item.size})` : ''} - Qty: ${item.quantity} - €${item.totalPrice.toFixed(2)}`)
+    .map(item => `• ${item.name}${item.size ? ` (${t('email.order.size', lang)}: ${item.size})` : ''} - ${t('email.order.qty', lang)}: ${item.quantity} - €${item.totalPrice.toFixed(2)}`)
     .join('\n')
 
   const giftCardsList = order.giftCards
@@ -273,39 +349,40 @@ export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailR
     .join('\n')
 
   const pickupInstructions = hasProducts
-    ? `\n📦 RITIRO IN SEDE\nI tuoi prodotti saranno pronti per il ritiro entro 24-48 ore presso:\nLo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)\n\nPresenta questo numero d'ordine al momento del ritiro.`
+    ? `\n${t('email.order.pickup.title', lang)}\n${t('email.order.pickup.message', lang)}\n\n${t('email.order.pickup.address', lang)}`
     : ''
 
   const giftCardInstructions = hasGiftCards
-    ? `\n🎁 GIFT CARD\nTrovi le tue Gift Card in formato PDF in allegato a questa email.\nPresenta il QR code al locale per utilizzarle.`
+    ? `\n${t('email.order.giftcardReady.title', lang)}\n${t('email.order.giftcardReady.message', lang)}`
     : ''
 
   const attachments = hasGiftCards ? await generateGiftCardAttachments(order) : []
-  const htmlContent = generateOrderConfirmationHtml(order, attachments.length > 0)
+  const htmlContent = generateOrderConfirmationHtml(order, attachments.length > 0, lang)
 
+  const dateLocale = lang === 'en' ? 'en-US' : 'it-IT'
   const text = `
-Grazie per il tuo ordine!
+${t('email.order.thanks', lang)}
 
-ORDINE #${order.orderNumber}
-Data: ${order.createdAt.toLocaleDateString('it-IT')}
+${t('email.order.number', lang).toUpperCase()} #${order.orderNumber}
+${t('email.order.date', lang)}: ${order.createdAt.toLocaleDateString(dateLocale)}
 
-📧 Email: ${order.email}
-${order.phone ? `📞 Telefono: ${order.phone}` : ''}
+📧 ${t('email.order.email', lang)}: ${order.email}
+${order.phone ? `📞 ${t('email.order.phone', lang)}: ${order.phone}` : ''}
 
-🛍️ PRODOTTI
-${itemsList || 'Nessun prodotto'}
+🛍️ ${t('email.order.products', lang).toUpperCase()}
+${itemsList || t('email.order.noProducts', lang)}
 
-${hasGiftCards ? `🎁 GIFT CARD\n${giftCardsList}` : ''}
+${hasGiftCards ? `🎁 ${t('email.order.giftcard', lang).toUpperCase()}\n${giftCardsList}` : ''}
 
-💰 TOTALE: €${order.total.toFixed(2)}
+💰 ${t('email.order.total', lang).toUpperCase()}: €${order.total.toFixed(2)}
 
 ${pickupInstructions}
 
 ${giftCardInstructions}
 
-Per qualsiasi domanda, scrivi a support@loscalo.it indicando il numero d'ordine.
+${t('email.order.support', lang)} support@loscalo.it ${t('email.order.subjectLine', lang)}
 
-A presto!
+${lang === 'en' ? 'See you soon!' : 'A presto!'}
 Lo Scalo Team
 `
 
@@ -313,7 +390,7 @@ Lo Scalo Team
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: order.email,
-      subject: `Conferma ordine #${order.orderNumber} - Lo Scalo`,
+      subject: t('email.order.subject', lang, { orderNumber: order.orderNumber }),
       text,
       html: htmlContent,
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -324,7 +401,7 @@ Lo Scalo Team
       return { success: false, error }
     }
 
-    console.log('Order confirmation sent:', data?.id, attachments.length > 0 ? `con ${attachments.length} allegati` : '')
+    console.log(`✅ [EMAIL] Order confirmation sent: ${data?.id}, lang=${lang}, subject="${t('email.order.subject', lang, { orderNumber: order.orderNumber })}"`)
     return { success: true, id: data?.id, attachments: attachments.length }
   } catch (err) {
     console.error('Exception sending order confirmation:', err)
@@ -457,17 +534,17 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
 const LOGO_URL = 'https://i.ibb.co/JjXJtRjT/Lo-Scalo-vertical-orange.png'
 
 // HTML template per conferma ordine
-function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false): string {
+function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false, lang: string = 'it'): string {
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
 
   return `
 <!DOCTYPE html>
-<html lang="it">
+<html lang="${lang}">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Conferma Ordine #${order.orderNumber}</title>
+  <title>${t('email.order.subject', lang, { orderNumber: order.orderNumber })}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: ${BRAND_DARK}; background-color: ${BRAND_CREAM};">
   <div style="background-color: white; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
@@ -475,20 +552,20 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
       <div style="margin-bottom: 6px;">
         <img src="${LOGO_URL}" alt="Lo Scalo" style="max-width: 160px; height: auto;" />
       </div>
-      <h1 style="font-size: 24px; font-weight: 700; color: ${BRAND_DARK}; margin: 0 0 8px;">Grazie per il tuo ordine!</h1>
-      <div style="font-size: 15px; color: #666; font-weight: 500;">Ordine <strong style="color: ${BRAND_DARK};">#${order.orderNumber}</strong></div>
+      <h1 style="font-size: 24px; font-weight: 700; color: ${BRAND_DARK}; margin: 0 0 8px;">${t('email.order.greeting', lang)}</h1>
+      <div style="font-size: 15px; color: #666; font-weight: 500;">${t('email.order.number', lang)} <strong style="color: ${BRAND_DARK};">#${order.orderNumber}</strong></div>
     </div>
 
     <div>
       <div style="background-color: white; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px;margin-top: 16px;">
-        <div style="font-size: 15px; font-weight: 700; color: ${BRAND_DARK}; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">Riepilogo ordine</div>
+        <div style="font-size: 15px; font-weight: 700; color: ${BRAND_DARK}; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">${t('email.order.summary', lang)}</div>
         
         <table width="100%" cellpadding="20" style="width: 100%; border-collapse: collapse;">
           ${order.items.map(item => `
           <tr>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; vertical-align: top;">
               <div style="font-weight: 600; color: ${BRAND_DARK}; font-size: 14px; margin-bottom: 4px;">${item.name}</div>
-              <div style="font-size: 13px; color: #888;">Qty: ${item.quantity}${item.size ? ` • Taglia: ${item.size}` : ''}</div>
+              <div style="font-size: 13px; color: #888;">${t('email.order.qty', lang)}: ${item.quantity}${item.size ? ` • ${t('email.order.size', lang)}: ${item.size}` : ''}</div>
             </td>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; text-align: right; vertical-align: top; white-space: nowrap;">
               <div style="font-weight: 700; color: ${BRAND_DARK}; font-size: 15px;">€${item.totalPrice.toFixed(2)}</div>
@@ -499,7 +576,7 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
           ${order.giftCards.map(gc => `
           <tr>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; vertical-align: top;">
-              <div style="font-weight: 600; color: ${BRAND_DARK}; font-size: 14px; margin-bottom: 4px;">Gift Card</div>
+              <div style="font-weight: 600; color: ${BRAND_DARK}; font-size: 14px; margin-bottom: 4px;">${t('email.order.giftcard', lang)}</div>
               <div style="font-size: 13px; color: #888;">${gc.code}</div>
             </td>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; text-align: right; vertical-align: top; white-space: nowrap;">
@@ -510,7 +587,7 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
           
           <tr>
             <td style="padding-top: 16px;">
-              <span style="font-size: 16px; font-weight: 700; color: ${BRAND_DARK};">Totale</span>
+              <span style="font-size: 16px; font-weight: 700; color: ${BRAND_DARK};">${t('email.order.total', lang)}</span>
             </td>
             <td style="padding-top: 16px; text-align: right;">
               <span style="font-size: 24px; font-weight: 700; color: ${BRAND_GREEN};">€${order.total.toFixed(2)}</span>
@@ -519,29 +596,29 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
         </table>
         
         <div style="margin-top: 16px; border-top: 1px solid #eee; font-size: 13px; color: #666;">
-          Conferma inviata a: <strong>${order.email}</strong>
+          ${t('email.order.success-sent-to', lang)} <strong>${order.email}</strong>
         </div>
       </div>
 
       ${hasGiftCards ? `
       <div style="background-color: rgba(240,90,40,0.1); border-radius: 16px; padding: 16px; margin-top: 16px;">
-        <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: ${BRAND_ORANGE};">🎁 Le tue Gift Card sono pronte!</div>
-        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">${hasAttachments ? 'Trovi le tue Gift Card in formato PDF in allegato a questa email. Presenta il QR code al locale per utilizzarle.' : 'Riceverai un\'altra email con i PDF contenenti i QR code scansionabili.'} Le gift card sono già attive e utilizzabili da subito presso il nostro locale.</p>
+        <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: ${BRAND_ORANGE};">${t('email.order.giftcardReady.title', lang)}</div>
+        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">${hasAttachments ? t('email.order.giftcardReady.message', lang) : t('email.order.giftcardReady.noAttach', lang)} ${t('email.order.giftcardReady.active', lang)}</p>
       </div>
       ` : ''}
 
       ${hasProducts ? `
       <div style="background-color: rgba(78,110,88,0.1); border-radius: 16px; padding: 16px; margin-top: 16px;">
-        <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: ${BRAND_GREEN};">📦 Ritiro in sede</div>
-        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">Potrai ritirare i prodotti fra 24/48 ore. Controlla gli orari di apertura del locale per sapere quando passare da noi!<br><br>
-        <strong>Indirizzo:</strong> Frazione San Vito, 9 - 22010 Cremia (CO)</p>
+        <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: ${BRAND_GREEN};">${t('email.order.pickup.title', lang)}</div>
+        <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.6;">${t('email.order.pickup.message', lang)}<br><br>
+        <strong>${t('email.order.pickup.address', lang)}</strong></p>
       </div>
       ` : ''}
     </div>
 
     <div style="background-color: ${BRAND_CREAM}; border-radius: 16px; padding: 24px; margin-top: 16px; text-align: center; border-top: 1px solid rgba(78,110,88,0.1);">
-      <p style="font-size: 13px; color: #666; margin: 0 0 8px;">Per problemi scrivi a <a href="mailto:support@loscalo.it" style="color: ${BRAND_GREEN}; text-decoration: none; font-weight: 600;">support@loscalo.it</a><br>indicando il numero d'ordine nell'oggetto.</p>
-      <p style="margin-top: 20px; color: #999; font-size: 12px;">© 2026 Lo Scalo - Craft Drinks by the Lake</p>
+      <p style="font-size: 13px; color: #666; margin: 0 0 8px;">${t('email.order.support', lang)} <a href="mailto:support@loscalo.it" style="color: ${BRAND_GREEN}; text-decoration: none; font-weight: 600;">support@loscalo.it</a><br>${t('email.order.subjectLine', lang)}</p>
+      <p style="margin-top: 20px; color: #999; font-size: 12px;">${t('email.order.footer', lang)}</p>
     </div>
   </div>
 </body>

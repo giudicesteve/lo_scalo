@@ -22,7 +22,7 @@ function isValidPhone(phone: string): boolean {
 }
 
 export default function CartContent() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const { items, removeItem, updateQuantity, clearCart } = useCart()
 
   const [email, setEmail] = useState("")
@@ -159,6 +159,7 @@ export default function CartContent() {
           items: orderItems,
           total: calculateTotal(items),
           type: orderType,
+          language: lang,  // Lingua selezionata dall'utente
         }),
       })
 
