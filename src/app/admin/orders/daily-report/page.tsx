@@ -244,18 +244,19 @@ function DailyReportContent() {
     XLSX.writeFile(wb, `LoScalo_Riepilogo_${selectedDate}.xlsx`)
   }
 
-  // Generate and download PDF
+  // Generate and download PDF with detail
   const generatePDF = async () => {
     if (filteredOrders.length === 0) return
 
     const pdfDoc = await PDFDocument.create()
-    const page = pdfDoc.addPage([842, 595]) // A4 Landscape
+    let page = pdfDoc.addPage([842, 595]) // A4 Landscape
     const { width, height } = page.getSize()
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     
     let y = height - 50
     const margin = 40
+    const rowHeight = 12
     
     // Header
     page.drawText("Lo Scalo - Riepilogo Contabile", {
@@ -277,72 +278,177 @@ function DailyReportContent() {
     
     y -= 30
     
-    // Table header
-    const colWidths = [70, 50, 120, 40, 60, 60, 60, 150]
-    const headers = ["Ordine", "Ora", "Cliente", "Prodotti", "Gift Card", "Totale", "Stripe ID"]
+    // Helper function to check and add new page
+    const checkNewPage = (neededSpace: number) => {
+      if (y < neededSpace + 60) {
+        page = pdfDoc.addPage([842, 595])
+        y = height - 50
+        return true
+      }
+      return false
+    }
     
-    // Header background
-    page.drawRectangle({
-      x: margin,
-      y: y - 5,
-      width: width - margin * 2,
-      height: 20,
-      color: rgb(0.95, 0.95, 0.95),
-    })
-    
-    let x = margin
-    headers.forEach((header, i) => {
-      page.drawText(header, {
-        x: x,
+    // Process each order with detail
+    filteredOrders.forEach((order) => {
+      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+      const time = new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+      
+      checkNewPage(80) // Space for order header
+      
+      // Order header background
+      page.drawRectangle({
+        x: margin,
+        y: y - 5,
+        width: width - margin * 2,
+        height: 20,
+        color: rgb(0.95, 0.95, 0.95),
+      })
+      
+      // Order header row
+      page.drawText(`#${order.orderNumber}`, {
+        x: margin,
         y,
         size: 10,
         font: fontBold,
         color: rgb(0, 0, 0),
       })
-      x += colWidths[i] || 80
-    })
-    
-    y -= 20
-    
-    // Table rows
-    filteredOrders.forEach(order => {
-      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
       
-      if (y < 80) {
-        // New page
-        pdfDoc.addPage([842, 595])
-        y = height - 50
-      }
-      
-      x = margin
-      const time = new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
-      
-      const rowData = [
-        order.orderNumber,
-        time,
-        order.email.substring(0, 25),
-        productTotal > 0 ? `${productTotal.toFixed(2)}€` : "-",
-        giftCardTotal > 0 ? `${giftCardTotal.toFixed(2)}€` : "-",
-        `${order.total.toFixed(2)}€`,
-        order.stripePaymentIntentId ? order.stripePaymentIntentId.substring(0, 20) : "-",
-      ]
-      
-      rowData.forEach((cell, i) => {
-        page.drawText(String(cell), {
-          x: x,
-          y,
-          size: 9,
-          font,
-          color: rgb(0, 0, 0),
-        })
-        x += colWidths[i] || 80
+      page.drawText(time, {
+        x: margin + 80,
+        y,
+        size: 9,
+        font,
+        color: rgb(0.4, 0.4, 0.4),
       })
       
-      y -= 15
+      page.drawText(order.email.length > 35 ? order.email.substring(0, 35) + "..." : order.email, {
+        x: margin + 130,
+        y,
+        size: 9,
+        font,
+        color: rgb(0, 0, 0),
+      })
+      
+      page.drawText(`${order.total.toFixed(2)}€`, {
+        x: width - margin - 60,
+        y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.8, 0.3, 0.1),
+      })
+      
+      y -= rowHeight + 5
+      
+      // Products detail
+      if (order.items.length > 0) {
+        checkNewPage(order.items.length * rowHeight + 20)
+        
+        page.drawText("Prodotti:", {
+          x: margin + 20,
+          y,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.2, 0.4, 0.8),
+        })
+        y -= rowHeight
+        
+        order.items.forEach(item => {
+          const sizeText = item.size ? ` (${item.size})` : ""
+          page.drawText(`• ${item.quantity}x ${item.product.name}${sizeText}`, {
+            x: margin + 30,
+            y,
+            size: 8,
+            font,
+            color: rgb(0, 0, 0),
+          })
+          
+          page.drawText(`${item.totalPrice.toFixed(2)}€`, {
+            x: width - margin - 100,
+            y,
+            size: 8,
+            font,
+            color: rgb(0.4, 0.4, 0.4),
+          })
+          
+          y -= rowHeight
+        })
+        
+        // Products total
+        page.drawText(`Totale Prodotti: ${productTotal.toFixed(2)}€`, {
+          x: width - margin - 150,
+          y,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.2, 0.4, 0.8),
+        })
+        y -= rowHeight + 5
+      }
+      
+      // Gift Cards detail
+      if (order.giftCards.length > 0) {
+        checkNewPage(order.giftCards.length * rowHeight + 20)
+        
+        page.drawText("Gift Card:", {
+          x: margin + 20,
+          y,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.2, 0.6, 0.2),
+        })
+        y -= rowHeight
+        
+        order.giftCards.forEach(gc => {
+          page.drawText(`• ${gc.code}`, {
+            x: margin + 30,
+            y,
+            size: 8,
+            font,
+            color: rgb(0, 0, 0),
+          })
+          
+          page.drawText(`${gc.initialValue.toFixed(2)}€`, {
+            x: width - margin - 100,
+            y,
+            size: 8,
+            font,
+            color: rgb(0.4, 0.4, 0.4),
+          })
+          
+          y -= rowHeight
+        })
+        
+        // Gift cards total
+        page.drawText(`Totale Gift Card: ${giftCardTotal.toFixed(2)}€`, {
+          x: width - margin - 150,
+          y,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.2, 0.6, 0.2),
+        })
+        y -= rowHeight + 5
+      }
+      
+      // Stripe ID if present
+      if (order.stripePaymentIntentId) {
+        checkNewPage(20)
+        page.drawText(`Stripe: ${order.stripePaymentIntentId}`, {
+          x: margin + 20,
+          y,
+          size: 7,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        })
+        y -= rowHeight
+      }
+      
+      // Separator between orders
+      y -= 10
     })
     
     // Footer totals
-    y -= 20
+    checkNewPage(100)
+    
+    y -= 10
     page.drawLine({
       start: { x: margin, y },
       end: { x: width - margin, y },
@@ -350,38 +456,38 @@ function DailyReportContent() {
       color: rgb(0, 0, 0),
     })
     
-    y -= 20
-    page.drawText("TOTALI GIORNO:", {
+    y -= 25
+    page.drawText("TOTALI GIORNO", {
       x: margin,
       y,
-      size: 12,
+      size: 14,
       font: fontBold,
       color: rgb(0, 0, 0),
     })
     
-    y -= 18
+    y -= 20
     page.drawText(`Prodotti: ${totals.productRevenue.toFixed(2)}€`, {
       x: margin + 20,
       y,
-      size: 11,
-      font,
+      size: 12,
+      font: fontBold,
       color: rgb(0.2, 0.4, 0.8),
     })
     
-    y -= 15
+    y -= 18
     page.drawText(`Gift Card: ${totals.giftCardRevenue.toFixed(2)}€`, {
       x: margin + 20,
       y,
-      size: 11,
-      font,
+      size: 12,
+      font: fontBold,
       color: rgb(0.2, 0.6, 0.2),
     })
     
-    y -= 20
-    page.drawText(`TOTALE: ${totals.totalRevenue.toFixed(2)}€`, {
+    y -= 22
+    page.drawText(`TOTALE INCASSO: ${totals.totalRevenue.toFixed(2)}€`, {
       x: margin,
       y,
-      size: 14,
+      size: 16,
       font: fontBold,
       color: rgb(0.8, 0.3, 0.1),
     })
