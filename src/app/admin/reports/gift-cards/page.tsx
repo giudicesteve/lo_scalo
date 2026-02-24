@@ -175,11 +175,10 @@ export default function GiftCardsMonthlyReportPage() {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     
-    let page = pdfDoc.addPage([595, 842]) // A4 Portrait
+    let page = pdfDoc.addPage([842, 595]) // A4 Landscape
     const { width, height } = page.getSize()
     let y = height - 50
     const margin = 40
-    const rowHeight = 14
     
     // Header
     page.drawText("Lo Scalo - Report Transazioni Gift Card", {
@@ -208,128 +207,126 @@ export default function GiftCardsMonthlyReportPage() {
       color: rgb(0.4, 0.4, 0.4),
     })
     
-    y -= 30
+    y -= 35
     
     const checkNewPage = (neededSpace: number) => {
-      if (y < neededSpace + 60) {
-        page = pdfDoc.addPage([595, 842])
+      if (y < neededSpace + margin) {
+        page = pdfDoc.addPage([842, 595])
         y = height - 50
         return true
       }
       return false
     }
     
-    // Per ogni transazione
-    for (const t of filteredTransactions) {
-      const needsSpace = t.receiptImage ? 200 : 80
-      checkNewPage(needsSpace)
+    // Track transactions with images for later
+    const transactionsWithImages: { index: number; t: Transaction }[] = []
+    
+    // Multi-row layout for each transaction
+    filteredTransactions.forEach((t, index) => {
+      const rowNum = index + 1
+      const date = new Date(t.createdAt)
+      const neededSpace = 70 // Height needed for each transaction block
       
-      // Box transazione
+      checkNewPage(neededSpace + 100)
+      
+      // Background box for the transaction
       page.drawRectangle({
         x: margin,
-        y: y - 5,
+        y: y - neededSpace + 12,
         width: width - margin * 2,
-        height: t.receiptImage ? 70 : 55,
+        height: neededSpace,
         color: rgb(0.97, 0.97, 0.97),
       })
       
-      // Data e ora
-      const date = new Date(t.createdAt)
-      page.drawText(`${date.toLocaleDateString("it-IT")} ${date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`, {
+      // Row 1: Number, Date, Amount, Remaining (right side)
+      page.drawText(`${rowNum}`, {
         x: margin + 10,
+        y,
+        size: 12,
+        font: fontBold,
+      })
+      
+      page.drawText(date.toLocaleDateString("it-IT"), {
+        x: margin + 35,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.4, 0.4, 0.4),
+      })
+      
+      page.drawText(date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }), {
+        x: margin + 95,
         y,
         size: 9,
         font,
         color: rgb(0.4, 0.4, 0.4),
       })
       
-      // Codice gift card
-      page.drawText(t.giftCard.code, {
-        x: margin + 10,
-        y: y - rowHeight,
-        size: 11,
-        font: fontBold,
-      })
-      
-      // Importo
+      // Importo (right aligned)
       page.drawText(`-${t.amount.toFixed(2)}€`, {
-        x: width - margin - 80,
-        y: y - 5,
-        size: 14,
+        x: width - margin - 150,
+        y,
+        size: 12,
         font: fontBold,
         color: rgb(0.8, 0.2, 0.2),
       })
       
-      y -= rowHeight * 2
+      // Residuo
+      page.drawText(`Residuo: ${t.giftCard.remainingValue.toFixed(2)}€`, {
+        x: width - margin - 80,
+        y,
+        size: 10,
+        font,
+      })
       
-      // Scontrino
-      if (t.receiptNumber) {
-        page.drawText(`Scontrino: ${t.receiptNumber}`, {
-          x: margin + 10,
-          y,
-          size: 9,
-          font,
-          color: rgb(0.2, 0.4, 0.8),
-        })
-        y -= rowHeight
-      }
+      y -= 20
       
-      // Nota
-      if (t.note) {
-        page.drawText(`Nota: ${t.note.substring(0, 50)}${t.note.length > 50 ? '...' : ''}`, {
-          x: margin + 10,
+      // Row 2: Gift Card Code
+      page.drawText(`Gift Card: ${t.giftCard.code}`, {
+        x: margin + 35,
+        y,
+        size: 10,
+        font: fontBold,
+      })
+      
+      y -= 18
+      
+      // Row 3: Cliente
+      page.drawText(`Cliente: ${t.giftCard.order.email}`, {
+        x: margin + 35,
+        y,
+        size: 9,
+        font,
+      })
+      
+      y -= 16
+      
+      // Row 4: Dettaglio (Scontrino, Note)
+      const details = []
+      if (t.receiptNumber) details.push(`Scontrino: ${t.receiptNumber}`)
+      if (t.note) details.push(`Nota: ${t.note}`)
+      if (t.receiptImage) details.push("[Foto allegata]")
+      
+      if (details.length > 0) {
+        page.drawText(details.join(" | "), {
+          x: margin + 35,
           y,
           size: 8,
           font,
-          color: rgb(0.4, 0.4, 0.4),
+          color: rgb(0.2, 0.4, 0.8),
         })
-        y -= rowHeight
       }
       
-      // Cliente
-      page.drawText(`Cliente: ${t.giftCard.order.email}`, {
-        x: margin + 10,
-        y,
-        size: 8,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      })
-      y -= rowHeight + 5
-      
-      // Immagine scontrino se presente
+      // Track if has image
       if (t.receiptImage) {
-        try {
-          const base64Data = t.receiptImage.split(',')[1]
-          if (base64Data) {
-            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-            const image = await pdfDoc.embedJpg(imageBytes).catch(() => 
-              pdfDoc.embedPng(imageBytes)
-            )
-            
-            const imgWidth = 150
-            const imgHeight = (image.height / image.width) * imgWidth
-            
-            checkNewPage(imgHeight + 20)
-            
-            page.drawImage(image, {
-              x: margin + 10,
-              y: y - imgHeight,
-              width: imgWidth,
-              height: imgHeight,
-            })
-            y -= imgHeight + 15
-          }
-        } catch (e) {
-          console.error("Error embedding image:", e)
-        }
+        transactionsWithImages.push({ index: rowNum, t })
       }
       
-      y -= 10
-    }
+      y -= 25
+    })
     
     // Totali
     checkNewPage(80)
-    
     y -= 10
     page.drawLine({
       start: { x: margin, y },
@@ -346,30 +343,90 @@ export default function GiftCardsMonthlyReportPage() {
       font: fontBold,
     })
     
-    y -= 20
-    page.drawText(`Totale Utilizzato: ${totals.totalUsed.toFixed(2)}€`, {
+    y -= 22
+    page.drawText(`Totale Utilizzato: ${totals.totalUsed.toFixed(2)}€ | Gift Card: ${totals.uniqueGiftCards} | Clienti: ${totals.uniqueCustomers}`, {
       x: margin + 20,
       y,
-      size: 12,
+      size: 11,
       font: fontBold,
       color: rgb(0.8, 0.2, 0.2),
     })
     
-    y -= 18
-    page.drawText(`Gift Card utilizzate: ${totals.uniqueGiftCards}`, {
-      x: margin + 20,
-      y,
-      size: 11,
-      font,
-    })
-    
-    y -= 18
-    page.drawText(`Clienti diversi: ${totals.uniqueCustomers}`, {
-      x: margin + 20,
-      y,
-      size: 11,
-      font,
-    })
+    // Add Receipt Images section if any
+    if (transactionsWithImages.length > 0) {
+      // Add new page for images
+      page = pdfDoc.addPage([595, 842]) // A4 Portrait for images
+      y = height - 50
+      
+      page.drawText("Foto Scontrini", {
+        x: margin,
+        y,
+        size: 18,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      })
+      
+      y -= 30
+      
+      // Add each image
+      for (const { index, t } of transactionsWithImages) {
+        if (!t.receiptImage) continue
+        
+        try {
+          const base64Data = t.receiptImage.split(',')[1]
+          if (base64Data) {
+            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+            const image = await pdfDoc.embedJpg(imageBytes).catch(() => 
+              pdfDoc.embedPng(imageBytes)
+            )
+            
+            // Calculate image size (max width 250px, keep aspect ratio)
+            const maxWidth = 250
+            const imgWidth = image.width > maxWidth ? maxWidth : image.width
+            const imgHeight = (image.height / image.width) * imgWidth
+            
+            // Check if need new page
+            if (y - imgHeight - 40 < margin) {
+              page = pdfDoc.addPage([595, 842])
+              y = height - 50
+            }
+            
+            // Row number label
+            page.drawText(`Riga ${index} | GiftCard ${t.giftCard.code}`, {
+              x: margin,
+              y: y,
+              size: 11,
+              font: fontBold,
+              color: rgb(0.2, 0.4, 0.8),
+            })
+            
+            if (t.receiptNumber) {
+              page.drawText(`Scontrino: ${t.receiptNumber}`, {
+                x: margin + 250,
+                y: y,
+                size: 10,
+                font,
+                color: rgb(0.4, 0.4, 0.4),
+              })
+            }
+            
+            y -= 20
+            
+            // Draw image
+            page.drawImage(image, {
+              x: margin,
+              y: y - imgHeight,
+              width: imgWidth,
+              height: imgHeight,
+            })
+            
+            y -= imgHeight + 30
+          }
+        } catch (e) {
+          console.error("Error embedding image:", e)
+        }
+      }
+    }
     
     const pdfBytes = await pdfDoc.save()
     const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
@@ -474,170 +531,162 @@ export default function GiftCardsMonthlyReportPage() {
           </div>
         </div>
 
-        {/* Search & Export */}
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            {/* Search */}
-            <div className="relative w-full lg:w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
-              <input
-                type="text"
-                placeholder="Cerca per codice, email, scontrino..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-field pl-12 pr-10 w-full"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50 rounded-full transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+        {/* Search Bar */}
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
+            <input
+              type="text"
+              placeholder="Cerca per codice, email, scontrino..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-field pl-12 pr-10 w-full"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Info & Export */}
+        <div className="mb-4 space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-title-md font-bold text-brand-dark">
+                {filteredTransactions.length} {filteredTransactions.length === 1 ? "transazione" : "transazioni"}
+              </h2>
+              <p className="text-body-sm text-brand-gray">
+                Transazioni gift card nel periodo selezionato
+              </p>
             </div>
-            
-            {/* Export Buttons */}
-            <div className="flex items-center gap-2 w-full lg:w-auto">
+            <div className="flex items-center gap-2">
               <button
                 onClick={exportToExcel}
                 disabled={filteredTransactions.length === 0}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-body-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-body-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                Excel
+                Export Excel
               </button>
               <button
                 onClick={generatePDF}
                 disabled={filteredTransactions.length === 0}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-full text-body-sm font-medium hover:bg-brand-dark transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-full text-body-sm font-medium hover:bg-brand-dark transition-colors disabled:opacity-50"
               >
                 <Printer className="w-4 h-4" />
-                PDF
+                Stampa PDF
               </button>
             </div>
           </div>
         </div>
 
-        {/* Transactions List */}
+        {/* Transactions Table */}
         {filteredTransactions.length > 0 ? (
-          <div className="space-y-4">
-            <h2 className="text-title-md font-bold text-brand-dark">
-              {filteredTransactions.length} {filteredTransactions.length === 1 ? "transazione" : "transazioni"}
-            </h2>
-            
-            {filteredTransactions.map((t) => (
-              <div key={t.id} className="bg-white rounded-2xl shadow-card p-4">
-                {/* Header: Data e Importo */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-label-sm text-brand-gray">
-                        {new Date(t.createdAt).toLocaleDateString("it-IT")}
-                      </span>
-                      <span className="text-label-sm text-brand-gray">
-                        {new Date(t.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-brand-primary" />
-                      <span className="font-mono text-title-sm font-bold text-brand-dark">
-                        {t.giftCard.code}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-headline-md font-bold text-red-500">
-                      -{t.amount.toFixed(2)}€
-                    </p>
-                    <p className="text-label-sm text-brand-gray">
-                      Residuo: {t.giftCard.remainingValue.toFixed(2)}€
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Dettagli */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-brand-cream rounded-xl p-4">
-                  {/* Info Gift Card */}
-                  <div className="space-y-2">
-                    <h4 className="text-label-sm font-bold text-brand-gray uppercase">
-                      Dati Gift Card
-                    </h4>
-                    <div className="space-y-1">
-                      <p className="text-body-sm">
-                        <span className="text-brand-gray">Valore iniziale:</span>{" "}
-                        <span className="font-medium">{t.giftCard.initialValue.toFixed(2)}€</span>
-                      </p>
-                      <p className="text-body-sm">
-                        <span className="text-brand-gray">Acquistata il:</span>{" "}
-                        <span className="font-medium">
-                          {new Date(t.giftCard.purchasedAt).toLocaleDateString("it-IT")}
-                        </span>
-                      </p>
-                      <p className="text-body-sm">
-                        <span className="text-brand-gray">Ordine:</span>{" "}
-                        <span className="font-medium">#{t.giftCard.order.orderNumber}</span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Info Cliente */}
-                  <div className="space-y-2">
-                    <h4 className="text-label-sm font-bold text-brand-gray uppercase">
-                      Cliente
-                    </h4>
-                    <div className="space-y-1">
-                      <p className="text-body-sm">
-                        <span className="text-brand-gray">Email:</span>{" "}
-                        <span className="font-medium">{t.giftCard.order.email}</span>
-                      </p>
-                      {t.giftCard.order.phone && (
-                        <p className="text-body-sm">
-                          <span className="text-brand-gray">Tel:</span>{" "}
-                          <span className="font-medium">{t.giftCard.order.phone}</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Scontrino e Nota */}
-                {(t.receiptNumber || t.note || t.receiptImage) && (
-                  <div className="mt-4 space-y-3">
-                    {t.receiptNumber && (
-                      <div className="flex items-center gap-2 text-body-sm">
-                        <Receipt className="w-4 h-4 text-blue-500" />
-                        <span className="text-brand-gray">Scontrino:</span>
-                        <span className="font-medium text-blue-600">{t.receiptNumber}</span>
+          <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-brand-cream border-b border-brand-light-gray">
+                  <tr>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Data</th>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Gift Card</th>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Cliente</th>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Dettaglio</th>
+                    <th className="text-right py-3 px-4 text-label-md font-bold text-brand-gray">Importo</th>
+                    <th className="text-right py-3 px-4 text-label-md font-bold text-brand-gray">Residuo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((t) => {
+                    const date = new Date(t.createdAt)
+                    return (
+                      <tr key={t.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-brand-cream/50">
+                        <td className="py-3 px-4">
+                          <div className="text-body-sm text-brand-dark">
+                            {date.toLocaleDateString("it-IT")}
+                          </div>
+                          <div className="text-label-sm text-brand-gray">
+                            {date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-mono text-body-sm font-bold text-brand-dark">
+                            {t.giftCard.code}
+                          </div>
+                          <div className="text-label-sm text-brand-gray">
+                            Iniziale: {t.giftCard.initialValue.toFixed(2)}€
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-body-sm text-brand-dark">{t.giftCard.order.email}</div>
+                          {t.giftCard.order.phone && (
+                            <div className="text-label-sm text-brand-gray">{t.giftCard.order.phone}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            {t.receiptNumber && (
+                              <div className="flex items-center gap-1 text-body-sm text-blue-600">
+                                <Receipt className="w-3 h-3" />
+                                {t.receiptNumber}
+                              </div>
+                            )}
+                            {t.note && (
+                              <div className="text-label-sm text-brand-gray truncate max-w-[200px]">
+                                {t.note}
+                              </div>
+                            )}
+                            {t.receiptImage && (
+                              <div className="flex items-center gap-1 text-label-sm text-green-600">
+                                <Camera className="w-3 h-3" />
+                                <button
+                                  onClick={() => setFullscreenImage({ 
+                                    url: t.receiptImage!, 
+                                    receiptNumber: t.receiptNumber 
+                                  })}
+                                  className="hover:underline"
+                                >
+                                  Foto scontrino
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-headline-sm font-bold text-red-500">
+                            -{t.amount.toFixed(2)}€
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-body-sm text-brand-gray">
+                            {t.giftCard.remainingValue.toFixed(2)}€
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
+                  <tr>
+                    <td colSpan={4} className="py-4 px-4 text-right">
+                      <span className="text-title-md font-bold text-brand-dark">TOTALE MESE:</span>
+                    </td>
+                    <td colSpan={2} className="py-4 px-4 text-right">
+                      <div className="text-headline-md font-bold text-red-500">
+                        -{totals.totalUsed.toFixed(2)}€
                       </div>
-                    )}
-                    
-                    {t.note && (
-                      <div className="flex items-start gap-2 text-body-sm">
-                        <span className="text-brand-gray">Nota:</span>
-                        <span className="font-medium">{t.note}</span>
+                      <div className="text-label-sm text-brand-gray">
+                        {totals.uniqueGiftCards} card • {totals.uniqueCustomers} clienti
                       </div>
-                    )}
-                    
-                    {t.receiptImage && (
-                      <div className="flex items-center gap-2">
-                        <Camera className="w-4 h-4 text-green-500" />
-                        <span className="text-label-sm text-brand-gray">Foto scontrino:</span>
-                        <img
-                          src={t.receiptImage}
-                          alt="Scontrino"
-                          className="h-20 w-auto object-contain rounded-lg border border-brand-light-gray cursor-pointer hover:opacity-80"
-                          onClick={() => setFullscreenImage({ 
-                            url: t.receiptImage!, 
-                            receiptNumber: t.receiptNumber 
-                          })}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-card p-12 text-center">

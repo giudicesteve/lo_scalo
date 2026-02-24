@@ -273,7 +273,7 @@ export default function MonthlyReportPage() {
         color: rgb(0.4, 0.4, 0.4),
       })
       
-      page.drawText(order.email.substring(0, 40), {
+      page.drawText(order.email, {
         x: margin + 150,
         y,
         size: 9,
@@ -308,6 +308,18 @@ export default function MonthlyReportPage() {
           size: 8,
           font,
           color: rgb(0.2, 0.6, 0.2),
+        })
+        y -= rowHeight
+      }
+      
+      // Stripe ID
+      if (order.stripePaymentIntentId) {
+        page.drawText(`Stripe: ${order.stripePaymentIntentId}`, {
+          x: margin + 20,
+          y,
+          size: 7,
+          font,
+          color: rgb(0.4, 0.4, 0.4),
         })
         y -= rowHeight
       }
@@ -506,6 +518,7 @@ export default function MonthlyReportPage() {
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Ordine</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Cliente</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Dettaglio</th>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Stripe ID</th>
                     <th className="text-right py-3 px-4 text-label-md font-bold text-brand-gray">Totale</th>
                   </tr>
                 </thead>
@@ -548,6 +561,15 @@ export default function MonthlyReportPage() {
                             )}
                           </div>
                         </td>
+                        <td className="py-3 px-4">
+                          <div className="font-mono text-label-sm text-brand-gray truncate max-w-[150px]">
+                            {order.stripePaymentIntentId ? (
+                              <span className="text-brand-dark">{order.stripePaymentIntentId}</span>
+                            ) : (
+                              <span className="text-brand-gray/50">-</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-right">
                           <span className="text-headline-sm font-bold text-brand-primary">
                             {order.total.toFixed(2)}€
@@ -559,7 +581,7 @@ export default function MonthlyReportPage() {
                 </tbody>
                 <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                   <tr>
-                    <td colSpan={3} className="py-4 px-4 text-right">
+                    <td colSpan={4} className="py-4 px-4 text-right">
                       <div className="space-y-1">
                         <div className="text-body-sm text-blue-600">
                           Prodotti: <span className="font-bold">{totals.productRevenue.toFixed(2)}€</span>
