@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Logo } from "@/components/Logo"
+
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, ArrowUp, ArrowDown, Power, AlertCircle } from "lucide-react"
 
 interface Cocktail {
@@ -246,36 +246,35 @@ export default function AdminMenuPage() {
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
             Gestione Menu
           </h1>
-          <Logo variant="solo" className="h-3 w-auto ml-auto" />
         </div>
       </header>
 
       <div className="p-4">
-        {/* Menu Toggle */}
-        <div className={`rounded-2xl p-4 mb-6 flex items-center justify-between ${menuEnabled ? 'bg-green-100' : 'bg-red-100'}`}>
-          <div className="flex items-center gap-3">
-            <Power className={`w-6 h-6 ${menuEnabled ? 'text-green-600' : 'text-red-600'}`} />
+        {/* Menu Toggle - Stile unificato con Shop */}
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-6">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-brand-dark">
-                Menu {menuEnabled ? 'Attivo' : 'Spento'}
-              </p>
+              <h2 className="text-title-md font-bold text-brand-dark">
+                {menuEnabled ? 'Menu Attivo' : 'Menu Chiuso'}
+              </h2>
               <p className="text-body-sm text-brand-gray">
                 {menuEnabled 
                   ? 'Il menu è visibile ai clienti' 
                   : 'Il menu è nascosto, i clienti vedranno il messaggio di chiusura'}
               </p>
             </div>
+            <button
+              onClick={toggleMenu}
+              className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                menuEnabled 
+                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              <Power className="w-4 h-4 inline mr-2" />
+              {menuEnabled ? 'Chiudi Menu' : 'Apri Menu'}
+            </button>
           </div>
-          <button
-            onClick={toggleMenu}
-            className={`px-4 py-2 rounded-full font-medium transition-all ${
-              menuEnabled 
-                ? 'bg-red-500 text-white hover:bg-red-600' 
-                : 'bg-green-500 text-white hover:bg-green-600'
-            }`}
-          >
-            {menuEnabled ? 'Spegni Menu' : 'Accendi Menu'}
-          </button>
         </div>
 
         {/* Error Message */}

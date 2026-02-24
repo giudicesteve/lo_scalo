@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it">
-      <body className={`${euclid.variable} font-sans antialiased min-h-screen flex flex-col`}>
+    <html lang="it" suppressHydrationWarning>
+      <body className={`${euclid.variable} font-sans antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
         <SessionProvider>
           <main className="flex-1">
             {children}

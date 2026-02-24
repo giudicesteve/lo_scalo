@@ -9,21 +9,22 @@ import {
   ShoppingBag,
   Wine,
   Store,
-  Gift,
   Wallet,
   LogOut,
   User,
   Shield,
   CreditCard,
   ExternalLink,
+  Calculator,
+  FileText,
 } from "lucide-react"
 
 const menuItems = [
   { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
   { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet },
+  { href: "/admin/accounting", label: "Contabilità", icon: Calculator },
   { href: "/admin/menu", label: "Menu", icon: Wine },
   { href: "/admin/shop", label: "Negozio", icon: Store },
-  { href: "/admin/gift-card-templates", label: "Tagli Gift Card", icon: Gift },
 ]
 
 export default function AdminLayout({
@@ -45,6 +46,11 @@ export default function AdminLayout({
   const handleSignOut = () => {
     signOut({ callbackUrl: "/login" })
   }
+
+  // Reset scroll when navigating to a new page
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <div className="min-h-screen bg-brand-cream">
@@ -73,6 +79,17 @@ export default function AdminLayout({
                   {item.label}
                 </Link>
               ))}
+              <Link
+                href="/admin/reports"
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                  pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
+                    ? "bg-brand-primary/10 text-brand-primary"
+                    : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Report
+              </Link>
               {canManageAdmins && (
                 <>
                   <Link
@@ -144,6 +161,17 @@ export default function AdminLayout({
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/admin/reports"
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
+              pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
+                ? "bg-brand-primary/10 text-brand-primary"
+                : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Report
+          </Link>
           {canManageAdmins && (
             <>
               <Link

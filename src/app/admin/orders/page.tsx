@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, FileText, AlertTriangle } from "lucide-react"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -69,6 +70,7 @@ export default function AdminOrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"active" | "archived">("active")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchQuery, setSearchQuery] = useState("")
   
   const { toast, showToast, hideToast } = useToast()
@@ -234,16 +236,7 @@ export default function AdminOrdersPage() {
       </header>
 
       <div className="p-4">
-        {/* Daily Report Button */}
-        <Link
-          href="/admin/orders/daily-report"
-          className="w-full mb-3 py-3 px-4 rounded-xl text-title-sm font-medium flex items-center justify-center gap-2 bg-white text-brand-dark border-2 border-brand-light-gray hover:border-brand-primary hover:text-brand-primary transition-all"
-        >
-          <FileText className="w-5 h-5" />
-          Riepilogo Contabilità
-        </Link>
-
-        {/* Search */}
+        {/* Search -->
         <div className="relative mb-4">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
           <input
@@ -263,9 +256,6 @@ export default function AdminOrdersPage() {
             </button>
           )}
         </div>
-
-        {/* Separatore tra area ricerca e tabs */}
-        <div className="border-b border-brand-light-gray mb-4" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
@@ -436,7 +426,7 @@ export default function AdminOrdersPage() {
                           <button
                             onClick={() => {
                               if (confirm("Ripristinare a 'Da ritirare'?")) {
-                                handleUpdateStatus(order.id, "PENDING")
+                                handleUpdateStatus(order.id, "COMPLETED")
                               }
                             }}
                             className="px-3 py-2 bg-orange-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-orange-600 transition-colors"
