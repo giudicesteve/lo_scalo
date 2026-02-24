@@ -1,17 +1,27 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, FileText, Calendar } from "lucide-react"
+import { ArrowLeft, ChevronRight, FileText, Calendar, BarChart3, Gift } from "lucide-react"
 
 const reportItems = [
+  { 
+    href: "/admin/reports/metrics", 
+    label: "Metriche", 
+    icon: BarChart3, 
+    description: "Metriche di vendita: totali, medie e statistiche mensili" 
+  },
   { 
     href: "/admin/reports/monthly", 
     label: "Report Mensile", 
     icon: Calendar, 
     description: "Riepilogo vendite prodotti e Gift Card con export Excel e PDF per contabilità" 
   },
-  // Future reports can be added here:
-  // { href: "/admin/reports/annual", label: "Report Annuale", icon: BarChart, description: "Resoconto annuale completo" },
+  { 
+    href: "/admin/reports/gift-cards", 
+    label: "Report Mensile Gift Card", 
+    icon: Gift, 
+    description: "Transazioni mensili gift card con dettagli con export Excel e PDF per contabilità" 
+  },
 ]
 
 export default function ReportsMenuPage() {

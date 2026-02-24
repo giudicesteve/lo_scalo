@@ -24,7 +24,7 @@ const quickAccessItems = [
 
 const configItems = [
   { href: "/admin/menu", label: "Menu", icon: Wine, description: "Categorie e cocktail" },
-  { href: "/admin/shop", label: "Negozio", icon: Store, description: "Prodotti, inventario e Gift Card" },
+  { href: "/admin/shop", label: "Negozio", icon: Store, description: "Prodotti, Gift Card e magazzino" },
 ]
 
 export default function AdminDashboard() {
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
         <div className="mb-8">
           <h2 className="text-title-md font-bold text-brand-dark mb-4 flex items-center gap-2">
             <span className="w-2 h-2 bg-brand-primary rounded-full"></span>
-            Accesso Rapido
+            Gestione giornaliera
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {quickAccessItems.map((item) => (
@@ -87,9 +87,6 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
-
-        {/* Divider */}
-        <div className="border-t border-brand-light-gray my-6"></div>
 
         {/* Configuration Section */}
         <div className="mb-8">
@@ -128,9 +125,6 @@ export default function AdminDashboard() {
         {/* Admin Tools Section - Only for canManageAdmins */}
         {!loading && canManageAdmins && (
           <>
-            {/* Divider */}
-            <div className="border-t border-brand-light-gray my-6"></div>
-
             <div>
               <h2 className="text-title-md font-bold text-brand-dark mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-brand-primary" />
@@ -174,7 +168,7 @@ export default function AdminDashboard() {
                           Gestione Admin
                         </h2>
                         <p className="text-body-sm text-brand-gray">
-                          Aggiungi o rimuovi admin
+                          Aggiungi o rimuovi utenti/admin
                         </p>
                       </div>
                     </div>
