@@ -84,6 +84,13 @@ export default function AdminManagementPage() {
   }
 
   const handleDeleteAdmin = async (id: string) => {
+    // Prevent deletion if there's only one admin
+    if (admins.length <= 1) {
+      showToast("Deve rimanere almeno un admin", "error")
+      setDeleteConfirm(null)
+      return
+    }
+
     try {
       const res = await fetch(`/api/admin/admins?id=${id}`, {
         method: "DELETE"
@@ -246,14 +253,16 @@ export default function AdminManagementPage() {
                   </div>
                 </div>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => setDeleteConfirm(admin.id)}
-                  className="p-2 text-brand-gray hover:text-red-500 transition-colors"
-                  title="Rimuovi"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {/* Delete Button - hidden if it's the last admin */}
+                {admins.length > 1 && (
+                  <button
+                    onClick={() => setDeleteConfirm(admin.id)}
+                    className="p-2 text-brand-gray hover:text-red-500 transition-colors"
+                    title="Rimuovi"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

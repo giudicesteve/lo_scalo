@@ -252,26 +252,43 @@ export default function AdminOrdersPage() {
       </header>
 
       <div className="p-4">
-        {/* Search -->
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
-          <input
-            type="text"
-            placeholder="Cerca per numero ordine, email o telefono..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-12 pr-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50 rounded-full transition-colors"
-              title="Cancella"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+        {/* Search & Refresh */}
+        <div className="rounded-2xl mb-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gray" />
+              <input
+                type="text"
+                placeholder="Cerca per numero ordine, email o telefono..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-field pl-12 pr-10 w-full"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50 rounded-full transition-colors"
+                  title="Cancella"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => fetchOrders()}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
+                title="Aggiorna"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span className="sm:hidden text-body-sm">Aggiorna</span>
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Separatore tra area ricerca e tabs */}
+        <div className="border-b border-brand-light-gray mb-4" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
