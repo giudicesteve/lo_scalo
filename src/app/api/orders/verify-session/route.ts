@@ -135,6 +135,7 @@ export async function POST(req: Request) {
         stripePaymentIntentId: typeof session.payment_intent === "string"
           ? session.payment_intent
           : session.payment_intent?.id,
+        paidAt: new Date(),  // Data effettiva del pagamento - CRITICO per contabilità
       },
     })
 

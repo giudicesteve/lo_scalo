@@ -108,7 +108,8 @@ export async function POST(req: Request) {
           data: { 
             status: newStatus,
             stripePaymentId: session.id,           // ID sessione (cs_...)
-            stripePaymentIntentId: paymentIntentId // ID payment (pi_...)
+            stripePaymentIntentId: paymentIntentId, // ID payment (pi_...)
+            paidAt: new Date()  // Data effettiva del pagamento - CRITICO per contabilità
           }
         })
 

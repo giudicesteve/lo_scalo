@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer } from "lucide-react"
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
@@ -33,6 +33,7 @@ interface Order {
   phone?: string
   total: number
   createdAt: string
+  paidAt?: string  // Data pagamento completato - CRITICO per contabilità
   stripePaymentIntentId?: string
   items: OrderItem[]
   giftCards: GiftCard[]
@@ -120,13 +121,33 @@ function DailyReportContent() {
     console.log(`   Offset usato: ${startOfDay.getTimezoneOffset() === -60 ? 'CET (+1)' : startOfDay.getTimezoneOffset() === -120 ? 'CEST (+2)' : 'UTC'}`)
 
     return orders.filter(order => {
-      const orderDate = new Date(order.createdAt)
+      // CRITICO per contabilità: usa SOLO paidAt (data pagamento effettivo)
+      // Ordini senza paidAt (legacy) non vengono mostrati nel report
+      if (!order.paidAt) return false
+      const orderDate = new Date(order.paidAt)
       // Check if order falls within the Italian day
       const isOnDate = orderDate >= startOfDay && orderDate < endOfDay
       // Only show paid orders (Option A: PENDING, COMPLETED, DELIVERED)
       const isPaidOrder = ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status)
       return isOnDate && isPaidOrder
     })
+  }, [orders, selectedDate])
+
+  // Calcola ordini problematici: pagati (COMPLETED/DELIVERED) ma SENZA paidAt
+  // Questi sono ordini che dovrebbero avere paidAt ma non ce l'hanno (errore da correggere)
+  const paidOrdersWithoutPaidAtCount = useMemo(() => {
+    const { startOfDay, endOfDay } = getItalianDayBounds(selectedDate)
+    return orders.filter(order => {
+      // Solo ordini PAGATI (COMPLETED o DELIVERED)
+      const isPaidStatus = ["COMPLETED", "DELIVERED"].includes(order.status)
+      if (!isPaidStatus) return false
+      // Ma SENZA paidAt (questo è un problema!)
+      if (order.paidAt) return false
+      // E creati nella data selezionata
+      const createdAt = new Date(order.createdAt)
+      const isOnDate = createdAt >= startOfDay && createdAt < endOfDay
+      return isOnDate
+    }).length
   }, [orders, selectedDate])
 
   const totals = useMemo(() => {
@@ -639,6 +660,21 @@ function DailyReportContent() {
           </div>
         </div>
 
+        {/* Note: Solo ordini pagati */}
+        <div className="mb-4 space-y-2">
+          <p className="text-body-sm text-brand-gray">
+            Vengono mostrati solo gli ordini con pagamento completato (data pagamento: {new Date(selectedDate).toLocaleDateString("it-IT")})
+          </p>
+          {paidOrdersWithoutPaidAtCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-body-sm text-red-700">
+                Attenzione: {paidOrdersWithoutPaidAtCount} ordine pagato senza data di pagamento registrata. Aggiorna manualmente il database.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Orders Count & Export Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-title-md font-bold text-brand-dark">
@@ -941,7 +977,10 @@ function DailyReportContent() {
           <div className="bg-white rounded-2xl shadow-card p-12 text-center">
             <Calendar className="w-12 h-12 text-brand-gray mx-auto mb-4" />
             <p className="text-body-lg text-brand-gray">
-              Nessun ordine per {formatDate(selectedDate)}
+              Nessun ordine con pagamento completato per {formatDate(selectedDate)}
+            </p>
+            <p className="text-body-sm text-brand-gray/60 mt-2">
+              Vengono mostrati solo gli ordini con data di pagamento (paidAt) registrata
             </p>
           </div>
         )}
