@@ -453,66 +453,6 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
   }
 }
 
-/**
- * Invia email con Gift Card - include QR code e PDF allegati
- */
-export async function sendGiftCardEmail(order: OrderDetails): Promise<EmailResult> {
-  if (order.giftCards.length === 0) return { success: true }
-
-  const attachments: { filename: string; content: Buffer }[] = []
-  for (const gc of order.giftCards) {
-    try {
-      const pdfBuffer = await generateGiftCardPDF(gc)
-      attachments.push({
-        filename: `Lo Scalo - ${gc.initialValue.toFixed(0)}EUR - ${gc.code}.pdf`,
-        content: pdfBuffer
-      })
-    } catch (err) {
-      console.error(`Error generating PDF for ${gc.code}:`, err)
-    }
-  }
-
-  const text = `
-Le tue Gift Card sono pronte!
-
-Ordine #${order.orderNumber}
-
-${order.giftCards.map(gc => `
-🎁 Gift Card ${gc.code}
-Valore: €${gc.initialValue.toFixed(2)}
-
-Presenta il codice al barista o usa il PDF allegato.
-`).join('\n---\n')}
-
-📍 Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)
-Senza scadenza - Valida per qualsiasi consumazione
-
-Problemi? support@loscalo.it
-`
-
-  try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: order.email,
-      subject: `Le tue Gift Card - Ordine #${order.orderNumber}`,
-      text,
-      html: generateGiftCardHtml(order),
-      attachments,
-    })
-
-    if (error) {
-      console.error('Error sending gift card email:', error)
-      return { success: false, error }
-    }
-
-    console.log('Gift card email sent with', attachments.length, 'PDFs')
-    return { success: true, id: data?.id, attachments: attachments.length }
-  } catch (err) {
-    console.error('Exception sending gift card email:', err)
-    return { success: false, error: err }
-  }
-}
-
 // Logo URL pubblico
 const LOGO_URL = 'https://i.ibb.co/JjXJtRjT/Lo-Scalo-vertical-orange.png'
 
@@ -601,56 +541,6 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
 
     <div style="background-color: ${BRAND_CREAM}; border-radius: 16px; padding: 24px; margin-top: 16px; text-align: center; border-top: 1px solid rgba(78,110,88,0.1);">
       <p style="font-size: 13px; color: #666; margin: 0 0 8px;">Per problemi scrivi a <a href="mailto:support@loscalo.it" style="color: ${BRAND_GREEN}; text-decoration: none; font-weight: 600;">support@loscalo.it</a><br>indicando il numero d'ordine nell'oggetto.</p>
-      <p style="margin-top: 20px; color: #999; font-size: 12px;">© 2026 Lo Scalo - Craft Drinks by the Lake</p>
-    </div>
-  </div>
-</body>
-</html>
-  `
-}
-
-// HTML template per Gift Card
-function generateGiftCardHtml(order: OrderDetails): string {
-  return `
-<html lang="it">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Le tue Gift Card - Ordine #${order.orderNumber}</title>
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: ${BRAND_DARK}; background-color: #FFFFFF;">
-  <div style="margin: 0 auto; background-color: white; border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
-    <div style="background-color: #FFF5F0; border-radius: 16px; padding: 32px 24px; text-align: center;">
-      <div style="margin-bottom: 6px;">
-        <img src="${LOGO_URL}" alt="Lo Scalo" style="max-width: 160px; height: auto;" />
-      </div>
-      <h1 style="font-size: 24px; font-weight: 700; margin: 0; color: #000000;">Le tue Gift Card</h1>
-      <div style="opacity: 0.9; margin-top: 8px; color: #000000;">Ordine #${order.orderNumber}</div>
-    </div>
-
-    <div style="background-color: #EDF0EE; border-radius16px;">
-      <div style="background-color: #EDF0EE; border-radius: 16px 16px 0px 0px; padding: 16px; margin-top: 16px; text-align: center;">
-        <p style="margin: 0; font-size: 14px; color: ${BRAND_DARK};"><strong>📎 PDF allegati</strong><br>Ogni Gift Card ha il suo PDF con QR code scansionabile,<br>pronto da salvare sul telefono o stampare.</p>
-      </div>
-
-      <div style="background-color: #EDF0EE; border-radius: 0px 0px 16px 16px; padding: 16px; text-align: center;">
-        <h3 style="margin: 0 0 12px; font-size: 15px; color: ${BRAND_DARK};">📍 Come utilizzare la Gift Card</h3>
-        <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #555;">
-          <p>1. Vieni a trovarci presso <strong>Lo Scalo</strong><br>
-              Frazione San Vito, 9 - 22010 Cremia (CO)</p>
-          <p>2. Mostra il <strong>codice</strong> o il <strong>QR code</strong> al barista</p>
-          <p>3. Il credito verrà scalato automaticamente dal totale</p>
-        </ol>
-        <p style="margin-top: 16px; font-weight: 600; color: ${BRAND_GREEN};">
-          La Gift card è senza scadenza — Valida per qualsiasi consumazione
-        </p>
-      </div>
-    </div>
-
-    <div style="background-color: #FFF5F0; padding: 24px; border-radius: 16px;text-align: center;margin-top: 16px;">
-      <p style="font-size: 13px; color: #666; margin: 0 0 8px;">Problemi con la Gift Card?</p>
-      <p style="font-size: 13px; color: #666; margin: 0 0 8px;">Scrivi a <a href="mailto:support@loscalo.it" style="color: ${BRAND_GREEN}; text-decoration: none; font-weight: 600;">support@loscalo.it</a></p>
-      <p style="font-size: 13px; color: #666; margin: 0 0 8px;">Indicando il numero d'ordine: <strong>#${order.orderNumber}</strong></p>
       <p style="margin-top: 20px; color: #999; font-size: 12px;">© 2026 Lo Scalo - Craft Drinks by the Lake</p>
     </div>
   </div>
