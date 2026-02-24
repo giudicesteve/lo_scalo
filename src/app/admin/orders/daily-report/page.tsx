@@ -71,15 +71,58 @@ function DailyReportContent() {
     }
   }
 
+  // Helper to get start/end of day in Italian timezone (Europe/Rome)
+  // CRITICAL for accounting: ensures correct day boundary at midnight Italy time
+  const getItalianDayBounds = (dateStr: string) => {
+    // Create date objects for start and end of day in Italian timezone
+    // Format: YYYY-MM-DD
+    const [year, month, day] = dateStr.split('-').map(Number)
+    
+    // Create dates at midnight in Italian timezone (UTC+1 winter, UTC+2 summer)
+    // We use toLocaleString to handle DST (Daylight Saving Time) automatically
+    const startOfDayIt = new Date(Date.UTC(year, month - 1, day, 0, 0, 0))
+    const endOfDayIt = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0))
+    
+    // Adjust for Italian timezone offset (CET = UTC+1, CEST = UTC+2)
+    // Check if date is in DST period (last Sunday of March to last Sunday of October)
+    const isDST = (d: Date) => {
+      const year = d.getFullYear()
+      // Last Sunday of March
+      const dstStart = new Date(year, 2, 31)
+      dstStart.setDate(dstStart.getDate() - dstStart.getDay())
+      dstStart.setHours(2, 0, 0, 0)
+      // Last Sunday of October
+      const dstEnd = new Date(year, 9, 31)
+      dstEnd.setDate(dstEnd.getDate() - dstEnd.getDay())
+      dstEnd.setHours(3, 0, 0, 0)
+      return d >= dstStart && d < dstEnd
+    }
+    
+    const offsetHours = isDST(startOfDayIt) ? 2 : 1 // CEST = +2, CET = +1
+    
+    // Adjust UTC dates by subtracting the Italian offset
+    // Midnight Italy = (24:00 - offset) UTC previous day
+    const startOfDay = new Date(startOfDayIt.getTime() - offsetHours * 60 * 60 * 1000)
+    const endOfDay = new Date(endOfDayIt.getTime() - offsetHours * 60 * 60 * 1000)
+    
+    return { startOfDay, endOfDay }
+  }
+
   const filteredOrders = useMemo(() => {
-    const date = new Date(selectedDate)
-    date.setHours(0, 0, 0, 0)
-    const nextDay = new Date(date)
-    nextDay.setDate(nextDay.getDate() + 1)
+    // Use Italian timezone for date filtering (critical for accounting)
+    // This ensures that an order placed at 23:30 Italy time on Feb 24
+    // is counted for Feb 24, even though it's 22:30 UTC (or 21:30 UTC in summer)
+    const { startOfDay, endOfDay } = getItalianDayBounds(selectedDate)
+    
+    console.log(`📅 [DailyReport] Filtro data: ${selectedDate}`)
+    console.log(`   Inizio giorno (IT): ${startOfDay.toISOString()}`)
+    console.log(`   Fine giorno (IT): ${endOfDay.toISOString()}`)
+    console.log(`   Offset usato: ${startOfDay.getTimezoneOffset() === -60 ? 'CET (+1)' : startOfDay.getTimezoneOffset() === -120 ? 'CEST (+2)' : 'UTC'}`)
 
     return orders.filter(order => {
       const orderDate = new Date(order.createdAt)
-      const isOnDate = orderDate >= date && orderDate < nextDay
+      // Check if order falls within the Italian day
+      const isOnDate = orderDate >= startOfDay && orderDate < endOfDay
       // Only show paid orders (Option A: PENDING, COMPLETED, DELIVERED)
       const isPaidOrder = ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status)
       return isOnDate && isPaidOrder
