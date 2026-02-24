@@ -126,7 +126,9 @@ export async function POST(req: Request) {
         }
 
         // Invia email solo se non già inviate (idempotenza)
+        console.log(`📧 [WEBHOOK] Check email for order ${orderId}: emailSent=${order.emailSent}`)
         if (!order.emailSent) {
+          console.log(`📧 [WEBHOOK] 🚀 INVIO EMAIL per ordine ${orderId}`)
           const orderDetails = {
             orderNumber: order.orderNumber,
             email: order.email,
@@ -147,6 +149,7 @@ export async function POST(req: Request) {
 
           try {
             // Invia email sequenzialmente con delay per rispettare rate limit (2 req/sec)
+            console.log(`📧 [WEBHOOK] Chiamo sendOrderConfirmation per ${order.orderNumber}`)
             const results = []
             
             // 1. Email cliente (sempre) - include gift card se presenti
@@ -168,7 +171,9 @@ export async function POST(req: Request) {
                 where: { id: orderId },
                 data: { emailSent: true }
               })
-              console.log(`📧 Emails marked as sent for order ${orderId}`)
+              console.log(`✅ [WEBHOOK] Email SENT e MARKED per order ${orderId}`)
+            } else {
+              console.log(`❌ [WEBHOOK] Email FALLITA per order ${orderId}, non marco come inviata`)
             }
           } catch (err) {
             // Non bloccare il webhook se le email falliscono
@@ -176,7 +181,7 @@ export async function POST(req: Request) {
             console.error('Error sending emails (will retry later):', err)
           }
         } else {
-          console.log(`📧 Emails already sent for order ${orderId}, skipping`)
+          console.log(`⏭️ [WEBHOOK] SKIP - Email già inviata per order ${orderId}`)
         }
 
         console.log(`✅ Order ${orderId} completed successfully`)

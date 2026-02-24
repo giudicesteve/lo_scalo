@@ -1,19 +1,11 @@
 import { Resend } from 'resend'
 import QRCode from 'qrcode'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
-import fs from 'fs'
-import path from 'path'
 import { prisma } from './prisma'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = 'Lo Scalo <onboarding@resend.dev>'
-
-// Feature flag per modalità email
-// 'send' = invia email normalmente
-// 'save-only' = salva PDF in test-emails/ senza inviare (SOLO LOCALE)
-const EMAIL_MODE = process.env.NODE_ENV === 'production' ? 'send' : (process.env.EMAIL_MODE || 'send')
-const TEST_EMAILS_DIR = path.join(process.cwd(), 'test-emails')
 
 // Brand colors
 const BRAND_GREEN = '#000000'
@@ -46,7 +38,6 @@ interface OrderDetails {
 interface EmailResult {
   success: boolean
   id?: string
-  saved?: boolean
   attachments?: number
   recipients?: string[]
   message?: string
@@ -92,7 +83,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     if (response.ok) {
       const logoBytes = await response.arrayBuffer()
       logoImage = await pdfDoc.embedPng(Buffer.from(logoBytes))
-      logoDims = logoImage.scale(0.6) // Regola scala qui
+      logoDims = logoImage.scale(0.6)
     } else {
       console.log('Logo not found at:', logoUrl)
     }
@@ -106,7 +97,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     y: 0,
     width,
     height,
-    color: rgb(1, 1, 1) // #ffffff
+    color: rgb(1, 1, 1)
   })
   
   // Header background
@@ -115,7 +106,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     y: height - 150,
     width,
     height: 150,
-    color: rgb(1, 1, 1) // #231F20
+    color: rgb(1, 1, 1)
   })
   
   // Draw logo or fallback to text
@@ -127,7 +118,6 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
       height: logoDims.height
     })
   } else {
-    // Fallback: Logo text
     page.drawText('LO SCALO', {
       x: width / 2 - 80,
       y: height - 75,
@@ -144,7 +134,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     y: height - 199,
     size: 24,
     font: fontBold,
-    color: rgb(0.941, 0.353, 0.157) // #F05A28
+    color: rgb(0.941, 0.353, 0.157)
   })
   
   // Value
@@ -154,13 +144,10 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     y: height - 247,
     size: 32,
     font: font,
-    color: rgb(0.137, 0.122, 0.125) // #231F20
+    color: rgb(0.137, 0.122, 0.125)
   })
   
-
-
-  
-  // QR Code placeholder (we'll embed the QR as image)
+  // QR Code
   try {
     const qrDataUrl = await QRCode.toDataURL(giftCard.code, { width: 200 })
     const qrBase64 = qrDataUrl.split(',')[1]
@@ -177,7 +164,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   }
 
   // Gift Card code
-  const textWidth3 = fontBold.widthOfTextAtSize(`€${giftCard.code}`, 20)
+  const textWidth3 = fontBold.widthOfTextAtSize(giftCard.code, 20)
   page.drawText(giftCard.code, {
     x: width / 2 - textWidth3 / 2,
     y: height - 492,
@@ -186,8 +173,8 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     color: rgb(0.137, 0.122, 0.125)
   })
   
-  // Instructions
-  const textWidth4 = fontBold.widthOfTextAtSize(`Come utilizzare la tua Gift Card`, 12)
+  // Instructions IT
+  const textWidth4 = fontBold.widthOfTextAtSize('Come utilizzare la tua Gift Card', 12)
   page.drawText('Come utilizzare la tua Gift Card', {
     x: width / 2 - textWidth4 / 2,
     y: height - 559,
@@ -215,7 +202,8 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     })
   })
 
-  const textWidth5 = fontBold.widthOfTextAtSize(`How to use your Gift Card`, 12)
+  // Instructions EN
+  const textWidth5 = fontBold.widthOfTextAtSize('How to use your Gift Card', 12)
   page.drawText('How to use your Gift Card', {
     x: width / 2 - textWidth5 / 2,
     y: height - 660,
@@ -223,7 +211,6 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     font: fontBold,
     color: rgb(0.137, 0.122, 0.125)
   })
-  
   
   const instructions2 = [
     '1. Show your voucher: Present this PDF on your smartphone or as a printout at the checkout.',
@@ -243,10 +230,9 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
       color: rgb(0.3, 0.3, 0.3),
     })
   })
-
   
   // Footer
-  const textWidth6 = font.widthOfTextAtSize(`Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)`, 10)
+  const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', 10)
   page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', {
     x: width / 2 - textWidth6 / 2,
     y: 60,
@@ -255,7 +241,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     color: rgb(0.5, 0.5, 0.5)
   })
   
-  const textWidth7 = font.widthOfTextAtSize(`Valida senza scadenza per qualsiasi consumazione`, 10)
+  const textWidth7 = font.widthOfTextAtSize('Valida senza scadenza per qualsiasi consumazione', 10)
   page.drawText('Valida senza scadenza per qualsiasi consumazione', {
     x: width / 2 - textWidth7 / 2,
     y: 40,
@@ -310,41 +296,12 @@ export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailR
     : ''
 
   const giftCardInstructions = hasGiftCards
-    ? `\n🎁 GIFT CARD\nTrovi le tue Gift Card in formato PDF in allegato a questa email.
-Presenta il QR code al locale per utilizzarle.`
+    ? `\n🎁 GIFT CARD\nTrovi le tue Gift Card in formato PDF in allegato a questa email.\nPresenta il QR code al locale per utilizzarle.`
     : ''
 
-  // Genera allegati se ci sono gift card
   const attachments = hasGiftCards ? await generateGiftCardAttachments(order) : []
-  
   const htmlContent = generateOrderConfirmationHtml(order, attachments.length > 0)
 
-  // MODALITÀ SAVE-ONLY: salva HTML e PDF su disco
-  if (EMAIL_MODE === 'save-only') {
-    try {
-      if (!fs.existsSync(TEST_EMAILS_DIR)) {
-        fs.mkdirSync(TEST_EMAILS_DIR, { recursive: true })
-      }
-
-      const htmlPath = path.join(TEST_EMAILS_DIR, `order-confirmation-${order.orderNumber}.html`)
-      fs.writeFileSync(htmlPath, htmlContent)
-      console.log(`💾 Order confirmation HTML salvato: ${htmlPath}`)
-
-      // Salva anche i PDF delle gift card
-      for (const attachment of attachments) {
-        const pdfPath = path.join(TEST_EMAILS_DIR, attachment.filename)
-        fs.writeFileSync(pdfPath, attachment.content)
-        console.log(`💾 Gift Card PDF salvato: ${pdfPath}`)
-      }
-
-      return { success: true, saved: true, attachments: attachments.length }
-    } catch (err) {
-      console.error('Error saving test files:', err)
-      return { success: false, error: err }
-    }
-  }
-
-  // MODALITÀ SEND: invia email
   const text = `
 Grazie per il tuo ordine!
 
@@ -400,7 +357,6 @@ Lo Scalo Team
 export async function sendAdminNotification(order: OrderDetails): Promise<EmailResult> {
   const hasGiftCards = order.giftCards.length > 0
 
-  // Recupera tutti gli admin che devono ricevere le notifiche
   const admins = await prisma.admin.findMany({
     where: { receiveNotifications: true }
   })
@@ -473,26 +429,6 @@ export async function sendAdminNotification(order: OrderDetails): Promise<EmailR
 </html>
   `
 
-  // MODALITÀ SAVE-ONLY: salva HTML su disco
-  if (EMAIL_MODE === 'save-only') {
-    try {
-      if (!fs.existsSync(TEST_EMAILS_DIR)) {
-        fs.mkdirSync(TEST_EMAILS_DIR, { recursive: true })
-      }
-
-      const htmlPath = path.join(TEST_EMAILS_DIR, `admin-notification-${order.orderNumber}.html`)
-      fs.writeFileSync(htmlPath, html)
-      console.log(`Admin notification HTML salvato: ${htmlPath}`)
-      console.log(`Destinatari che avrebbero ricevuto: ${adminEmails.join(', ')}`)
-
-      return { success: true, saved: true, recipients: adminEmails }
-    } catch (err) {
-      console.error('Error saving test file:', err)
-      return { success: false, error: err }
-    }
-  }
-
-  // MODALITÀ SEND: invia email a tutti gli admin abilitati
   const text = `
 🛒 NUOVO ORDINE #${order.orderNumber}
 
@@ -512,7 +448,6 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
 `
 
   try {
-    // Usa il primo admin come "to" e tutti gli altri come "bcc" per privacy
     const [firstAdmin, ...otherAdmins] = adminEmails
     
     const { data, error } = await resend.emails.send({
@@ -543,13 +478,6 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
 export async function sendGiftCardEmail(order: OrderDetails): Promise<EmailResult> {
   if (order.giftCards.length === 0) return { success: true }
 
-  // Genera QR codes per ogni gift card
-  const qrCodes: Record<string, string> = {}
-  for (const gc of order.giftCards) {
-    qrCodes[gc.code] = await generateQRCode(gc.code)
-  }
-
-  // Genera PDF per ogni gift card
   const attachments: { filename: string; content: Buffer }[] = []
   for (const gc of order.giftCards) {
     try {
@@ -563,35 +491,6 @@ export async function sendGiftCardEmail(order: OrderDetails): Promise<EmailResul
     }
   }
 
-  // MODALITÀ SAVE-ONLY: salva PDF su disco senza inviare email
-  if (EMAIL_MODE === 'save-only') {
-    try {
-      // Crea cartella se non esiste
-      if (!fs.existsSync(TEST_EMAILS_DIR)) {
-        fs.mkdirSync(TEST_EMAILS_DIR, { recursive: true })
-      }
-
-      // Salva ogni PDF
-      for (const attachment of attachments) {
-        const filePath = path.join(TEST_EMAILS_DIR, attachment.filename)
-        fs.writeFileSync(filePath, attachment.content)
-        console.log(`💾 PDF salvato: ${filePath}`)
-      }
-
-      // Salva anche l'HTML per preview
-      const htmlContent = generateGiftCardHtml(order)
-      const htmlPath = path.join(TEST_EMAILS_DIR, `giftcard-email-${order.orderNumber}.html`)
-      fs.writeFileSync(htmlPath, htmlContent)
-      console.log(`💾 HTML salvato: ${htmlPath}`)
-
-      return { success: true, saved: true, attachments: attachments.length }
-    } catch (err) {
-      console.error('Error saving test files:', err)
-      return { success: false, error: err }
-    }
-  }
-
-  // MODALITÀ SEND: invia email normalmente
   const text = `
 Le tue Gift Card sono pronte!
 
@@ -636,7 +535,7 @@ Problemi? support@loscalo.it
 // Logo URL pubblico
 const LOGO_URL = 'https://i.ibb.co/JjXJtRjT/Lo-Scalo-vertical-orange.png'
 
-// HTML template per conferma ordine - CSS INLINE per compatibilità email
+// HTML template per conferma ordine
 function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false): string {
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
@@ -655,7 +554,7 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
       <div style="margin-bottom: 6px;">
         <img src="${LOGO_URL}" alt="Lo Scalo" style="max-width: 160px; height: auto;" />
       </div>
-	  <h1 style="font-size: 24px; font-weight: 700; color: ${BRAND_DARK}; margin: 0 0 8px;">Grazie per il tuo ordine!</h1>
+      <h1 style="font-size: 24px; font-weight: 700; color: ${BRAND_DARK}; margin: 0 0 8px;">Grazie per il tuo ordine!</h1>
       <div style="font-size: 15px; color: #666; font-weight: 500;">Ordine <strong style="color: ${BRAND_DARK};">#${order.orderNumber}</strong></div>
     </div>
 
@@ -729,9 +628,8 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
   `
 }
 
-// HTML template per Gift Card - CSS INLINE per compatibilità email
+// HTML template per Gift Card
 function generateGiftCardHtml(order: OrderDetails): string {
-
   return `
 <html lang="it">
 <head>
@@ -753,7 +651,6 @@ function generateGiftCardHtml(order: OrderDetails): string {
       <div style="background-color: #EDF0EE; border-radius: 16px 16px 0px 0px; padding: 16px; margin-top: 16px; text-align: center;">
         <p style="margin: 0; font-size: 14px; color: ${BRAND_DARK};"><strong>📎 PDF allegati</strong><br>Ogni Gift Card ha il suo PDF con QR code scansionabile,<br>pronto da salvare sul telefono o stampare.</p>
       </div>
-
 
       <div style="background-color: #EDF0EE; border-radius: 0px 0px 16px 16px; padding: 16px; text-align: center;">
         <h3 style="margin: 0 0 12px; font-size: 15px; color: ${BRAND_DARK};">📍 Come utilizzare la Gift Card</h3>

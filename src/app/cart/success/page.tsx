@@ -43,7 +43,10 @@ function CartSuccessContent() {
 
   useEffect(() => {
     async function verifyOrder() {
+      console.log(`🛒 [SUCCESS PAGE] Verifica ordine ${orderNumber}, sessionId: ${sessionId ? 'presente' : 'mancante'}`)
+      
       if (!orderNumber) {
+        console.log(`❌ [SUCCESS PAGE] Numero ordine mancante`)
         setError(t("cart.order-number-missing"))
         setLoading(false)
         return
@@ -51,13 +54,16 @@ function CartSuccessContent() {
 
       try {
         // 1. Prima prova a recuperare l'ordine dal DB
+        console.log(`🔍 [SUCCESS PAGE] Chiamo /api/orders/${orderNumber}`)
         const orderRes = await fetch(`/api/orders/${orderNumber}`)
         
         if (orderRes.ok) {
           const orderData = await orderRes.json()
           
           // Se l'ordine è già completato, mostra i dati
+          console.log(`📊 [SUCCESS PAGE] Ordine trovato: status=${orderData.status}, emailSent=${orderData.emailSent}`)
           if (orderData.status !== "PENDING_PAYMENT") {
+            console.log(`⏭️ [SUCCESS PAGE] Ordine già completato, SKIP verify-session`)
             setOrder(orderData)
             setSource("database")
             setLoading(false)
@@ -71,7 +77,9 @@ function CartSuccessContent() {
 
         // 2. Se l'ordine è ancora PENDING_PAYMENT e abbiamo il session ID,
         // verifica con Stripe (fallback al webhook)
+        console.log(`📧 [SUCCESS PAGE] Ordine PENDING_PAYMENT, verifico con Stripe...`)
         if (sessionId) {
+          console.log(`🚀 [SUCCESS PAGE] Chiamo /api/orders/verify-session`)
           const verifyRes = await fetch("/api/orders/verify-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -82,6 +90,7 @@ function CartSuccessContent() {
             const verifyData = await verifyRes.json()
             
             if (verifyData.success) {
+              console.log(`✅ [SUCCESS PAGE] Verify-session OK, source=${verifyData.source}`)
               setOrder(verifyData.order)
               setSource(verifyData.source)
               setLoading(false)
@@ -100,10 +109,12 @@ function CartSuccessContent() {
         }
 
         // 3. Se arriviamo qui, qualcosa è andato storto
+        console.log(`❌ [SUCCESS PAGE] Ordine non trovato o errore`)
         setError(t("cart.order-not-found"))
         setLoading(false)
         
-      } catch {
+      } catch (err) {
+        console.error(`❌ [SUCCESS PAGE] Errore:`, err)
         setError(t("cart.order-not-found"))
         setLoading(false)
       }

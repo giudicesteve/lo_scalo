@@ -32,9 +32,11 @@ export async function POST(req: Request) {
     }
 
     // 2. Se già completato, controlla se email sono state inviate
+    console.log(`🔍 [VERIFY] Ordine ${orderNumber} - status: ${order.status}, emailSent: ${order.emailSent}`)
     if (order.status !== "PENDING_PAYMENT") {
       // Se email non inviate (fallback se webhook ha fallito), invia ora
       if (!order.emailSent) {
+        console.log(`📧 [VERIFY] 🚀 FALLBACK - Invio email per ordine già completato ${orderNumber}`)
         const orderDetails = {
           orderNumber: order.orderNumber,
           email: order.email,
@@ -69,13 +71,14 @@ export async function POST(req: Request) {
               where: { id: order.id },
               data: { emailSent: true }
             })
-            console.log(`📧 Emails sent via verify-session (fallback) for order ${order.id}`)
+            console.log(`✅ [VERIFY] FALLBACK Email SENT e MARKED per order ${order.id}`)
           }
         } catch (err) {
           console.error('Error sending fallback emails:', err)
         }
       }
 
+      console.log(`⏭️ [VERIFY] SKIP - Ordine già completato e email già inviata per ${orderNumber}`)
       return NextResponse.json({
         success: true,
         order: {
@@ -142,7 +145,9 @@ export async function POST(req: Request) {
     }
 
     // 5. Invia email se non già inviate (idempotenza)
+    console.log(`📧 [VERIFY] Check invio: updateResult.count=${updateResult.count}, emailSent=${order.emailSent}`)
     if (updateResult.count > 0 && !order.emailSent) {
+      console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id}`)
       const orderDetails = {
         orderNumber: order.orderNumber,
         email: order.email,
@@ -177,7 +182,9 @@ export async function POST(req: Request) {
             where: { id: order.id },
             data: { emailSent: true }
           })
-          console.log(`📧 Emails sent via verify-session for order ${order.id}`)
+          console.log(`✅ [VERIFY] Email SENT e MARKED per order ${order.id}`)
+        } else {
+          console.log(`❌ [VERIFY] Email FALLITA per order ${order.id}`)
         }
       } catch (err) {
         console.error('Error sending emails from verify-session:', err)
@@ -224,6 +231,7 @@ export async function POST(req: Request) {
       })),
     }
 
+    console.log(`✅ [VERIFY] Completato per ${orderNumber}, source=stripe-verification`)
     return NextResponse.json({
       success: true,
       order: sanitizedOrder,
