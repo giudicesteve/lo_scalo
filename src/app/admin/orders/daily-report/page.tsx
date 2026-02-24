@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Download, Package, CreditCard, Gift, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer } from "lucide-react"
+import * as XLSX from "xlsx"
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
 interface OrderItem {
   id: string
@@ -112,6 +114,286 @@ function DailyReportContent() {
 
   const isToday = selectedDate === new Date().toISOString().split("T")[0]
 
+  // Export to Excel
+  const exportToExcel = () => {
+    if (filteredOrders.length === 0) return
+
+    const rows: Record<string, string | number>[] = []
+    
+    filteredOrders.forEach(order => {
+      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+      
+      // Riga principale ordine
+      rows.push({
+        "Data": new Date(order.createdAt).toLocaleDateString("it-IT"),
+        "Ora": new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
+        "Ordine": order.orderNumber,
+        "Email": order.email,
+        "Telefono": order.phone || "-",
+        "Tipo": order.items.length > 0 && order.giftCards.length > 0 ? "MIXED" : order.giftCards.length > 0 ? "GIFT CARD" : "PRODOTTI",
+        "Prodotto": "",
+        "Taglia": "",
+        "Qty": "",
+        "Prezzo": "",
+        "Totale Prodotti": productTotal > 0 ? productTotal : "",
+        "Totale Gift Card": giftCardTotal > 0 ? giftCardTotal : "",
+        "Totale Ordine": order.total,
+        "Stripe ID": order.stripePaymentIntentId || "-",
+      })
+      
+      // Righe prodotti
+      order.items.forEach(item => {
+        rows.push({
+          "Data": "",
+          "Ora": "",
+          "Ordine": "",
+          "Email": "",
+          "Telefono": "",
+          "Tipo": "",
+          "Prodotto": item.product.name,
+          "Taglia": item.size || "-",
+          "Qty": item.quantity,
+          "Prezzo": item.totalPrice,
+          "Totale Prodotti": "",
+          "Totale Gift Card": "",
+          "Totale Ordine": "",
+          "Stripe ID": "",
+        })
+      })
+      
+      // Righe gift card
+      order.giftCards.forEach(gc => {
+        rows.push({
+          "Data": "",
+          "Ora": "",
+          "Ordine": "",
+          "Email": "",
+          "Telefono": "",
+          "Tipo": "",
+          "Prodotto": `Gift Card ${gc.code}`,
+          "Taglia": "",
+          "Qty": 1,
+          "Prezzo": gc.initialValue,
+          "Totale Prodotti": "",
+          "Totale Gift Card": "",
+          "Totale Ordine": "",
+          "Stripe ID": "",
+        })
+      })
+      
+      // Riga vuota per separare ordini
+      rows.push({
+        "Data": "",
+        "Ora": "",
+        "Ordine": "",
+        "Email": "",
+        "Telefono": "",
+        "Tipo": "",
+        "Prodotto": "",
+        "Taglia": "",
+        "Qty": "",
+        "Prezzo": "",
+        "Totale Prodotti": "",
+        "Totale Gift Card": "",
+        "Totale Ordine": "",
+        "Stripe ID": "",
+      })
+    })
+    
+    // Riga totali
+    rows.push({
+      "Data": "TOTALI GIORNO",
+      "Ora": "",
+      "Ordine": "",
+      "Email": "",
+      "Telefono": "",
+      "Tipo": "",
+      "Prodotto": "",
+      "Taglia": "",
+      "Qty": "",
+      "Prezzo": "",
+      "Totale Prodotti": totals.productRevenue,
+      "Totale Gift Card": totals.giftCardRevenue,
+      "Totale Ordine": totals.totalRevenue,
+      "Stripe ID": "",
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Riepilogo")
+    
+    // Auto-width per colonne
+    const colWidths = [
+      { wch: 12 }, // Data
+      { wch: 8 },  // Ora
+      { wch: 12 }, // Ordine
+      { wch: 25 }, // Email
+      { wch: 15 }, // Telefono
+      { wch: 10 }, // Tipo
+      { wch: 30 }, // Prodotto
+      { wch: 8 },  // Taglia
+      { wch: 6 },  // Qty
+      { wch: 10 }, // Prezzo
+      { wch: 12 }, // Totale Prodotti
+      { wch: 12 }, // Totale Gift Card
+      { wch: 12 }, // Totale Ordine
+      { wch: 30 }, // Stripe ID
+    ]
+    ws['!cols'] = colWidths
+    
+    XLSX.writeFile(wb, `LoScalo_Riepilogo_${selectedDate}.xlsx`)
+  }
+
+  // Generate and download PDF
+  const generatePDF = async () => {
+    if (filteredOrders.length === 0) return
+
+    const pdfDoc = await PDFDocument.create()
+    const page = pdfDoc.addPage([842, 595]) // A4 Landscape
+    const { width, height } = page.getSize()
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    
+    let y = height - 50
+    const margin = 40
+    
+    // Header
+    page.drawText("Lo Scalo - Riepilogo Contabile", {
+      x: margin,
+      y,
+      size: 18,
+      font: fontBold,
+      color: rgb(0, 0, 0),
+    })
+    
+    y -= 25
+    page.drawText(`Data: ${formatDate(selectedDate)}`, {
+      x: margin,
+      y,
+      size: 12,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    })
+    
+    y -= 30
+    
+    // Table header
+    const colWidths = [70, 50, 120, 40, 60, 60, 60, 150]
+    const headers = ["Ordine", "Ora", "Cliente", "Prodotti", "Gift Card", "Totale", "Stripe ID"]
+    
+    // Header background
+    page.drawRectangle({
+      x: margin,
+      y: y - 5,
+      width: width - margin * 2,
+      height: 20,
+      color: rgb(0.95, 0.95, 0.95),
+    })
+    
+    let x = margin
+    headers.forEach((header, i) => {
+      page.drawText(header, {
+        x: x,
+        y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      })
+      x += colWidths[i] || 80
+    })
+    
+    y -= 20
+    
+    // Table rows
+    filteredOrders.forEach(order => {
+      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+      
+      if (y < 80) {
+        // New page
+        pdfDoc.addPage([842, 595])
+        y = height - 50
+      }
+      
+      x = margin
+      const time = new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+      
+      const rowData = [
+        order.orderNumber,
+        time,
+        order.email.substring(0, 25),
+        productTotal > 0 ? `${productTotal.toFixed(2)}€` : "-",
+        giftCardTotal > 0 ? `${giftCardTotal.toFixed(2)}€` : "-",
+        `${order.total.toFixed(2)}€`,
+        order.stripePaymentIntentId ? order.stripePaymentIntentId.substring(0, 20) : "-",
+      ]
+      
+      rowData.forEach((cell, i) => {
+        page.drawText(String(cell), {
+          x: x,
+          y,
+          size: 9,
+          font,
+          color: rgb(0, 0, 0),
+        })
+        x += colWidths[i] || 80
+      })
+      
+      y -= 15
+    })
+    
+    // Footer totals
+    y -= 20
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: width - margin, y },
+      thickness: 2,
+      color: rgb(0, 0, 0),
+    })
+    
+    y -= 20
+    page.drawText("TOTALI GIORNO:", {
+      x: margin,
+      y,
+      size: 12,
+      font: fontBold,
+      color: rgb(0, 0, 0),
+    })
+    
+    y -= 18
+    page.drawText(`Prodotti: ${totals.productRevenue.toFixed(2)}€`, {
+      x: margin + 20,
+      y,
+      size: 11,
+      font,
+      color: rgb(0.2, 0.4, 0.8),
+    })
+    
+    y -= 15
+    page.drawText(`Gift Card: ${totals.giftCardRevenue.toFixed(2)}€`, {
+      x: margin + 20,
+      y,
+      size: 11,
+      font,
+      color: rgb(0.2, 0.6, 0.2),
+    })
+    
+    y -= 20
+    page.drawText(`TOTALE: ${totals.totalRevenue.toFixed(2)}€`, {
+      x: margin,
+      y,
+      size: 14,
+      font: fontBold,
+      color: rgb(0.8, 0.3, 0.1),
+    })
+    
+    const pdfBytes = await pdfDoc.save()
+    const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = `LoScalo_Riepilogo_${selectedDate}.pdf`
+    link.click()
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-brand-cream flex items-center justify-center">
@@ -208,18 +490,29 @@ function DailyReportContent() {
           </div>
         </div>
 
-        {/* Orders Count */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Orders Count & Export Buttons */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-title-md font-bold text-brand-dark">
             {filteredOrders.length} {filteredOrders.length === 1 ? "ordine" : "ordini"}
           </h2>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-brand-light-gray rounded-full text-body-sm font-medium text-brand-dark hover:border-brand-primary hover:text-brand-primary transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Stampa / PDF
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportToExcel}
+              disabled={filteredOrders.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-body-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export Excel
+            </button>
+            <button
+              onClick={generatePDF}
+              disabled={filteredOrders.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-full text-body-sm font-medium hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="w-4 h-4" />
+              Stampa PDF
+            </button>
+          </div>
         </div>
 
         {/* Desktop Table View */}
