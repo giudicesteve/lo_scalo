@@ -134,6 +134,11 @@ const translations: Record<Language, Record<string, string>> = {
     'cart.email-confirm-help': "Inserisci di nuovo l'email per evitare errori.",
     'cart.phone-help': "Ci servirà per contattarti in caso di problemi.",
     'cart.error.email-mismatch': "Le email non coincidono",
+    'cart.terms-label': "Accetto i ",
+    'cart.terms-link': "Termini e Condizioni",
+    'cart.and': " e la ",
+    'cart.privacy-link': "Privacy Policy",
+    'cart.error.terms-required': "Devi accettare i Termini e Condizioni e la Privacy Policy",
     
     // Admin
     'admin.login': 'Accesso Admin',
@@ -314,6 +319,11 @@ const translations: Record<Language, Record<string, string>> = {
     'cart.email-confirm-help': "Enter your email again to avoid mistakes.",
     'cart.phone-help': "We need it to contact you in case of issues.",
     'cart.error.email-mismatch': "Emails do not match",
+    'cart.terms-label': "I accept the ",
+    'cart.terms-link': "Terms & Conditions",
+    'cart.and': " and the ",
+    'cart.privacy-link': "Privacy Policy",
+    'cart.error.terms-required': "You must accept the Terms & Conditions and Privacy Policy",
     
     // Admin
     'admin.login': 'Admin Login',

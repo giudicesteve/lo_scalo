@@ -28,12 +28,14 @@ export default function CartContent() {
   const [email, setEmail] = useState("")
   const [emailConfirm, setEmailConfirm] = useState("")
   const [phone, setPhone] = useState("")
+  const [acceptTerms, setAcceptTerms] = useState(false)
   const [errors, setErrors] = useState<{ 
     email?: string; 
     emailConfirm?: string; 
     phone?: string; 
     general?: string;
     unavailableItems?: string;
+    terms?: string;
   }>({})
   const [isCheckout, setIsCheckout] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -103,7 +105,7 @@ export default function CartContent() {
   const total = calculateTotal(items)
 
   const validateForm = (): boolean => {
-    const newErrors: { email?: string; emailConfirm?: string; phone?: string } = {}
+    const newErrors: { email?: string; emailConfirm?: string; phone?: string; terms?: string } = {}
 
     if (!email.trim()) {
       newErrors.email = t('cart.error.email-required')
@@ -121,6 +123,10 @@ export default function CartContent() {
       newErrors.phone = t('cart.error.phone-required')
     } else if (!isValidPhone(phone)) {
       newErrors.phone = t('cart.error.phone-invalid')
+    }
+
+    if (!acceptTerms) {
+      newErrors.terms = t('cart.error.terms-required')
     }
 
     setErrors(newErrors)
@@ -449,6 +455,37 @@ export default function CartContent() {
                     <p className="text-label-sm text-brand-gray mt-1">{t("cart.phone-help")}</p>
                   )}
                 </div>
+
+                {/* Terms and Privacy Checkbox */}
+                <div className="pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={acceptTerms}
+                      onChange={(e) => {
+                        setAcceptTerms(e.target.checked)
+                        if (errors.terms) setErrors({ ...errors, terms: undefined })
+                      }}
+                      className="w-5 h-5 mt-0.5 rounded border-brand-gray text-brand-primary focus:ring-brand-primary"
+                    />
+                    <span className="text-body-sm text-brand-dark">
+                      {t('cart.terms-label')}
+                      <Link href="/terms" className="text-brand-primary hover:underline" target="_blank">
+                        {t('cart.terms-link')}
+                      </Link>
+                      {t('cart.and')}
+                      <Link href="/privacy" className="text-brand-primary hover:underline" target="_blank">
+                        {t('cart.privacy-link')}
+                      </Link>
+                    </span>
+                  </label>
+                  {errors.terms && (
+                    <p className="text-red-500 text-label-sm mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.terms}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -461,7 +498,7 @@ export default function CartContent() {
 
             <button
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || !acceptTerms}
               className="btn-primary w-full disabled:opacity-50"
             >
               {loading ? t("common.loading") : t("cart.confirm")}
