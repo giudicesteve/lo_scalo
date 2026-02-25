@@ -217,13 +217,26 @@ export async function POST(req: Request) {
       // 4. Crea gift card (in stato pending)
       // NOTA: Se quantity > 1, creiamo N gift card separate
       
-      // Get the admin settings for gift card expiry
-      const adminSettings = await tx.admin.findFirst({
-        select: { expiryType: true, expiryTime: true },
-      })
+      // Get or create the global gift card expiry settings
+      let expiryConfig
+      try {
+        expiryConfig = await tx.giftCardExpiryConfig.upsert({
+          where: { id: "gift-card-expiry" },
+          update: {},
+          create: {
+            id: "gift-card-expiry",
+            expiryType: "END_OF_MONTH",
+            expiryTime: "ONE_YEAR",
+          },
+        })
+      } catch (e) {
+        logToFile(`  ❌ Error with expiry config: ${JSON.stringify(e)}`)
+        // Fallback to defaults if table doesn't exist
+      }
       
-      const expiryType = adminSettings?.expiryType || "END_OF_MONTH"
-      const expiryTime = adminSettings?.expiryTime || "ONE_YEAR"
+      const expiryType = expiryConfig?.expiryType || "END_OF_MONTH"
+      const expiryTime = expiryConfig?.expiryTime || "ONE_YEAR"
+      logToFile(`  📅 Expiry settings: ${expiryType}, ${expiryTime}`)
       
       // Calculate expiry date based on settings
       const purchaseDate = new Date()

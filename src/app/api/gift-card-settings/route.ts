@@ -13,13 +13,19 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    // Get the admin settings
-    const adminSettings = await prisma.admin.findFirst({
-      select: { expiryType: true, expiryTime: true },
+    // Get or create the global expiry settings
+    const config = await prisma.giftCardExpiryConfig.upsert({
+      where: { id: "gift-card-expiry" },
+      update: {},
+      create: {
+        id: "gift-card-expiry",
+        expiryType: "END_OF_MONTH",
+        expiryTime: "ONE_YEAR",
+      },
     })
 
-    const expiryType = adminSettings?.expiryType || "END_OF_MONTH"
-    const expiryTime = adminSettings?.expiryTime || "ONE_YEAR"
+    const expiryType = config?.expiryType || "END_OF_MONTH"
+    const expiryTime = config?.expiryTime || "ONE_YEAR"
 
     // Calculate preview expiry date (if purchased today)
     const previewExpiryDate = calculateGiftCardExpiry(expiryType, expiryTime, new Date())

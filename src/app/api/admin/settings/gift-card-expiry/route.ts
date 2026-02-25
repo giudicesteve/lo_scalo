@@ -24,10 +24,21 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Get or create the global config
+    const config = await prisma.giftCardExpiryConfig.upsert({
+      where: { id: "gift-card-expiry" },
+      update: {},
+      create: {
+        id: "gift-card-expiry",
+        expiryType: "END_OF_MONTH",
+        expiryTime: "ONE_YEAR",
+      },
+    })
+
     // Return the current settings
     return NextResponse.json({
-      expiryType: admin.expiryType,
-      expiryTime: admin.expiryTime,
+      expiryType: config.expiryType,
+      expiryTime: config.expiryTime,
     })
   } catch (error) {
     console.error("Error fetching gift card expiry settings:", error)
@@ -82,9 +93,15 @@ export async function PUT(req: Request) {
       )
     }
 
-    // Update all admins with the new settings (to keep them in sync)
-    await prisma.admin.updateMany({
-      data: {
+    // Update the global config (upsert - create if not exists, update if exists)
+    const config = await prisma.giftCardExpiryConfig.upsert({
+      where: { id: "gift-card-expiry" },
+      update: {
+        expiryType,
+        expiryTime,
+      },
+      create: {
+        id: "gift-card-expiry",
         expiryType,
         expiryTime,
       },
@@ -93,8 +110,8 @@ export async function PUT(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Gift card expiry settings updated successfully",
-      expiryType,
-      expiryTime,
+      expiryType: config.expiryType,
+      expiryTime: config.expiryTime,
     })
   } catch (error) {
     console.error("Error updating gift card expiry settings:", error)

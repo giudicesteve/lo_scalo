@@ -9,17 +9,14 @@ datasource db {
 
 // Utenti Admin
 model Admin {
-  id                   String             @id @default(cuid())
-  email                String             @unique
+  id                   String   @id @default(cuid())
+  email                String   @unique
   name                 String?
   image                String?
-  receiveNotifications Boolean            @default(true)
-  canManageAdmins      Boolean            @default(false)
-  // Gift Card expiry settings
-  expiryType           GiftCardExpiryType @default(END_OF_MONTH)
-  expiryTime           GiftCardExpiryTime @default(ONE_YEAR)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  receiveNotifications Boolean  @default(true)
+  canManageAdmins      Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // Enum for gift card expiry type
@@ -37,10 +34,18 @@ enum GiftCardExpiryTime {
 
 // Configurazione globale del sito
 model SiteConfig {
-  id            String    @id @default(cuid())
-  key           String    @unique
-  value         String
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Gift Card Expiry Configuration (single row, always id = "gift-card-expiry")
+model GiftCardExpiryConfig {
+  id         String           @id @default("gift-card-expiry")
+  expiryType GiftCardExpiryType @default(END_OF_MONTH)
+  expiryTime GiftCardExpiryTime @default(ONE_YEAR)
+  updatedAt  DateTime         @updatedAt
 }
 
 // Categorie per il menu

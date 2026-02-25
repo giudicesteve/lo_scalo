@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save, Clock, Calendar } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save, Clock, Calendar, User } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -335,88 +335,95 @@ export default function AdminManagementPage() {
           )}
         </div>
 
-        {/* Add Button */}
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary mb-6 flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Aggiungi Admin
-        </button>
+
 
         {/* Lista Admin */}
-        <div className="space-y-4">
-          {admins.map((admin) => (
-            <div
-              key={admin.id}
-              className="bg-white rounded-2xl shadow-card p-4"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-title-md font-bold text-brand-dark">
-                      {admin.name || admin.email.split('@')[0]}
-                    </h2>
-                    {admin.canManageAdmins && (
-                      <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-label-sm rounded-full">
-                        Super Admin
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-body-sm text-brand-gray flex items-center gap-1">
-                    <Mail className="w-4 h-4" />
-                    {admin.email}
-                  </p>
+        <div className="bg-white rounded-2xl shadow-card p-6 mb-6">
+          <h2 className="text-title-lg font-bold text-brand-dark mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-brand-primary" />
+              Gestione Utenti
+          </h2>
+                    {/* Add Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary mb-6 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Aggiungi Utente
+          </button>
+          <div className="space-y-4">
+            {admins.map((admin) => (
+              <div
+                key={admin.id}
+                className="bg-white rounded-2xl  p-4"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h2 className="text-title-md font-bold text-brand-dark">
+                        {admin.name || admin.email.split('@')[0]}
+                      </h2>
+                      {admin.canManageAdmins && (
+                        <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-label-sm rounded-full">
+                          Super Admin
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-body-sm text-brand-gray flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      {admin.email}
+                    </p>
 
-                  {/* Permessi */}
-                  <div className="flex flex-wrap gap-4 mt-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={admin.receiveNotifications}
-                        onChange={(e) => {
-                          const updated = { ...admin, receiveNotifications: e.target.checked }
-                          handleUpdatePermissions(updated)
-                        }}
-                        className="w-4 h-4 rounded border-brand-gray text-brand-primary"
-                      />
-                      <span className="text-label-sm text-brand-gray flex items-center gap-1">
-                        <Bell className="w-3 h-3" />
-                        Riceve notifiche
-                      </span>
-                    </label>
+                    {/* Permessi */}
+                    <div className="flex flex-wrap gap-4 mt-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={admin.receiveNotifications}
+                          onChange={(e) => {
+                            const updated = { ...admin, receiveNotifications: e.target.checked }
+                            handleUpdatePermissions(updated)
+                          }}
+                          className="w-4 h-4 rounded border-brand-gray text-brand-primary"
+                        />
+                        <span className="text-label-sm text-brand-gray flex items-center gap-1">
+                          <Bell className="w-3 h-3" />
+                          Riceve notifiche
+                        </span>
+                      </label>
 
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={admin.canManageAdmins}
-                        onChange={(e) => {
-                          const updated = { ...admin, canManageAdmins: e.target.checked }
-                          handleUpdatePermissions(updated)
-                        }}
-                        className="w-4 h-4 rounded border-brand-gray text-brand-primary"
-                      />
-                      <span className="text-label-sm text-brand-gray flex items-center gap-1">
-                        <Shield className="w-3 h-3" />
-                        Gestione Admin
-                      </span>
-                    </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={admin.canManageAdmins}
+                          onChange={(e) => {
+                            const updated = { ...admin, canManageAdmins: e.target.checked }
+                            handleUpdatePermissions(updated)
+                          }}
+                          className="w-4 h-4 rounded border-brand-gray text-brand-primary"
+                        />
+                        <span className="text-label-sm text-brand-gray flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          Gestione Admin
+                        </span>
+                      </label>
+                    </div>
                   </div>
+
+                  {/* Delete Button - hidden if it's the last admin */}
+                  {admins.length > 1 && (
+                    <button
+                      onClick={() => setDeleteConfirm(admin.id)}
+                      className="p-2 text-brand-gray hover:text-red-500 transition-colors"
+                      title="Rimuovi"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
-
-                {/* Delete Button - hidden if it's the last admin */}
-                {admins.length > 1 && (
-                  <button
-                    onClick={() => setDeleteConfirm(admin.id)}
-                    className="p-2 text-brand-gray hover:text-red-500 transition-colors"
-                    title="Rimuovi"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
             </div>
           ))}
+        </div>
         </div>
 
         {admins.length === 0 && (
