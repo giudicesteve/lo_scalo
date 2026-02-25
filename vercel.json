@@ -2,9 +2,6 @@
   "buildCommand": "prisma generate && next build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "env": {
-    "DATABASE_URL": "postgresql://neondb_owner:npg_OEGHJCc4y5fq@ep-weathered-thunder-al8krh2b-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-  },
   "crons": [
     {
       "path": "/api/jobs/deactivate-expired-gift-cards",
