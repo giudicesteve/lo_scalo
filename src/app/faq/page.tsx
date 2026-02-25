@@ -90,7 +90,7 @@ export default function FAQPage() {
             {
               id: "giftcard-expiry",
               question: "Le Gift Card hanno scadenza?",
-              answer: "Si, le Gift Card hanno una durata di 1 anno dalla data di acquisto. Scaduto questo periodo, il credito residuo non potrà piu essere utilizzato per gli acquisti e non potrà essere rimborsata. Ti consigliamo di utilizzare la Gift Card entro la data di scadenza indicata nell'email e sul PDF allegato."
+              answer: "Si, le Gift Card hanno una durata di 1 anno dalla data di acquisto. Scaduto questo periodo, il credito residuo non potrà piu essere utilizzato per gli acquisti e non potrà essere rimborsato. Ti consigliamo di utilizzare la Gift Card entro la data di scadenza indicata nell'email e sul PDF allegato."
             },
             {
               id: "giftcard-use",
@@ -115,7 +115,7 @@ export default function FAQPage() {
             {
               id: "pickup-location",
               question: "Dove ritiro i prodotti acquistati?",
-              answer: "Tutti i prodotti devono essere ritirati presso il nostro locale a Cremia (CO), in Frazione San Vito, 9. Non effettuiamo spedizioni."
+              answer: "Tutti i prodotti devono essere ritirati presso il nostro locale a Cremia (CO), in Frazione San Vito, 9 - Italia. Non effettuiamo spedizioni."
             },
             {
               id: "pickup-time",
@@ -256,7 +256,7 @@ export default function FAQPage() {
             {
               id: "pickup-location",
               question: "Where do I pick up purchased products?",
-              answer: "All products must be picked up at our venue in Cremia (CO), Frazione San Vito, 9. We do not ship products."
+              answer: "All products must be picked up at our venue in Cremia (CO), Frazione San Vito, 9 - Italy. We do not ship products."
             },
             {
               id: "pickup-time",

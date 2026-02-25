@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       sections: [
         {
           title: "1. Titolare del Trattamento",
-          content: `Il titolare del trattamento dei dati personali è Lo Scalo, con sede in Frazione San Vito, 9 - 22010 Cremia (CO), P.IVA IT03661710131.
+          content: `Il titolare del trattamento dei dati personali è Lo Scalo, con sede in Frazione San Vito, 9 - 22010 Cremia (CO) - Italia, P.IVA IT03661710131.
 
 Per qualsiasi informazione riguardante il trattamento dei dati personali, puoi contattarci all'indirizzo email: support@loscalo.it`
         },
@@ -127,7 +127,7 @@ Hai anche il diritto di presentare reclamo all'Autorità Garante per la Protezio
           title: "11. Contatti",
           content: `Per qualsiasi domanda sulla privacy:
 Email: support@loscalo.it
-Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO)`
+Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO) - Italia`
         }
       ]
     },

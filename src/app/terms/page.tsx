@@ -49,7 +49,7 @@ In caso di problemi con il pagamento, l'ordine rimane in stato "In attesa di pag
         {
           title: "5. Ritiro in Sede",
           content: `Tutti i prodotti acquistati devono essere ritirati presso il nostro locale:
-Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO)
+Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO) - Italia
 
 I prodotti sono generalmente pronti per il ritiro entro 24-48 ore dall'ordine. Non effettuiamo spedizioni.
 
@@ -85,7 +85,7 @@ In caso di problemi tecnici con la ricezione della Gift Card (non arrivo email, 
           title: "8. Disponibilità Stagionale",
           content: `Lo Scalo è un locale stagionale. Durante i mesi di chiusura:
 • Lo shop online può essere temporaneamente disattivato
-• Il menu cocktail non è consultabile
+• Il menu cocktail potrebbe non essere consultabile
 • I ritiri dei prodotti acquistati potrebbero subire ritardi
 
 Ti invitiamo a seguirci sui social per conoscere le date di apertura e chiusura.`
@@ -107,7 +107,7 @@ Ci impegniamo a mantenere il sito sicuro e funzionante, ma non garantiamo la dis
           title: "11. Contatti",
           content: `Per qualsiasi domanda o reclamo:
 Email: support@loscalo.it
-Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO)
+Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO) - Italia
 Telefono: +39 347 585 2220`
         }
       ]
@@ -188,7 +188,7 @@ In case of technical problems with receiving the Gift Card (email not arriving, 
           title: "8. Seasonal Availability",
           content: `Lo Scalo is a seasonal venue. During closing months:
 • The online shop may be temporarily deactivated
-• The cocktail menu is not available
+• The cocktail menu may not be available
 • Pickup of purchased products may be delayed
 
 We invite you to follow us on social media to know the opening and closing dates.`

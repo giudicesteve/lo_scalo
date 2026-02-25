@@ -63,7 +63,7 @@ const emailTranslations: Record<string, Record<string, string>> = {
     'email.order.total': 'Totale',
     'email.order.pickup.title': '📦 Ritiro in sede',
     'email.order.pickup.message': 'Potrai ritirare i prodotti fra 24/48 ore. Controlla gli orari di apertura del locale per sapere quando passare da noi!',
-    'email.order.pickup.address': 'Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO)',
+    'email.order.pickup.address': 'Indirizzo: Frazione San Vito, 9 - 22010 Cremia (CO) - Italia',
     'email.order.giftcardReady.title': '🎁 Le tue Gift Card sono pronte!',
     'email.order.giftcardReady.message': 'Trovi le tue Gift Card in formato PDF in allegato a questa email. Presenta il QR code al locale per utilizzarle.',
     'email.order.giftcardReady.noAttach': 'Riceverai un\'altra email con i PDF contenenti i QR code scansionabili.',
@@ -93,7 +93,7 @@ const emailTranslations: Record<string, Record<string, string>> = {
     'email.order.total': 'Total',
     'email.order.pickup.title': '📦 In-store pickup',
     'email.order.pickup.message': 'You can pick up products within 24/48 hours. Check our opening hours to know when to visit us!',
-    'email.order.pickup.address': 'Address: Frazione San Vito, 9 - 22010 Cremia (CO)',
+    'email.order.pickup.address': 'Address: Frazione San Vito, 9 - 22010 Cremia (CO) - Italy',
     'email.order.giftcardReady.title': '🎁 Your Gift Cards are ready!',
     'email.order.giftcardReady.message': 'You will find your Gift Cards in PDF format attached to this email. Present the QR code at the venue to use them.',
     'email.order.giftcardReady.noAttach': 'You will receive another email with the PDFs containing scannable QR codes.',
@@ -303,8 +303,8 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   })
   
   // Footer
-  const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', 10)
-  page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', {
+  const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', 10)
+  page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', {
     x: width / 2 - textWidth6 / 2,
     y: 40,
     size: 10,
