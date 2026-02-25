@@ -90,7 +90,7 @@ export default function FAQPage() {
             {
               id: "giftcard-expiry",
               question: "Le Gift Card hanno scadenza?",
-              answer: "Si, le Gift Card hanno una durata di 1 anno dalla data di acquisto. Scaduto questo periodo, il credito residuo non potrà piu essere utilizzato per gli acquisti e non potrà essere rimborsata. Rimarrà nei nostri sistemi per finalità contabili. Ti consigliamo di utilizzare la Gift Card entro la data di scadenza indicata nell'email e sul PDF allegato."
+              answer: "Si, le Gift Card hanno una durata di 1 anno dalla data di acquisto. Scaduto questo periodo, il credito residuo non potrà piu essere utilizzato per gli acquisti e non potrà essere rimborsata. Ti consigliamo di utilizzare la Gift Card entro la data di scadenza indicata nell'email e sul PDF allegato."
             },
             {
               id: "giftcard-use",
@@ -100,7 +100,7 @@ export default function FAQPage() {
             {
               id: "giftcard-balance",
               question: "Come controllo il saldo residuo?",
-              answer: "Il saldo residuo viene mostrato dopo ogni utilizzo. Per controllarlo in qualsiasi momento, puoi scriverci a support@loscalo.it indicando il codice della tua Gift Card."
+              answer: "Il saldo residuo viene comunicato dopo ogni utilizzo. Per controllarlo in qualsiasi momento, puoi scriverci a support@loscalo.it indicando il codice della tua Gift Card."
             },
             {
               id: "giftcard-multiple",
@@ -241,7 +241,7 @@ export default function FAQPage() {
             {
               id: "giftcard-balance",
               question: "How do I check the remaining balance?",
-              answer: "The remaining balance is shown after each use. To check it at any time, you can write to us at support@loscalo.it indicating your Gift Card code."
+              answer: "The remaining balance is communicated after each use. To check it at any time, you can write to us at support@loscalo.it indicating your Gift Card code."
             },
             {
               id: "giftcard-multiple",

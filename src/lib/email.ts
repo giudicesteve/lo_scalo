@@ -248,7 +248,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const textWidth4 = fontBold.widthOfTextAtSize('Come utilizzare la tua Gift Card', 12)
   page.drawText('Come utilizzare la tua Gift Card', {
     x: width / 2 - textWidth4 / 2,
-    y: height - 559,
+    y: height - 529,
     size: 12,
     font: fontBold,
     color: rgb(0.137, 0.122, 0.125)
@@ -266,7 +266,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     widthSentence = font.widthOfTextAtSize(instructions[i], 10)
     page.drawText(line, {
       x: width / 2 - widthSentence / 2,
-      y: height - 577 - (i * 15),
+      y: height - 547 - (i * 15),
       size: 10,
       font,
       color: rgb(0.3, 0.3, 0.3)
@@ -277,7 +277,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const textWidth5 = fontBold.widthOfTextAtSize('How to use your Gift Card', 12)
   page.drawText('How to use your Gift Card', {
     x: width / 2 - textWidth5 / 2,
-    y: height - 660,
+    y: height - 630,
     size: 12,
     font: fontBold,
     color: rgb(0.137, 0.122, 0.125)
@@ -295,7 +295,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     widthSentence2 = font.widthOfTextAtSize(instructions2[i], 10)
     page.drawText(line, {
       x: width / 2 - widthSentence2 / 2,
-      y: height - 676 - (i * 15),
+      y: height - 646 - (i * 15),
       size: 10,
       font,
       color: rgb(0.3, 0.3, 0.3),
@@ -306,7 +306,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', 10)
   page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO)', {
     x: width / 2 - textWidth6 / 2,
-    y: 60,
+    y: 40,
     size: 10,
     font,
     color: rgb(0.5, 0.5, 0.5)
@@ -318,27 +318,34 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const expiryDateStrEn = formatPDFDate(giftCard.expiresAt, 'en')
 
   console.log(`[PDF] Formatted expiry date (IT):`, expiryDateStr)
-  if (expiryDateStr) {
-    const expiryText = `Valida fino al ${expiryDateStr} | Valid until ${expiryDateStrEn}`
-    const textWidth7 = font.widthOfTextAtSize(expiryText, 10)
-    page.drawText(expiryText, {
-      x: width / 2 - textWidth7 / 2,
-      y: 40,
+
+  const expiryText = `Valida fino al ${expiryDateStr} | Valid until ${expiryDateStrEn}`
+  const textWidth7 = font.widthOfTextAtSize(expiryText, 10)
+  page.drawText(expiryText, {
+    x: width / 2 - textWidth7 / 2,
+    y: 80,
+    size: 10,
+    font,
+    color: rgb(0.94, 0.35, 0.16) // Orange color for warning
+  })
+
+
+  const textWidth8 = font.widthOfTextAtSize('Oltrepassata la data di validità, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.', 10)
+  page.drawText('Oltrepassata la data di validità, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.', {
+      x: width / 2 - textWidth8 / 2,
+      y: 70,
       size: 10,
       font,
-      color: rgb(0.94, 0.35, 0.16) // Orange color for warning
-    })
-  } else {
-    // Fallback for old gift cards without expiry
-    const textWidth7 = font.widthOfTextAtSize('Valida senza scadenza per qualsiasi consumazione', 10)
-    page.drawText('Valida senza scadenza per qualsiasi consumazione', {
-      x: width / 2 - textWidth7 / 2,
-      y: 40,
+      color: rgb(0.137, 0.122, 0.125)
+  })
+  const textWidth9 = font.widthOfTextAtSize('Upon expiry of the validity period, any remaining balance can no longer be used for purchases and is non-refundable.', 10)
+  page.drawText('Upon expiry of the validity period, any remaining balance can no longer be used for purchases and is non-refundable.', {
+      x: width / 2 - textWidth9 / 2,
+      y: 60,
       size: 10,
       font,
-      color: rgb(0.5, 0.5, 0.5)
-    })
-  }
+      color: rgb(0.137, 0.122, 0.125)
+  })
   
   const pdfBytes = await pdfDoc.save()
   return Buffer.from(pdfBytes)

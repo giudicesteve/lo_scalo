@@ -77,8 +77,7 @@ In caso di reso conforme, il rimborso verrà effettuato entro 14 giorni dal rice
 Validità e scadenza:
 • Le Gift Card hanno una validità di 1 anno dalla data di acquisto
 • La data di scadenza è indicata nell'email di conferma e sul PDF allegato
-• Scaduto il termine, il credito residuo non potrà più essere utilizzato per gli acquisti
-• Il credito residuo delle Gift Card scadute rimane nei nostri sistemi per finalità contabili
+• Scaduto il termine, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.
 
 In caso di problemi tecnici con la ricezione della Gift Card (non arrivo email, QR code illeggibile), contattaci entro 7 giorni dall'acquisto a support@loscalo.it per risolvere il problema o ricevere un rimborso.`
         },
@@ -181,8 +180,7 @@ In case of a compliant return, the refund will be made within 14 days of receivi
 Validity and expiry:
 • Gift Cards are valid for 1 year from the date of purchase
 • The expiry date is indicated in the confirmation email and attached PDF
-• After expiry, the remaining balance can no longer be used for purchases
-• The remaining balance of expired Gift Cards remains in our systems for accounting purposes
+• After expiry, the remaining balance can no longer be used for purchases and cannot be refunded.
 
 In case of technical problems with receiving the Gift Card (email not arriving, unreadable QR code), contact us within 7 days of purchase at support@loscalo.it to resolve the issue or receive a refund.`
         },
