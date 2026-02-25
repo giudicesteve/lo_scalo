@@ -74,6 +74,12 @@ In caso di reso conforme, il rimborso verrà effettuato entro 14 giorni dal rice
           title: "7. Resi e Rimborsi - Gift Card",
           content: `Le Gift Card sono prodotti digitali con codice QR unico. Una volta acquistate e attivate, le Gift Card NON sono rimborsabili.
 
+Validità e scadenza:
+• Le Gift Card hanno una validità di 1 anno dalla data di acquisto
+• La data di scadenza è indicata nell'email di conferma e sul PDF allegato
+• Scaduto il termine, il credito residuo non potrà più essere utilizzato per gli acquisti
+• Il credito residuo delle Gift Card scadute rimane nei nostri sistemi per finalità contabili
+
 In caso di problemi tecnici con la ricezione della Gift Card (non arrivo email, QR code illeggibile), contattaci entro 7 giorni dall'acquisto a support@loscalo.it per risolvere il problema o ricevere un rimborso.`
         },
         {
@@ -171,6 +177,12 @@ In case of a compliant return, the refund will be made within 14 days of receivi
         {
           title: "7. Returns and Refunds - Gift Cards",
           content: `Gift Cards are digital products with a unique QR code. Once purchased and activated, Gift Cards are NOT refundable.
+
+Validity and expiry:
+• Gift Cards are valid for 1 year from the date of purchase
+• The expiry date is indicated in the confirmation email and attached PDF
+• After expiry, the remaining balance can no longer be used for purchases
+• The remaining balance of expired Gift Cards remains in our systems for accounting purposes
 
 In case of technical problems with receiving the Gift Card (email not arriving, unreadable QR code), contact us within 7 days of purchase at support@loscalo.it to resolve the issue or receive a refund.`
         },

@@ -27,11 +27,12 @@ interface Order {
     code: string
     initialValue: number
     isActive: boolean
+    expiresAt?: string | null
   }>
 }
 
 function CartSuccessContent() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const searchParams = useSearchParams()
   const orderNumber = searchParams.get("order")
   const sessionId = searchParams.get("session")
@@ -201,6 +202,11 @@ function CartSuccessContent() {
                 <div className="flex-1">
                   <p className="text-body-sm text-brand-dark font-medium">{t("giftcard.title")}</p>
                   <p className="text-label-sm text-brand-gray">{gc.code}</p>
+                  {gc.expiresAt && (
+                    <p className="text-label-sm text-orange-600 mt-1">
+                      {t('giftcard.expiry.label')}: {new Date(gc.expiresAt).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
                 </div>
                 <p className="text-body-sm font-bold text-brand-dark">
                   {gc.initialValue.toFixed(2)}€

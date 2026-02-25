@@ -711,7 +711,7 @@ export default function AdminShopPage() {
                 Elimina {deleteConfirm.type === 'product' ? 'Prodotto' : 'Taglio Gift Card'}
               </h3>
               <p className="text-body-md text-brand-gray">
-                Sei sicuro di voler eliminare <strong>{deleteConfirm.type === 'product' ? deleteConfirm.name : `Gift Card ${deleteConfirm.value}€`}</strong>? L'azione non può essere annullata.
+                Sei sicuro di voler eliminare <strong>{deleteConfirm.type === 'product' ? deleteConfirm.name : `Gift Card ${deleteConfirm.value}€`}</strong>? L&apos;azione non può essere annullata.
               </p>
             </div>
             <div className="flex gap-3">

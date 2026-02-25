@@ -70,7 +70,10 @@ const translations: Record<Language, Record<string, string>> = {
     'giftcard.select-value': 'Seleziona il valore',
     'giftcard.add-to-cart': 'Aggiungi al carrello',
     'giftcard.attention': 'ATTENZIONE',
-    'giftcard.email-delivery': 'Riceverai la Gift Card via email con un QR code pronto all\'uso. Senza scadenza e valida per qualsiasi consumo presso il locale. Prima di venire a trovarci, verifica sempre i nostri orari di apertura.',
+    'giftcard.email-delivery': 'Riceverai la Gift Card via email con un QR code pronto all\'uso. Prima di venire a trovarci, verifica sempre i nostri orari di apertura.',
+    'giftcard.expiry.title': 'Validità',
+    'giftcard.expiry.preview': 'Se acquisti oggi, la Gift Card scade il',
+    'giftcard.expiry.label': 'Scadenza',
     
     // Cart
     'cart.title': 'Riepilogo ordine',
@@ -247,7 +250,10 @@ const translations: Record<Language, Record<string, string>> = {
     'giftcard.select-value': 'Select value',
     'giftcard.add-to-cart': 'Add to cart',
     'giftcard.attention': 'ATTENTION',
-    'giftcard.email-delivery': 'You will receive the Gift Card via email with a ready-to-use QR code. No expiration and valid for any purchase at our venue. Before visiting us, always check our opening hours.',
+    'giftcard.email-delivery': 'You will receive the Gift Card via email with a ready-to-use QR code. Before visiting us, always check our opening hours.',
+    'giftcard.expiry.title': 'Validity',
+    'giftcard.expiry.preview': 'If purchased today, the Gift Card expires on',
+    'giftcard.expiry.label': 'Expires',
     
     // Cart
     'cart.title': 'Order summary',

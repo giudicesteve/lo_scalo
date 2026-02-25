@@ -9,14 +9,30 @@ datasource db {
 
 // Utenti Admin
 model Admin {
-  id                   String    @id @default(cuid())
-  email                String    @unique
+  id                   String             @id @default(cuid())
+  email                String             @unique
   name                 String?
   image                String?
-  receiveNotifications Boolean   @default(true)
-  canManageAdmins      Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  receiveNotifications Boolean            @default(true)
+  canManageAdmins      Boolean            @default(false)
+  // Gift Card expiry settings
+  expiryType           GiftCardExpiryType @default(END_OF_MONTH)
+  expiryTime           GiftCardExpiryTime @default(ONE_YEAR)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+// Enum for gift card expiry type
+enum GiftCardExpiryType {
+  EXACT_DATE
+  END_OF_MONTH
+}
+
+// Enum for gift card expiry time
+enum GiftCardExpiryTime {
+  SIX_MONTHS
+  ONE_YEAR
+  TWO_YEARS
 }
 
 // Configurazione globale del sito
@@ -114,6 +130,7 @@ model GiftCard {
   remainingValue   Float
   isActive         Boolean   @default(true)
   isArchived       Boolean   @default(false)
+  isExpired        Boolean   @default(false)
   purchasedAt      DateTime  @default(now())
   activatedAt      DateTime?
   expiresAt        DateTime?

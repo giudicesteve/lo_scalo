@@ -8,7 +8,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Gift,
-  CreditCard,
   FileSpreadsheet,
   Printer,
   Receipt,

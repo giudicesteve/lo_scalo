@@ -142,10 +142,14 @@ export async function POST(req: Request) {
               size: item.size || undefined,
               totalPrice: item.totalPrice
             })),
-            giftCards: order.giftCards.map(gc => ({
-              code: gc.code,
-              initialValue: gc.initialValue
-            })),
+            giftCards: order.giftCards.map(gc => {
+              console.log(`[WEBHOOK] Gift card ${gc.code} expiresAt:`, gc.expiresAt, typeof gc.expiresAt)
+              return {
+                code: gc.code,
+                initialValue: gc.initialValue,
+                expiresAt: gc.expiresAt
+              }
+            }),
             createdAt: order.createdAt
           }
 

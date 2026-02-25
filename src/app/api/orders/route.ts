@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { stripe } from "@/lib/stripe"
+import { calculateGiftCardExpiry } from "@/lib/gift-card-expiry"
 
 // Helper per logging (solo console)
 function logToFile(message: string) {
@@ -215,6 +216,19 @@ export async function POST(req: Request) {
       logToFile("  🎁 Creazione gift card...")
       // 4. Crea gift card (in stato pending)
       // NOTA: Se quantity > 1, creiamo N gift card separate
+      
+      // Get the admin settings for gift card expiry
+      const adminSettings = await tx.admin.findFirst({
+        select: { expiryType: true, expiryTime: true },
+      })
+      
+      const expiryType = adminSettings?.expiryType || "END_OF_MONTH"
+      const expiryTime = adminSettings?.expiryTime || "ONE_YEAR"
+      
+      // Calculate expiry date based on settings
+      const purchaseDate = new Date()
+      const expiresAt = calculateGiftCardExpiry(expiryType, expiryTime, purchaseDate)
+      
       let giftCardsCreated = 0
       for (const item of giftCardItems) {
         const qty = item.quantity || 1
@@ -226,12 +240,13 @@ export async function POST(req: Request) {
               remainingValue: item.price,
               orderId: order.id,
               isActive: false,
+              expiresAt: expiresAt,
             },
           })
           giftCardsCreated++
         }
       }
-      logToFile(`  ✅ Gift card create: ${giftCardsCreated}`)
+      logToFile(`  ✅ Gift card create: ${giftCardsCreated} (scadenza: ${expiresAt.toISOString()})`)
 
       return order
     })

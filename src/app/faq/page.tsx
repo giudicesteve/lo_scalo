@@ -85,7 +85,12 @@ export default function FAQPage() {
             {
               id: "giftcard-delivery",
               question: "Come ricevo la Gift Card?",
-              answer: "La Gift Card viene inviata immediatamente via email dopo il pagamento. Contiene un QR code unico che potrai mostrare al nostro staff per utilizzarla. Non ha scadenza ed e valida per qualsiasi consumo presso il locale. Nel caso le Gift Card non siano arrivate, contattaci a support@loscalo.it con il numero di ordine nell'oggetto, ti risponderemo il prima possibile."
+              answer: "La Gift Card viene inviata immediatamente via email dopo il pagamento. Contiene un QR code unico che potrai mostrare al nostro staff per utilizzarla. Nel caso le Gift Card non siano arrivate, contattaci a support@loscalo.it con il numero di ordine nell'oggetto, ti risponderemo il prima possibile."
+            },
+            {
+              id: "giftcard-expiry",
+              question: "Le Gift Card hanno scadenza?",
+              answer: "Si, le Gift Card hanno una durata di 1 anno dalla data di acquisto. Scaduto questo periodo, il credito residuo non potrà piu essere utilizzato per gli acquisti e non potrà essere rimborsata. Rimarrà nei nostri sistemi per finalità contabili. Ti consigliamo di utilizzare la Gift Card entro la data di scadenza indicata nell'email e sul PDF allegato."
             },
             {
               id: "giftcard-use",
@@ -221,7 +226,12 @@ export default function FAQPage() {
             {
               id: "giftcard-delivery",
               question: "How do I receive the Gift Card?",
-              answer: "The Gift Card is sent immediately via email after payment. It contains a unique QR code that you can show to our staff to use it. It has no expiration and is valid for any purchase at our venue. If you haven't received the Gift Card, contact us at support@loscalo.it with the order number in the subject, we will reply as soon as possible."
+              answer: "The Gift Card is sent immediately via email after payment. It contains a unique QR code that you can show to our staff to use it. If you haven't received the Gift Card, contact us at support@loscalo.it with the order number in the subject, we will reply as soon as possible."
+            },
+            {
+              id: "giftcard-expiry",
+              question: "Do Gift Cards expire?",
+              answer: "Yes, Gift Cards are valid for 1 year from the date of purchase. After this period, the remaining balance can no longer be used for purchases, and cannot be refunded. We recommend using your Gift Card before the expiration date indicated in the email and attached PDF."
             },
             {
               id: "giftcard-use",

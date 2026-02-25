@@ -51,7 +51,8 @@ export async function POST(req: Request) {
           })),
           giftCards: order.giftCards.map(gc => ({
             code: gc.code,
-            initialValue: gc.initialValue
+            initialValue: gc.initialValue,
+            expiresAt: gc.expiresAt
           })),
           createdAt: order.createdAt
         }
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
             code: gc.code,
             initialValue: gc.initialValue,
             isActive: gc.isActive,
+            expiresAt: gc.expiresAt,
           })),
         },
         source: "database",
@@ -165,7 +167,8 @@ export async function POST(req: Request) {
         })),
         giftCards: order.giftCards.map(gc => ({
           code: gc.code,
-          initialValue: gc.initialValue
+          initialValue: gc.initialValue,
+          expiresAt: gc.expiresAt
         })),
         createdAt: order.createdAt
       }
@@ -233,6 +236,7 @@ export async function POST(req: Request) {
         code: gc.code,
         initialValue: gc.initialValue,
         isActive: gc.isActive,
+        expiresAt: gc.expiresAt,
       })),
     }
 

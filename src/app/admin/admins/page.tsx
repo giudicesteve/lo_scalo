@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save, Clock, Calendar } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -13,6 +13,14 @@ interface Admin {
   receiveNotifications: boolean
   canManageAdmins: boolean
   createdAt: string
+}
+
+type ExpiryType = "EXACT_DATE" | "END_OF_MONTH"
+type ExpiryTime = "SIX_MONTHS" | "ONE_YEAR" | "TWO_YEARS"
+
+interface GiftCardExpirySettings {
+  expiryType: ExpiryType
+  expiryTime: ExpiryTime
 }
 
 export default function AdminManagementPage() {
@@ -30,8 +38,14 @@ export default function AdminManagementPage() {
     canManageAdmins: false,
   })
 
+  // Gift Card Expiry Settings
+  const [expirySettings, setExpirySettings] = useState<GiftCardExpirySettings | null>(null)
+  const [expiryLoading, setExpiryLoading] = useState(true)
+  const [expirySaving, setExpirySaving] = useState(false)
+
   useEffect(() => {
     fetchAdmins()
+    fetchExpirySettings()
   }, [])
 
   const fetchAdmins = async () => {
@@ -48,6 +62,44 @@ export default function AdminManagementPage() {
       showToast("Errore nel caricamento admin", "error")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchExpirySettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings/gift-card-expiry")
+      if (res.ok) {
+        const data = await res.json()
+        setExpirySettings(data)
+      }
+    } catch (error) {
+      console.error("Error fetching expiry settings:", error)
+    } finally {
+      setExpiryLoading(false)
+    }
+  }
+
+  const handleSaveExpirySettings = async () => {
+    if (!expirySettings) return
+    
+    setExpirySaving(true)
+    try {
+      const res = await fetch("/api/admin/settings/gift-card-expiry", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(expirySettings)
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Errore durante il salvataggio")
+      }
+
+      showToast("Impostazioni salvate con successo", "success")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Errore", "error")
+    } finally {
+      setExpirySaving(false)
     }
   }
 
@@ -182,6 +234,105 @@ export default function AdminManagementPage() {
             <Shield className="w-4 h-4 inline mr-2" />
             Solo gli admin con il permesso &quot;Gestione Admin&quot; possono vedere questa pagina.
           </p>
+        </div>
+
+        {/* Gift Card Expiry Settings */}
+        <div className="bg-white rounded-2xl shadow-card p-6 mb-6">
+          <h2 className="text-title-lg font-bold text-brand-dark mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-brand-primary" />
+            Impostazioni Scadenza Gift Card
+          </h2>
+          
+          {expiryLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-primary" />
+            </div>
+          ) : expirySettings ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Expiry Type */}
+                <div>
+                  <label className="block text-label-md text-brand-gray mb-2">
+                    Tipo di scadenza
+                  </label>
+                  <select
+                    value={expirySettings.expiryType}
+                    onChange={(e) => setExpirySettings({ 
+                      ...expirySettings, 
+                      expiryType: e.target.value as ExpiryType 
+                    })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
+                  >
+                    <option value="EXACT_DATE">Data esatta</option>
+                    <option value="END_OF_MONTH">Fine del mese</option>
+                  </select>
+                  <p className="text-label-sm text-brand-gray mt-1">
+                    {expirySettings.expiryType === "EXACT_DATE" 
+                      ? "Scade esattamente dopo il periodo selezionato"
+                      : "Scade alla fine del mese dopo il periodo selezionato"}
+                  </p>
+                </div>
+
+                {/* Expiry Time */}
+                <div>
+                  <label className="block text-label-md text-brand-gray mb-2">
+                    Durata validità
+                  </label>
+                  <select
+                    value={expirySettings.expiryTime}
+                    onChange={(e) => setExpirySettings({ 
+                      ...expirySettings, 
+                      expiryTime: e.target.value as ExpiryTime 
+                    })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
+                  >
+                    <option value="SIX_MONTHS">6 mesi</option>
+                    <option value="ONE_YEAR">1 anno</option>
+                    <option value="TWO_YEARS">2 anni</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <p className="text-body-sm text-orange-800 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <strong>Esempio:</strong> Se acquistata oggi, una Gift Card scadrebbe il{" "}
+                  {expirySettings.expiryType === "END_OF_MONTH" ? "31" : new Date().getDate()}{" "}
+                  {new Date().toLocaleDateString("it-IT", { 
+                    month: "long",
+                    year: "numeric"
+                  }).replace(/\d{4}/, () => {
+                    const currentYear = new Date().getFullYear()
+                    const offset = expirySettings.expiryTime === "SIX_MONTHS" ? 0 
+                      : expirySettings.expiryTime === "ONE_YEAR" ? 1 
+                      : 2
+                    return (currentYear + offset).toString()
+                  })}
+                </p>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                <p className="text-label-sm text-yellow-800">
+                  <strong>Nota:</strong> Le modifiche si applicano solo alle nuove Gift Card. 
+                  Quelle esistenti mantengono la scadenza originale.
+                </p>
+              </div>
+
+              {/* Save Button */}
+              <button
+                onClick={handleSaveExpirySettings}
+                disabled={expirySaving}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {expirySaving ? "Salvataggio..." : "Salva impostazioni"}
+              </button>
+            </div>
+          ) : (
+            <p className="text-brand-gray">Errore nel caricamento delle impostazioni</p>
+          )}
         </div>
 
         {/* Add Button */}

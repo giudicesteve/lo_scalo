@@ -23,6 +23,18 @@ interface OrderItem {
 interface GiftCardInfo {
   code: string
   initialValue: number
+  expiresAt?: Date | null
+}
+
+// Helper function to format date for PDF
+function formatPDFDate(date: Date | null | undefined, lang: 'it' | 'en' = 'it'): string {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'Europe/Rome'
+  })
 }
 
 interface OrderDetails {
@@ -56,6 +68,8 @@ const emailTranslations: Record<string, Record<string, string>> = {
     'email.order.giftcardReady.message': 'Trovi le tue Gift Card in formato PDF in allegato a questa email. Presenta il QR code al locale per utilizzarle.',
     'email.order.giftcardReady.noAttach': 'Riceverai un\'altra email con i PDF contenenti i QR code scansionabili.',
     'email.order.giftcardReady.active': 'Le gift card sono già attive e utilizzabili da subito presso il nostro locale.',
+    'email.order.giftcard.expiry': 'Scadenza',
+    'email.order.giftcard.expiryWarning': 'Questa Gift Card è valida fino al {date}. Scaduta questa data, il credito residuo non potrà più essere utilizzato e non potrà essere rimborsato.',
     'email.order.support': 'Per problemi scrivi a',
     'email.order.subjectLine': 'indicando il numero d\'ordine nell\'oggetto.',
     'email.order.footer': '© 2026 Lo Scalo - Craft Drinks by the Lake',
@@ -84,6 +98,8 @@ const emailTranslations: Record<string, Record<string, string>> = {
     'email.order.giftcardReady.message': 'You will find your Gift Cards in PDF format attached to this email. Present the QR code at the venue to use them.',
     'email.order.giftcardReady.noAttach': 'You will receive another email with the PDFs containing scannable QR codes.',
     'email.order.giftcardReady.active': 'Gift cards are already active and ready to use at our venue.',
+    'email.order.giftcard.expiry': 'Expiry date',
+    'email.order.giftcard.expiryWarning': 'This Gift Card is valid until {date}. After this date, any remaining balance can no longer be used and cannot be refunded.',
     'email.order.support': 'For issues, write to',
     'email.order.subjectLine': 'indicating the order number in the subject.',
     'email.order.footer': '© 2026 Lo Scalo - Craft Drinks by the Lake',
@@ -296,14 +312,33 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     color: rgb(0.5, 0.5, 0.5)
   })
   
-  const textWidth7 = font.widthOfTextAtSize('Valida senza scadenza per qualsiasi consumazione', 10)
-  page.drawText('Valida senza scadenza per qualsiasi consumazione', {
-    x: width / 2 - textWidth7 / 2,
-    y: 40,
-    size: 10,
-    font,
-    color: rgb(0.5, 0.5, 0.5)
-  })
+  // Expiry warning in PDF (Italian & English)
+  console.log(`[PDF] Gift card ${giftCard.code} expiresAt:`, giftCard.expiresAt, typeof giftCard.expiresAt)
+  const expiryDateStr = formatPDFDate(giftCard.expiresAt, 'it')
+  const expiryDateStrEn = formatPDFDate(giftCard.expiresAt, 'en')
+
+  console.log(`[PDF] Formatted expiry date (IT):`, expiryDateStr)
+  if (expiryDateStr) {
+    const expiryText = `Valida fino al ${expiryDateStr} | Valid until ${expiryDateStrEn}`
+    const textWidth7 = font.widthOfTextAtSize(expiryText, 10)
+    page.drawText(expiryText, {
+      x: width / 2 - textWidth7 / 2,
+      y: 40,
+      size: 10,
+      font,
+      color: rgb(0.94, 0.35, 0.16) // Orange color for warning
+    })
+  } else {
+    // Fallback for old gift cards without expiry
+    const textWidth7 = font.widthOfTextAtSize('Valida senza scadenza per qualsiasi consumazione', 10)
+    page.drawText('Valida senza scadenza per qualsiasi consumazione', {
+      x: width / 2 - textWidth7 / 2,
+      y: 40,
+      size: 10,
+      font,
+      color: rgb(0.5, 0.5, 0.5)
+    })
+  }
   
   const pdfBytes = await pdfDoc.save()
   return Buffer.from(pdfBytes)
@@ -345,11 +380,21 @@ export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailR
     .join('\n')
 
   const giftCardsList = order.giftCards
-    .map(gc => `• Gift Card ${gc.code} - €${gc.initialValue.toFixed(2)}`)
+    .map(gc => {
+      console.log(`[EMAIL] Processing gift card ${gc.code}, expiresAt:`, gc.expiresAt, typeof gc.expiresAt)
+      const expiryDate = gc.expiresAt 
+        ? new Date(gc.expiresAt).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : null
+      return `• Gift Card ${gc.code} - €${gc.initialValue.toFixed(2)}${expiryDate ? ` (${t('email.order.giftcard.expiry', lang)}: ${expiryDate})` : ''}`
+    })
     .join('\n')
 
   const pickupInstructions = hasProducts
     ? `\n${t('email.order.pickup.title', lang)}\n${t('email.order.pickup.message', lang)}\n\n${t('email.order.pickup.address', lang)}`
+    : ''
+
+  const giftCardExpiryWarning = hasGiftCards && order.giftCards.some(gc => gc.expiresAt)
+    ? `\n⚠️ ${t('email.order.giftcard.expiryWarning', lang, { date: new Date(order.giftCards[0].expiresAt!).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) })}`
     : ''
 
   const giftCardInstructions = hasGiftCards
@@ -372,7 +417,7 @@ ${order.phone ? `📞 ${t('email.order.phone', lang)}: ${order.phone}` : ''}
 🛍️ ${t('email.order.products', lang).toUpperCase()}
 ${itemsList || t('email.order.noProducts', lang)}
 
-${hasGiftCards ? `🎁 ${t('email.order.giftcard', lang).toUpperCase()}\n${giftCardsList}` : ''}
+${hasGiftCards ? `🎁 ${t('email.order.giftcard', lang).toUpperCase()}\n${giftCardsList}${giftCardExpiryWarning}` : ''}
 
 💰 ${t('email.order.total', lang).toUpperCase()}: €${order.total.toFixed(2)}
 
@@ -573,17 +618,20 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
           </tr>
           `).join('')}
           
-          ${order.giftCards.map(gc => `
+          ${order.giftCards.map(gc => {
+            const expiryDate = gc.expiresAt ? new Date(gc.expiresAt).toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null
+            return `
           <tr>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; vertical-align: top;">
               <div style="font-weight: 600; color: ${BRAND_DARK}; font-size: 14px; margin-bottom: 4px;">${t('email.order.giftcard', lang)}</div>
               <div style="font-size: 13px; color: #888;">${gc.code}</div>
+              ${expiryDate ? `<div style="font-size: 12px; color: #F05A28; margin-top: 4px;">${t('email.order.giftcard.expiry', lang)}: ${expiryDate}</div>` : ''}
             </td>
             <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; text-align: right; vertical-align: top; white-space: nowrap;">
               <div style="font-weight: 700; color: ${BRAND_DARK}; font-size: 15px;">€${gc.initialValue.toFixed(2)}</div>
             </td>
           </tr>
-          `).join('')}
+          `}).join('')}
           
           <tr>
             <td style="padding-top: 16px;">

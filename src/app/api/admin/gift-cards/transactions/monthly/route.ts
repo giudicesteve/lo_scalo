@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+// Force dynamic rendering - uses req.url
+export const dynamic = 'force-dynamic'
+
 // GET - Lista tutte le transazioni gift card per un mese specifico
 export async function GET(req: Request) {
   try {

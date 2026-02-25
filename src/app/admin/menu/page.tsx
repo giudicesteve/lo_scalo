@@ -685,7 +685,7 @@ export default function AdminMenuPage() {
                 Elimina {deleteConfirm.type === 'category' ? 'Sezione' : 'Cocktail'}
               </h3>
               <p className="text-body-md text-brand-gray">
-                Sei sicuro di voler eliminare <strong>{deleteConfirm.name}</strong>? L'azione non può essere annullata.
+                Sei sicuro di voler eliminare <strong>{deleteConfirm.name}</strong>? L&apos;azione non può essere annullata.
               </p>
             </div>
             <div className="flex gap-3">

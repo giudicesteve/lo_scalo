@@ -50,6 +50,7 @@ export async function GET(
         code: gc.code,
         initialValue: gc.initialValue,
         isActive: gc.isActive,
+        expiresAt: gc.expiresAt,
       })),
     }
 

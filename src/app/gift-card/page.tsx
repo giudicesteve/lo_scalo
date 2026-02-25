@@ -15,10 +15,19 @@ interface GiftCardTemplate {
   price: number
 }
 
+interface GiftCardSettings {
+  expiryType: string
+  expiryTime: string
+  previewExpiryDate: string
+  policyIt: string
+  policyEn: string
+}
+
 export default function GiftCardPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const { addItem, items } = useCart()
   const [templates, setTemplates] = useState<GiftCardTemplate[]>([])
+  const [settings, setSettings] = useState<GiftCardSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
@@ -27,6 +36,7 @@ export default function GiftCardPage() {
 
   useEffect(() => {
     fetchTemplates()
+    fetchSettings()
   }, [])
 
   const fetchTemplates = async () => {
@@ -38,6 +48,16 @@ export default function GiftCardPage() {
       console.error("Error fetching gift card templates:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/gift-card-settings")
+      const data = await res.json()
+      setSettings(data)
+    } catch (error) {
+      console.error("Error fetching gift card settings:", error)
     }
   }
 
@@ -94,12 +114,39 @@ export default function GiftCardPage() {
           </p>
         </div>
 
-        <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-4 mb-6">
+        <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-4 mb-4">
           <p className="text-body-sm text-brand-dark">
             <span className="font-bold">{t("giftcard.attention")}:</span>{" "}
             {t("giftcard.email-delivery")}
           </p>
         </div>
+
+        {/* Expiry Policy */}
+        {settings && settings.previewExpiryDate && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+            <p className="text-body-sm text-brand-dark">
+              <span className="font-bold">{t("giftcard.expiry.title")}:</span>{" "}
+              {lang === "it" ? settings.policyIt : settings.policyEn}
+            </p>
+            <p className="text-body-sm text-brand-dark mt-2">
+              {t("giftcard.expiry.preview")}: {" "}
+              <span className="text-body-sm text-orange-600">
+                {(() => {
+                  try {
+                    const date = new Date(settings.previewExpiryDate)
+                    if (isNaN(date.getTime())) return "--"
+                    return date.toLocaleDateString(
+                      lang === "it" ? "it-IT" : "en-US",
+                      { year: "numeric", month: "long", day: "numeric" }
+                    )
+                  } catch {
+                    return "--"
+                  }
+                })()}
+              </span>
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
