@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, Scale, Users, Clock } from "lucide-react"
+import { ArrowLeft, ChevronRight, Scale, Users, Clock, Shield } from "lucide-react"
 
 const settingsItems = [
   { 
@@ -40,6 +40,19 @@ export default function SettingsMenuPage() {
       </header>
 
       <div className="p-4 max-w-2xl mx-auto">
+      {/* Info Banner - Solo Super Admin */}
+      <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <Shield className="w-5 h-5 text-brand-primary flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-body-sm text-brand-dark font-medium">
+            Sezione riservata
+          </p>
+          <p className="text-label-sm text-brand-gray">
+            Solo gli utenti con il permesso &quot;Gestione Admin&quot; possono accedere a questa sezione.
+          </p>
+        </div>
+      </div>
+
         {/* Lista impostazioni */}
         <div className="space-y-4">
           {settingsItems.map((item) => (

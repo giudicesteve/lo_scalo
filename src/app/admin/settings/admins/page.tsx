@@ -176,18 +176,6 @@ export default function AdminManagementPage() {
       </header>
 
       <div className="p-4 max-w-4xl mx-auto">
-        {/* Info Banner - Solo Super Admin */}
-        <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <Shield className="w-5 h-5 text-brand-primary flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-body-sm text-brand-dark font-medium">
-              Sezione riservata
-            </p>
-            <p className="text-label-sm text-brand-gray">
-              Solo gli utenti con il permesso &quot;Gestione Admin&quot; possono accedere a questa sezione e gestire gli altri admin.
-            </p>
-          </div>
-        </div>
 
         {/* Lista Admin */}
         <div className="bg-white rounded-2xl shadow-card p-6 mb-6">

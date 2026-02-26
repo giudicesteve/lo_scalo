@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Eye, Power, X, Save, FileText, Shield, Cookie, Archive } from "lucide-react"
+import { ArrowLeft, Plus, Eye, Power, X, Save, FileText, Shield, Cookie, Archive, Copy } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -169,6 +169,23 @@ export default function AdminPoliciesPage() {
     acc[policy.type].push(policy)
     return acc
   }, {} as Record<PolicyType, PolicyDocument[]>)
+
+  // Copy content from active policy of the selected type
+  const copyFromActivePolicy = () => {
+    const typePolicies = groupedPolicies[newPolicy.type] || []
+    const activePolicy = typePolicies.find((p) => p.isActive)
+    
+    if (activePolicy) {
+      setNewPolicy((prev) => ({
+        ...prev,
+        contentIt: activePolicy.contentIt,
+        contentEn: activePolicy.contentEn,
+      }))
+      showToast("Contenuto copiato dalla policy attiva", "success")
+    } else {
+      showToast("Nessuna policy attiva per questo tipo", "error")
+    }
+  }
 
   if (loading) {
     return (
@@ -462,7 +479,16 @@ export default function AdminPoliciesPage() {
                   <label className="block text-body-sm font-medium text-brand-dark">
                     Contenuto HTML
                   </label>
-                  <div className="flex rounded-lg border border-brand-light-gray overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={copyFromActivePolicy}
+                      className="flex items-center gap-1 px-3 py-1.5 text-body-xs text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                      title="Copia dalla policy attiva"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Copia da attiva
+                    </button>
+                    <div className="flex rounded-lg border border-brand-light-gray overflow-hidden">
                     <button
                       onClick={() => setActiveLang("it")}
                       className={`px-3 py-1 text-body-xs font-medium transition-colors ${
@@ -483,6 +509,7 @@ export default function AdminPoliciesPage() {
                     >
                       🇬🇧 EN
                     </button>
+                  </div>
                   </div>
                 </div>
                 <p className="text-body-xs text-brand-gray mb-2">
