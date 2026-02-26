@@ -47,7 +47,9 @@ interface GiftCard {
   remainingValue: number
   isActive: boolean
   isArchived: boolean
+  isExpired: boolean
   purchasedAt: string
+  expiresAt: string | null
   order: {
     email: string
     orderNumber: string
@@ -820,6 +822,15 @@ export default function AdminGiftCardsPage() {
                       </span>
                     )}
                   </p>
+                  {gc.expiresAt && (
+                    <p className="text-body-sm text-brand-dark">
+                      <span className="text-brand-gray">Scadenza:</span>{" "}
+                      <span className={gc.isExpired ? "text-red-500 font-medium" : ""}>
+                        {new Date(gc.expiresAt).toLocaleDateString("it-IT")}
+                        {gc.isExpired && " (scaduta)"}
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Valori - Barra progresso */}

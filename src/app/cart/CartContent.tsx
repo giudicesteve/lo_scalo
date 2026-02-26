@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo"
 import { useLanguage } from "@/store/language"
 import { useCart, calculateTotal } from "@/store/cart"
 import { ArrowLeft, X, AlertCircle } from "lucide-react"
+import { PolicyModal } from "@/components/PolicyModal"
 
 // Validazione email
 function isValidEmail(email: string): boolean {
@@ -40,11 +41,18 @@ export default function CartContent() {
   const [isCheckout, setIsCheckout] = useState(false)
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [policyModalOpen, setPolicyModalOpen] = useState(false)
+  const [policyModalType, setPolicyModalType] = useState<"TERMS" | "PRIVACY" | null>(null)
 
   // Evita hydration mismatch - la lingua viene caricata dal localStorage solo sul client
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const openPolicyModal = (type: "TERMS" | "PRIVACY") => {
+    setPolicyModalType(type)
+    setPolicyModalOpen(true)
+  }
 
   // Verifica e aggiorna disponibilità quando si torna al carrello
   useEffect(() => {
@@ -504,13 +512,21 @@ export default function CartContent() {
                     />
                     <span className="text-body-sm text-brand-dark">
                       {t('cart.terms-label')}
-                      <Link href="/terms" className="text-brand-primary hover:underline" target="_blank">
+                      <button
+                        type="button"
+                        onClick={() => openPolicyModal("TERMS")}
+                        className="text-brand-primary hover:underline"
+                      >
                         {t('cart.terms-link')}
-                      </Link>
+                      </button>
                       {t('cart.and')}
-                      <Link href="/privacy" className="text-brand-primary hover:underline" target="_blank">
+                      <button
+                        type="button"
+                        onClick={() => openPolicyModal("PRIVACY")}
+                        className="text-brand-primary hover:underline"
+                      >
                         {t('cart.privacy-link')}
-                      </Link>
+                      </button>
                     </span>
                   </label>
                   {errors.terms && (
@@ -540,6 +556,14 @@ export default function CartContent() {
           </>
         )}
       </div>
+
+      {/* Policy Modal */}
+      <PolicyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        type={policyModalType}
+        lang={lang}
+      />
     </main>
   )
 }

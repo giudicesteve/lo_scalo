@@ -226,7 +226,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     
     page.drawImage(qrImage, {
       x: width / 2 - 100,
-      y: height - 462,
+      y: height - 455,
       width: 200,
       height: 200
     })
@@ -238,7 +238,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const textWidth3 = fontBold.widthOfTextAtSize(giftCard.code, 20)
   page.drawText(giftCard.code, {
     x: width / 2 - textWidth3 / 2,
-    y: height - 492,
+    y: height - 482,
     size: 20,
     font: fontBold,
     color: rgb(0.137, 0.122, 0.125)
@@ -248,7 +248,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const textWidth4 = fontBold.widthOfTextAtSize('Come utilizzare la tua Gift Card', 12)
   page.drawText('Come utilizzare la tua Gift Card', {
     x: width / 2 - textWidth4 / 2,
-    y: height - 529,
+    y: height - 539,
     size: 12,
     font: fontBold,
     color: rgb(0.137, 0.122, 0.125)
@@ -266,7 +266,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     widthSentence = font.widthOfTextAtSize(instructions[i], 10)
     page.drawText(line, {
       x: width / 2 - widthSentence / 2,
-      y: height - 547 - (i * 15),
+      y: height - 557 - (i * 15),
       size: 10,
       font,
       color: rgb(0.3, 0.3, 0.3)
@@ -302,15 +302,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
     })
   })
   
-  // Footer
-  const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', 10)
-  page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', {
-    x: width / 2 - textWidth6 / 2,
-    y: 40,
-    size: 10,
-    font,
-    color: rgb(0.5, 0.5, 0.5)
-  })
+
   
   // Expiry warning in PDF (Italian & English)
   console.log(`[PDF] Gift card ${giftCard.code} expiresAt:`, giftCard.expiresAt, typeof giftCard.expiresAt)
@@ -320,31 +312,41 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   console.log(`[PDF] Formatted expiry date (IT):`, expiryDateStr)
 
   const expiryText = `Valida fino al ${expiryDateStr} | Valid until ${expiryDateStrEn}`
-  const textWidth7 = font.widthOfTextAtSize(expiryText, 10)
+  const textWidth7 = fontBold.widthOfTextAtSize(expiryText, 12)
   page.drawText(expiryText, {
     x: width / 2 - textWidth7 / 2,
-    y: 80,
-    size: 10,
-    font,
+    y: 95,
+    size: 12,
+    font: fontBold,
     color: rgb(0.94, 0.35, 0.16) // Orange color for warning
   })
 
 
-  const textWidth8 = font.widthOfTextAtSize('Oltrepassata la data di validità, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.', 10)
+  const textWidth8 = font.widthOfTextAtSize('Oltrepassata la data di validità, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.', 8)
   page.drawText('Oltrepassata la data di validità, il credito residuo non potrà più essere utilizzato per gli acquisti e non potrà essere rimborsato.', {
       x: width / 2 - textWidth8 / 2,
-      y: 70,
-      size: 10,
+      y: 75,
+      size: 8,
       font,
       color: rgb(0.137, 0.122, 0.125)
   })
-  const textWidth9 = font.widthOfTextAtSize('Upon expiry of the validity period, any remaining balance can no longer be used for purchases and is non-refundable.', 10)
+  const textWidth9 = font.widthOfTextAtSize('Upon expiry of the validity period, any remaining balance can no longer be used for purchases and is non-refundable.', 8)
   page.drawText('Upon expiry of the validity period, any remaining balance can no longer be used for purchases and is non-refundable.', {
       x: width / 2 - textWidth9 / 2,
       y: 60,
-      size: 10,
+      size: 8,
       font,
       color: rgb(0.137, 0.122, 0.125)
+  })
+
+  // Footer
+  const textWidth6 = font.widthOfTextAtSize('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', 10)
+  page.drawText('Lo Scalo - Frazione San Vito, 9 - 22010 Cremia (CO) - Italia/Italy', {
+    x: width / 2 - textWidth6 / 2,
+    y: 35,
+    size: 10,
+    font,
+    color: rgb(0.5, 0.5, 0.5)
   })
   
   const pdfBytes = await pdfDoc.save()
