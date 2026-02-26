@@ -4,8 +4,8 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/jobs/deactivate-expired-gift-cards",
-      "schedule": "0 0 * * *"
+      "path": "/api/jobs/deactivate-expired-gift-cards?secret=4990bd47-12a6-489f-af88-7845143e8f34",
+      "schedule": "0 1 * * *"
     }
   ]
 }

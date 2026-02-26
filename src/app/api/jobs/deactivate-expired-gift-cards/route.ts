@@ -18,11 +18,23 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(req: Request) {
   try {
-    // Optional: Verify cron secret for security
+    // Verify cron secret for security
+    // Support both query param (for Vercel Cron) and Authorization header (for manual calls)
+    const url = new URL(req.url)
+    const secretFromQuery = url.searchParams.get("secret")
     const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret) {
+      return NextResponse.json(
+        { error: "CRON_SECRET not configured" },
+        { status: 500 }
+      )
+    }
+    
+    const isAuthorized = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
+    
+    if (!isAuthorized) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -110,11 +122,23 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    // Optional: Verify cron secret for security
+    // Verify cron secret for security
+    // Support both query param (for Vercel Cron) and Authorization header (for manual calls)
+    const url = new URL(req.url)
+    const secretFromQuery = url.searchParams.get("secret")
     const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret) {
+      return NextResponse.json(
+        { error: "CRON_SECRET not configured" },
+        { status: 500 }
+      )
+    }
+    
+    const isAuthorized = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
+    
+    if (!isAuthorized) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
