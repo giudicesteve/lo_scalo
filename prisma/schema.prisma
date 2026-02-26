@@ -200,3 +200,47 @@ model OrderItem {
   variant       ProductVariant? @relation(fields: [variantId], references: [id])
   variantId     String?
 }
+
+// ============================================
+// POLICY DOCUMENTS (Terms, Privacy, Cookies)
+// ============================================
+
+enum PolicyType {
+  TERMS
+  PRIVACY
+  COOKIES
+}
+
+model PolicyDocument {
+  id            String    @id @default(cuid())
+  type          PolicyType
+  version       String          // Date-based: "2026-02-26"
+  contentIt     String          // HTML content (Italian)
+  contentEn     String          // HTML content (English)
+  isActive      Boolean   @default(false)
+  isArchived    Boolean   @default(false)  // Archiviazione invece di eliminazione
+  effectiveDate DateTime        // When this version becomes enforceable
+  createdAt     DateTime  @default(now())
+  createdBy     String?         // Admin email who created it
+  
+  acceptances   PolicyAcceptance[]
+  
+  @@index([type, isActive])
+  @@index([type, isArchived])
+}
+
+model PolicyAcceptance {
+  id            String   @id @default(cuid())
+  policyId      String
+  policy        PolicyDocument @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  
+  // User identification
+  email         String   // From order
+  ipAddress     String?  // GDPR audit requirement
+  
+  acceptedAt    DateTime @default(now())
+  orderId       String   // Link to order
+  
+  @@index([orderId])
+  @@index([email])
+}

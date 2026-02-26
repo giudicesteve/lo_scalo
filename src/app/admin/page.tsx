@@ -13,18 +13,19 @@ import {
   ExternalLink,
   Shield,
   Calculator,
-  FileText
+  FileText,
+  Settings
 } from "lucide-react"
 
 const quickAccessItems = [
   { href: "/admin/orders", label: "Ordini", icon: ShoppingBag, description: "Gestisci tutti gli ordini" },
-  { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet, description: "Gestisci le card acquistate" },
-  { href: "/admin/accounting", label: "Contabilità", icon: Calculator, description: "Riepilogo giornaliero" },
+  { href: "/admin/gift-cards", label: "Gift Card", icon: Wallet, description: "Gestisci le gift card" },
+  { href: "/admin/accounting", label: "Contabilità", icon: Calculator, description: "Riepilogo giornaliero ordini" },
 ]
 
 const configItems = [
-  { href: "/admin/menu", label: "Menu", icon: Wine, description: "Categorie e cocktail" },
-  { href: "/admin/shop", label: "Negozio", icon: Store, description: "Prodotti, Gift Card e magazzino" },
+  { href: "/admin/menu", label: "Menu", icon: Wine, description: "Configura categorie e cocktail" },
+  { href: "/admin/shop", label: "Negozio", icon: Store, description: "Configura Prodotti, Gift Card e magazzino" },
 ]
 
 export default function AdminDashboard() {
@@ -146,7 +147,7 @@ export default function AdminDashboard() {
                           Reportistica
                         </h2>
                         <p className="text-body-sm text-brand-gray">
-                          Reportistica a supporto
+                          Reportistica a supporto contabile
                         </p>
                       </div>
                     </div>
@@ -155,20 +156,20 @@ export default function AdminDashboard() {
                 </Link>
 
                 <Link
-                  href="/admin/admins"
+                  href="/admin/settings"
                   className="bg-white rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-shadow group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-brand-primary" />
+                        <Settings className="w-6 h-6 text-brand-primary" />
                       </div>
                       <div>
                         <h2 className="text-headline-sm font-bold text-brand-dark group-hover:text-brand-primary transition-colors">
-                          Gestione Admin
+                          Impostazioni
                         </h2>
                         <p className="text-body-sm text-brand-gray">
-                          Aggiungi o rimuovi utenti/admin
+                          Gestione utenti, impostazioni Gift Card, documenti legali e altro
                         </p>
                       </div>
                     </div>

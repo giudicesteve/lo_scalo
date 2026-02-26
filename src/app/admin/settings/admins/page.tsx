@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, Save, Clock, Calendar, User } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, User } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -13,14 +13,6 @@ interface Admin {
   receiveNotifications: boolean
   canManageAdmins: boolean
   createdAt: string
-}
-
-type ExpiryType = "EXACT_DATE" | "END_OF_MONTH"
-type ExpiryTime = "SIX_MONTHS" | "ONE_YEAR" | "TWO_YEARS"
-
-interface GiftCardExpirySettings {
-  expiryType: ExpiryType
-  expiryTime: ExpiryTime
 }
 
 export default function AdminManagementPage() {
@@ -38,14 +30,8 @@ export default function AdminManagementPage() {
     canManageAdmins: false,
   })
 
-  // Gift Card Expiry Settings
-  const [expirySettings, setExpirySettings] = useState<GiftCardExpirySettings | null>(null)
-  const [expiryLoading, setExpiryLoading] = useState(true)
-  const [expirySaving, setExpirySaving] = useState(false)
-
   useEffect(() => {
     fetchAdmins()
-    fetchExpirySettings()
   }, [])
 
   const fetchAdmins = async () => {
@@ -62,44 +48,6 @@ export default function AdminManagementPage() {
       showToast("Errore nel caricamento admin", "error")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchExpirySettings = async () => {
-    try {
-      const res = await fetch("/api/admin/settings/gift-card-expiry")
-      if (res.ok) {
-        const data = await res.json()
-        setExpirySettings(data)
-      }
-    } catch (error) {
-      console.error("Error fetching expiry settings:", error)
-    } finally {
-      setExpiryLoading(false)
-    }
-  }
-
-  const handleSaveExpirySettings = async () => {
-    if (!expirySettings) return
-    
-    setExpirySaving(true)
-    try {
-      const res = await fetch("/api/admin/settings/gift-card-expiry", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(expirySettings)
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Errore durante il salvataggio")
-      }
-
-      showToast("Impostazioni salvate con successo", "success")
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Errore", "error")
-    } finally {
-      setExpirySaving(false)
     }
   }
 
@@ -203,10 +151,10 @@ export default function AdminManagementPage() {
             Non hai i permessi per gestire gli admin.
           </p>
           <Link
-            href="/admin"
+            href="/admin/settings"
             className="px-6 py-3 rounded-full border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-colors"
           >
-            Torna alla Dashboard
+            Torna alle Impostazioni
           </Link>
         </div>
       </main>
@@ -218,151 +166,45 @@ export default function AdminManagementPage() {
       {/* Header */}
       <header className="bg-white border-b border-brand-light-gray">
         <div className="flex items-center px-4 py-3 relative">
-          <Link href="/admin" className="p-2 -ml-2">
+          <Link href="/admin/settings" className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Gestione Admin
+            Gestione Utenti
           </h1>
         </div>
       </header>
 
       <div className="p-4 max-w-4xl mx-auto">
-        {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
-          <p className="text-body-sm text-blue-700">
-            <Shield className="w-4 h-4 inline mr-2" />
-            Solo gli admin con il permesso &quot;Gestione Admin&quot; possono vedere questa pagina.
-          </p>
-        </div>
-
-        {/* Gift Card Expiry Settings */}
-        <div className="bg-white rounded-2xl shadow-card p-6 mb-6">
-          <h2 className="text-title-lg font-bold text-brand-dark mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-brand-primary" />
-            Impostazioni Scadenza Gift Card
-          </h2>
-          
-          {expiryLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-primary" />
-            </div>
-          ) : expirySettings ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Expiry Type */}
-                <div>
-                  <label className="block text-label-md text-brand-gray mb-2">
-                    Tipo di scadenza
-                  </label>
-                  <select
-                    value={expirySettings.expiryType}
-                    onChange={(e) => setExpirySettings({ 
-                      ...expirySettings, 
-                      expiryType: e.target.value as ExpiryType 
-                    })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
-                  >
-                    <option value="EXACT_DATE">Data esatta</option>
-                    <option value="END_OF_MONTH">Fine del mese</option>
-                  </select>
-                  <p className="text-label-sm text-brand-gray mt-1">
-                    {expirySettings.expiryType === "EXACT_DATE" 
-                      ? "Scade esattamente dopo il periodo selezionato"
-                      : "Scade alla fine del mese dopo il periodo selezionato"}
-                  </p>
-                </div>
-
-                {/* Expiry Time */}
-                <div>
-                  <label className="block text-label-md text-brand-gray mb-2">
-                    Durata validità
-                  </label>
-                  <select
-                    value={expirySettings.expiryTime}
-                    onChange={(e) => setExpirySettings({ 
-                      ...expirySettings, 
-                      expiryTime: e.target.value as ExpiryTime 
-                    })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
-                  >
-                    <option value="SIX_MONTHS">6 mesi</option>
-                    <option value="ONE_YEAR">1 anno</option>
-                    <option value="TWO_YEARS">2 anni</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                <p className="text-body-sm text-orange-800 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <strong>Esempio:</strong> Se acquistata oggi, una Gift Card scadrebbe il{" "}
-                  {expirySettings.expiryType === "END_OF_MONTH" ? "31" : new Date().getDate()}{" "}
-                  {new Date().toLocaleDateString("it-IT", { 
-                    month: "long",
-                    year: "numeric"
-                  }).replace(/\d{4}/, () => {
-                    const currentYear = new Date().getFullYear()
-                    const offset = expirySettings.expiryTime === "SIX_MONTHS" ? 0 
-                      : expirySettings.expiryTime === "ONE_YEAR" ? 1 
-                      : 2
-                    return (currentYear + offset).toString()
-                  })}
-                </p>
-              </div>
-
-              {/* Warning */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                <p className="text-label-sm text-yellow-800">
-                  <strong>Nota:</strong> Le modifiche si applicano solo alle nuove Gift Card. 
-                  Quelle esistenti mantengono la scadenza originale.
-                </p>
-              </div>
-
-              {/* Save Button */}
-              <button
-                onClick={handleSaveExpirySettings}
-                disabled={expirySaving}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {expirySaving ? "Salvataggio..." : "Salva impostazioni"}
-              </button>
-            </div>
-          ) : (
-            <p className="text-brand-gray">Errore nel caricamento delle impostazioni</p>
-          )}
-        </div>
-
-
 
         {/* Lista Admin */}
         <div className="bg-white rounded-2xl shadow-card p-6 mb-6">
-          <h2 className="text-title-lg font-bold text-brand-dark mb-4 flex items-center gap-2">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-title-lg font-bold text-brand-dark flex items-center gap-2">
               <User className="w-5 h-5 text-brand-primary" />
-              Gestione Utenti
-          </h2>
-                    {/* Add Button */}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary mb-6 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Aggiungi Utente
-          </button>
+              Utenti
+            </h2>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Aggiungi
+            </button>
+          </div>
+
           <div className="space-y-4">
             {admins.map((admin) => (
               <div
                 key={admin.id}
-                className="bg-white rounded-2xl  p-4"
+                className="bg-brand-cream/50 rounded-2xl p-4"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h2 className="text-title-md font-bold text-brand-dark">
+                      <h3 className="text-title-md font-bold text-brand-dark">
                         {admin.name || admin.email.split('@')[0]}
-                      </h2>
+                      </h3>
                       {admin.canManageAdmins && (
                         <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-label-sm rounded-full">
                           Super Admin
@@ -410,60 +252,50 @@ export default function AdminManagementPage() {
                     </div>
                   </div>
 
-                  {/* Delete Button - hidden if it's the last admin */}
-                  {admins.length > 1 && (
-                    <button
-                      onClick={() => setDeleteConfirm(admin.id)}
-                      className="p-2 text-brand-gray hover:text-red-500 transition-colors"
-                      title="Rimuovi"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  )}
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => setDeleteConfirm(admin.id)}
+                    disabled={admins.length <= 1}
+                    className="p-2 text-brand-gray hover:text-red-500 transition-colors disabled:opacity-30"
+                    title="Rimuovi admin"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-        </div>
-
-        {admins.length === 0 && (
-          <p className="text-center text-brand-gray py-12">
-            Nessun admin registrato
-          </p>
-        )}
       </div>
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}>
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-headline-sm font-bold text-brand-dark">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-title-lg font-bold text-brand-dark">
                 Aggiungi Admin
-              </h3>
+              </h2>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 -mr-2 text-brand-gray hover:text-brand-dark"
+                className="p-2 hover:bg-brand-light-gray rounded-full transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-brand-gray" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-label-md text-brand-gray mb-2">
-                  Email *
+                  Email
                 </label>
                 <input
                   type="email"
                   value={newAdmin.email}
                   onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
-                  placeholder="nome@esempio.com"
+                  placeholder="admin@esempio.com"
                   className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                 />
-                <p className="text-label-sm text-brand-gray mt-1">
-                  L&apos;utente dovrà accedere con Google usando questa email.
-                </p>
               </div>
 
               <div>
@@ -474,7 +306,7 @@ export default function AdminManagementPage() {
                   type="text"
                   value={newAdmin.name}
                   onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
-                  placeholder="Nome visualizzato"
+                  placeholder="Mario Rossi"
                   className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                 />
               </div>
@@ -487,7 +319,7 @@ export default function AdminManagementPage() {
                     onChange={(e) => setNewAdmin({ ...newAdmin, receiveNotifications: e.target.checked })}
                     className="w-4 h-4 rounded border-brand-gray text-brand-primary"
                   />
-                  <span className="text-body-sm text-brand-dark">Riceve notifiche ordini</span>
+                  <span className="text-body-sm text-brand-dark">Riceve notifiche email</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -500,46 +332,32 @@ export default function AdminManagementPage() {
                   <span className="text-body-sm text-brand-dark">Può gestire altri admin</span>
                 </label>
               </div>
-            </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="flex-1 px-6 py-3 rounded-xl border-2 border-brand-dark text-brand-dark font-medium hover:bg-brand-dark hover:text-white transition-colors"
-              >
-                Annulla
-              </button>
               <button
                 onClick={handleAddAdmin}
-                className="flex-1 px-6 py-3 rounded-xl bg-brand-primary text-white font-medium hover:bg-brand-dark transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full"
               >
-                <Save className="w-5 h-5" />
-                Salva
+                Aggiungi Admin
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm Delete */}
+      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="Conferma rimozione"
-        description="Sei sicuro di voler rimuovere questo admin? L'utente non potrà più accedere all'area admin."
-        confirmLabel="Rimuovi"
-        confirmVariant="danger"
         onConfirm={() => deleteConfirm && handleDeleteAdmin(deleteConfirm)}
+        title="Rimuovi Admin"
+        description="Sei sicuro di voler rimuovere questo admin? L'azione non può essere annullata."
+        confirmLabel="Rimuovi"
+        cancelLabel="Annulla"
+        confirmVariant="danger"
       />
 
       {/* Toast */}
-      <Toast
-        isOpen={toast.isOpen}
-        message={toast.message}
-        type={toast.type}
-        onClose={hideToast}
-        duration={4000}
-      />
+      <Toast isOpen={toast.isOpen} message={toast.message} type={toast.type} onClose={hideToast} />
     </main>
   )
 }

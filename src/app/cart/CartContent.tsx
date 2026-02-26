@@ -172,6 +172,40 @@ export default function CartContent() {
       const data = await res.json()
 
       if (data.success && data.stripeUrl) {
+        // Record policy acceptance
+        try {
+          // Get active policies
+          const [termsRes, privacyRes] = await Promise.all([
+            fetch("/api/policies?type=TERMS"),
+            fetch("/api/policies?type=PRIVACY")
+          ])
+          
+          const termsPolicies = termsRes.ok ? await termsRes.json() : []
+          const privacyPolicies = privacyRes.ok ? await privacyRes.json() : []
+          
+          const policyIds = [
+            ...(termsPolicies.length > 0 ? [termsPolicies[0].id] : []),
+            ...(privacyPolicies.length > 0 ? [privacyPolicies[0].id] : [])
+          ]
+          
+          // Record acceptance if policies exist
+          if (policyIds.length > 0) {
+            await fetch("/api/policies/accept", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email,
+                orderId: data.order.id,
+                policyIds,
+                language: lang // Track which language version was shown
+              })
+            })
+          }
+        } catch (error) {
+          // Non bloccare il checkout se il tracking fallisce
+          console.error("Error recording policy acceptance:", error)
+        }
+
         // Salva dettagli ordine per la pagina di successo
         localStorage.setItem('pending-order', JSON.stringify({
           orderNumber: data.order.orderNumber,
