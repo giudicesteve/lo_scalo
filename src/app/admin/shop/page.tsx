@@ -5,6 +5,14 @@ import Link from "next/link"
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Package, Power, Gift } from "lucide-react"
 import { ImageUpload } from "@/components/ImageUpload"
 
+// Helper to parse number with both comma and dot as decimal separator
+const parseNumber = (value: string): number => {
+  if (!value) return 0
+  // Replace comma with dot for European decimal format, then parse
+  const normalized = value.replace(',', '.')
+  return parseFloat(normalized) || 0
+}
+
 interface ProductVariant {
   id?: string
   size: string
@@ -511,10 +519,11 @@ export default function AdminShopPage() {
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.5"
                   value={editingProduct.price || ""}
                   onChange={(e) =>
-                    setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })
+                    setEditingProduct({ ...editingProduct, price: parseNumber(e.target.value) })
                   }
                   className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                 />
@@ -561,10 +570,13 @@ export default function AdminShopPage() {
                         <span className="text-body-sm w-8">{size}</span>
                         <input
                           type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           min="0"
+                          step="1"
                           value={getVariantQuantity(size)}
                           onChange={(e) =>
-                            handleVariantChange(size, parseInt(e.target.value) || 0)
+                            handleVariantChange(size, Math.floor(parseNumber(e.target.value)) || 0)
                           }
                           className="w-20 px-2 py-2 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                         />
@@ -579,10 +591,13 @@ export default function AdminShopPage() {
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="0"
+                    step="1"
                     value={editingProduct.stock || 0}
                     onChange={(e) =>
-                      setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })
+                      setEditingProduct({ ...editingProduct, stock: Math.floor(parseNumber(e.target.value)) || 0 })
                     }
                     className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                   />
@@ -637,12 +652,13 @@ export default function AdminShopPage() {
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="1"
                   value={editingTemplate.value || ""}
                   onChange={(e) =>
                     setEditingTemplate({
                       ...editingTemplate,
-                      value: parseFloat(e.target.value),
+                      value: parseNumber(e.target.value),
                     })
                   }
                   className="input-field"
@@ -654,12 +670,13 @@ export default function AdminShopPage() {
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.01"
                   value={editingTemplate.price || ""}
                   onChange={(e) =>
                     setEditingTemplate({
                       ...editingTemplate,
-                      price: parseFloat(e.target.value),
+                      price: parseNumber(e.target.value),
                     })
                   }
                   className="input-field"

@@ -22,6 +22,14 @@ import {
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
+// Helper to parse number with both comma and dot as decimal separator
+const parseNumber = (value: string): number => {
+  if (!value) return 0
+  // Replace comma with dot for European decimal format, then parse
+  const normalized = value.replace(',', '.')
+  return parseFloat(normalized) || 0
+}
+
 interface Transaction {
   id: string
   amount: number
@@ -151,7 +159,7 @@ export default function AdminGiftCardsPage() {
   }
 
   const handleUseGiftCard = async () => {
-    if (!selectedGiftCard || !useAmount || parseFloat(useAmount) <= 0) {
+    if (!selectedGiftCard || !useAmount || parseNumber(useAmount) <= 0) {
       setUseError("Inserisci un importo valido")
       return
     }
@@ -160,8 +168,15 @@ export default function AdminGiftCardsPage() {
       setUseError("Numero scontrino obbligatorio")
       return
     }
+    
+    // Validate Italian fiscal receipt format: 2874-3984 or 2874-10001
+    const receiptRegex = /^\d{1,4}-\d{1,5}$/
+    if (!receiptRegex.test(receiptNumber.trim())) {
+      setUseError("Formato non valido. Usa: REGISTRO-PROGRESSIVO (es: 2874-3984 o 2874-10001)")
+      return
+    }
 
-    const amount = parseFloat(useAmount)
+    const amount = parseNumber(useAmount)
     
     if (amount > selectedGiftCard.remainingValue) {
       setUseError(`Importo superiore al residuo (${selectedGiftCard.remainingValue.toFixed(2)}€)`)
@@ -931,6 +946,7 @@ export default function AdminGiftCardsPage() {
                       <label className="block text-label-sm text-brand-gray mb-1">Importo (€)</label>
                       <input
                         type="number"
+                        inputMode="decimal"
                         min="0.01"
                         max={selectedGiftCard.remainingValue}
                         step="0.01"
@@ -969,15 +985,32 @@ export default function AdminGiftCardsPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="Es: 123/2024"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="2874-3984"
                         value={receiptNumber}
                         onChange={(e) => {
-                          setReceiptNumber(e.target.value)
+                          let value = e.target.value.replace(/[^0-9-]/g, '')
+                          
+                          // Auto-add dash after 4 digits
+                          if (value.length > 4 && !value.includes('-')) {
+                            value = value.slice(0, 4) + '-' + value.slice(4)
+                          }
+                          
+                          // Limit to max 4 digits + dash + 5 digits = 10 chars
+                          if (value.length > 10) {
+                            value = value.slice(0, 10)
+                          }
+                          
+                          setReceiptNumber(value)
                           setUseError(null)
                         }}
                         className="input-field w-full"
-                        maxLength={50}
+                        maxLength={10}
                       />
+                      <p className="text-label-sm text-brand-gray mt-1">
+                        Formato: REGISTRO-PROGRESSIVO (es: 2874-3984 o 2874-10001)
+                      </p>
                     </div>
 
                     {/* Foto Scontrino */}
@@ -1028,7 +1061,7 @@ export default function AdminGiftCardsPage() {
 
                     <button
                       onClick={handleUseGiftCard}
-                      disabled={!useAmount || parseFloat(useAmount) <= 0 || !receiptNumber.trim() || isUsing}
+                      disabled={!useAmount || parseNumber(useAmount) <= 0 || !receiptNumber.trim() || isUsing}
                       className="w-full btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {isUsing ? (

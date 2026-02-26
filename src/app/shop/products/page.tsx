@@ -243,9 +243,9 @@ export default function ShopProductsPage() {
               return (
                 <div
                   key={product.id}
-                  className="bg-[#FBEEEB] rounded-2xl overflow-hidden drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] "
+                  className="bg-[#FBEEEB] rounded-2xl overflow-hidden drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] flex flex-col"
                 >
-                  <div className="relative aspect-square bg-brand-light-gray ">
+                  <div className="relative aspect-square bg-brand-light-gray flex-shrink-0">
                     <img
                       src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
                       alt={product.name}
@@ -257,11 +257,11 @@ export default function ShopProductsPage() {
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 flex flex-col flex-grow">
                     <h3 className="text-headline-sm font-bold text-brand-primary mb-2">
                       {product.name}
                     </h3>
-                    <p className="text-body-sm text-brand-gray mb-4">
+                    <p className="text-body-sm text-brand-gray mb-4 flex-grow">
                       {lang === "it" ? product.descriptionIt : product.descriptionEn}
                     </p>
                     
@@ -278,7 +278,7 @@ export default function ShopProductsPage() {
                       </span>
                     </div>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mt-auto">
                       <span className="text-title-lg font-bold text-brand-dark">
                         {product.price.toFixed(2)}€
                       </span>

@@ -5,6 +5,14 @@ import Link from "next/link"
 
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, ArrowUp, ArrowDown, Power, AlertCircle } from "lucide-react"
 
+// Helper to parse number with both comma and dot as decimal separator
+const parseNumber = (value: string): number => {
+  if (!value) return 0
+  // Replace comma with dot for European decimal format, then parse
+  const normalized = value.replace(',', '.')
+  return parseFloat(normalized) || 0
+}
+
 interface Cocktail {
   id?: string
   nameIt: string
@@ -617,10 +625,11 @@ export default function AdminMenuPage() {
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.5"
                   value={editingCocktail.price ?? ""}
                   onChange={(e) =>
-                    setEditingCocktail({ ...editingCocktail, price: parseFloat(e.target.value) })
+                    setEditingCocktail({ ...editingCocktail, price: parseNumber(e.target.value) })
                   }
                   className={`input-field ${fieldErrors.price ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                 />
@@ -635,13 +644,16 @@ export default function AdminMenuPage() {
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="0"
                     max="5"
+                    step="1"
                     value={editingCocktail.alcoholLevel ?? ""}
                     onChange={(e) =>
                       setEditingCocktail({
                         ...editingCocktail,
-                        alcoholLevel: parseInt(e.target.value) || 0,
+                        alcoholLevel: Math.floor(parseNumber(e.target.value)) || 0,
                       })
                     }
                     className={`input-field ${fieldErrors.alcoholLevel ? 'border-red-500 ring-2 ring-red-200' : ''}`}

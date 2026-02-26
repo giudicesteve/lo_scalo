@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, FileText, Calendar, BarChart3, Gift } from "lucide-react"
+import { ArrowLeft, ChevronRight, FileText, Calendar, BarChart3, Gift, AlertCircle } from "lucide-react"
 
 const reportItems = [
   { 
@@ -12,15 +12,21 @@ const reportItems = [
   },
   { 
     href: "/admin/reports/monthly", 
-    label: "Report Mensile", 
+    label: "Report Mensile Prodotti e Gift Card vendute", 
     icon: Calendar, 
     description: "Riepilogo vendite prodotti e Gift Card con export Excel e PDF per contabilità" 
   },
   { 
     href: "/admin/reports/gift-cards", 
-    label: "Report Mensile Gift Card", 
+    label: "Report Mensile transazioni Gift Card", 
     icon: Gift, 
     description: "Transazioni mensili gift card con dettagli con export Excel e PDF per contabilità" 
+  },
+  { 
+    href: "/admin/reports/expired-gift-cards", 
+    label: "Report Mensile Gift Card Scadute", 
+    icon: AlertCircle, 
+    description: "Gift card scadute nel mese con residuo non utilizzato con export Excel e PDF per contabilità" 
   },
 ]
 
