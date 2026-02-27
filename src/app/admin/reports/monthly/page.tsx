@@ -133,6 +133,7 @@ export default function MonthlyReportPage() {
         "Data": orderDate.toLocaleDateString("it-IT"),
         "Ora": orderDate.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
         "Ordine": order.orderNumber,
+        "Fonte": order.orderSource === "MANUAL" ? "MANUALE (POS/Contanti)" : "ONLINE",
         "Email": order.email,
         "Telefono": order.phone || "-",
         "Tipo": order.items.length > 0 && order.giftCards.length > 0 ? "MIXED" : order.giftCards.length > 0 ? "GIFT CARD" : "PRODOTTI",
@@ -147,6 +148,7 @@ export default function MonthlyReportPage() {
           "Data": "",
           "Ora": "",
           "Ordine": "",
+          "Fonte": "",
           "Email": "",
           "Telefono": "",
           "Tipo": "PRODOTTO",
@@ -162,6 +164,7 @@ export default function MonthlyReportPage() {
           "Data": "",
           "Ora": "",
           "Ordine": "",
+          "Fonte": "",
           "Email": "",
           "Telefono": "",
           "Tipo": "GIFT CARD",
@@ -258,15 +261,19 @@ export default function MonthlyReportPage() {
         color: rgb(0.95, 0.95, 0.95),
       })
       
-      page.drawText(`#${order.orderNumber}`, {
+      const orderNumberText = order.orderSource === "MANUAL" 
+        ? `#${order.orderNumber} (MANUALE)` 
+        : `#${order.orderNumber}`
+      page.drawText(orderNumberText, {
         x: margin,
         y,
         size: 10,
         font: fontBold,
+        color: order.orderSource === "MANUAL" ? rgb(0.8, 0.5, 0.1) : rgb(0, 0, 0),
       })
       
       page.drawText(date.toLocaleDateString("it-IT"), {
-        x: margin + 80,
+        x: margin + 160,
         y,
         size: 9,
         font,
@@ -274,7 +281,7 @@ export default function MonthlyReportPage() {
       })
       
       page.drawText(order.email, {
-        x: margin + 150,
+        x: margin + 250,
         y,
         size: 9,
         font,
@@ -516,6 +523,7 @@ export default function MonthlyReportPage() {
                   <tr>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Data</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Ordine</th>
+                    <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Fonte</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Cliente</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Dettaglio</th>
                     <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Stripe ID</th>
@@ -540,6 +548,15 @@ export default function MonthlyReportPage() {
                           <div className="font-mono text-body-sm font-bold text-brand-dark">
                             #{order.orderNumber}
                           </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {order.orderSource === "MANUAL" ? (
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                              MANUALE
+                            </span>
+                          ) : (
+                            <span className="text-label-sm text-brand-gray">Online</span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-body-sm text-brand-dark">{order.email}</div>
@@ -581,7 +598,7 @@ export default function MonthlyReportPage() {
                 </tbody>
                 <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                   <tr>
-                    <td colSpan={4} className="py-4 px-4 text-right">
+                    <td colSpan={5} className="py-4 px-4 text-right">
                       <div className="space-y-1">
                         <div className="text-body-sm text-blue-600">
                           Prodotti: <span className="font-bold">{totals.productRevenue.toFixed(2)}€</span>
