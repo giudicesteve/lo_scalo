@@ -34,6 +34,7 @@ interface Order {
   total: number
   createdAt: string
   paidAt?: string  // Data pagamento completato - CRITICO per contabilità
+  orderSource?: "ONLINE" | "MANUAL"
   stripePaymentIntentId?: string
   items: OrderItem[]
   giftCards: GiftCard[]
@@ -728,7 +729,8 @@ function DailyReportContent() {
                                 #{order.orderNumber}
                               </div>
                               {/* Warning for missing Stripe ID */}
-                              {["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
+                              {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
+                              {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
                                 <div className="group relative">
                                   <AlertTriangle className="w-4 h-4 text-red-500 cursor-help" />
                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-red-600 text-white text-label-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -861,7 +863,8 @@ function DailyReportContent() {
                     </div>
 
                     {/* Warning: Missing Stripe Payment ID */}
-                    {["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
+                    {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
+                    {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-start gap-2">
                         <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                         <div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 
 
@@ -54,9 +54,15 @@ export default function CartContent() {
     setPolicyModalOpen(true)
   }
 
+  // Ref per accedere a items senza causare re-render infiniti
+  const itemsRef = useRef(items)
+  useEffect(() => {
+    itemsRef.current = items
+  })
+
   // Verifica e aggiorna disponibilità quando si torna al carrello
   useEffect(() => {
-    if (!mounted || items.length === 0) return
+    if (!mounted || itemsRef.current.length === 0) return
 
     async function checkStock() {
       try {
@@ -68,7 +74,7 @@ export default function CartContent() {
         let hasUpdates = false
 
         // Verifica ogni item nel carrello
-        items.forEach(item => {
+        itemsRef.current.forEach(item => {
           if (item.type !== 'product') return
 
           const product = products.find((p: { id: string }) => p.id === item.id)
@@ -108,7 +114,7 @@ export default function CartContent() {
     }
 
     checkStock()
-  }, [mounted, items.length]) // Solo al mount e quando cambia il numero di items
+  }, [mounted, items.length, removeItem, t, updateQuantity])
 
   const total = calculateTotal(items)
 

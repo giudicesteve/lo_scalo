@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { 
   ArrowLeft, 
   Calendar, 
@@ -59,11 +60,7 @@ export default function GiftCardsMonthlyReportPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [fullscreenImage, setFullscreenImage] = useState<{url: string, receiptNumber: string | null} | null>(null)
 
-  useEffect(() => {
-    fetchTransactions()
-  }, [selectedDate])
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setLoading(true)
     try {
       const [year, month] = selectedDate.split('-').map(Number)
@@ -79,7 +76,11 @@ export default function GiftCardsMonthlyReportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDate])
+
+  useEffect(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
 
   const filteredTransactions = useMemo(() => {
     if (!searchQuery.trim()) return transactions
@@ -736,9 +737,12 @@ export default function GiftCardsMonthlyReportPage() {
             </div>
             
             {/* Image */}
-            <img
+            <Image
               src={fullscreenImage.url}
               alt="Scontrino"
+              width={800}
+              height={600}
+              unoptimized
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />

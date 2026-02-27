@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Package, Power, Gift } from "lucide-react"
 import { ImageUpload } from "@/components/ImageUpload"
 
@@ -69,20 +70,7 @@ export default function AdminShopPage() {
     value?: number
   } | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    await Promise.all([
-      fetchProducts(),
-      fetchShopStatus(),
-      fetchTemplates(),
-    ])
-    setLoading(false)
-  }
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/products")
       const data = await res.json()
@@ -90,9 +78,9 @@ export default function AdminShopPage() {
     } catch (error) {
       console.error("Error fetching products:", error)
     }
-  }
+  }, [])
 
-  const fetchShopStatus = async () => {
+  const fetchShopStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/site-config?key=SHOP_ENABLED")
       const data = await res.json()
@@ -100,9 +88,9 @@ export default function AdminShopPage() {
     } catch (error) {
       console.error("Error fetching shop status:", error)
     }
-  }
+  }, [])
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/gift-card-templates")
       const data = await res.json()
@@ -110,7 +98,20 @@ export default function AdminShopPage() {
     } catch (error) {
       console.error("Error fetching templates:", error)
     }
-  }
+  }, [])
+
+  const fetchData = useCallback(async () => {
+    await Promise.all([
+      fetchProducts(),
+      fetchShopStatus(),
+      fetchTemplates(),
+    ])
+    setLoading(false)
+  }, [fetchProducts, fetchShopStatus, fetchTemplates])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const toggleShop = async () => {
     const newStatus = !shopEnabled
@@ -326,10 +327,12 @@ export default function AdminShopPage() {
               {products.map((product) => (
                 <div key={product.id} className={`bg-white rounded-2xl shadow-card overflow-hidden ${!product.isActive ? 'opacity-60' : ''}`}>
                   <div className="relative aspect-square bg-brand-light-gray">
-                    <img
+                    <Image
                       src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      unoptimized={product.image.startsWith('data:')}
+                      className="object-cover"
                     />
                   </div>
                   <div className="p-3">
@@ -354,12 +357,14 @@ export default function AdminShopPage() {
                             hasSizesChanged: false,
                           })}
                           className="p-1.5 text-brand-gray hover:text-brand-primary"
+                          aria-label={`Modifica ${product.name}`}
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(product.id, product.name)}
                           className="p-1.5 text-brand-gray hover:text-red-500"
+                          aria-label={`Elimina ${product.name}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -439,12 +444,14 @@ export default function AdminShopPage() {
                       <button
                         onClick={() => setEditingTemplate(template)}
                         className="p-2 text-brand-gray hover:text-brand-primary"
+                        aria-label={`Modifica taglio ${template.value}€`}
                       >
                         <Edit2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(template.id, template.value)}
                         className="p-2 text-brand-gray hover:text-red-500"
+                        aria-label={`Elimina taglio ${template.value}€`}
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -470,17 +477,18 @@ export default function AdminShopPage() {
 
       {/* Product Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-headline-sm font-bold text-brand-dark mb-4">
               {editingProduct.id ? "Modifica Prodotto" : "Nuovo Prodotto"}
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="product-name" className="block text-label-md text-brand-gray mb-2">
                   Nome
                 </label>
                 <input
+                  id="product-name"
                   type="text"
                   value={editingProduct.name || ""}
                   onChange={(e) =>
@@ -490,10 +498,11 @@ export default function AdminShopPage() {
                 />
               </div>
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="product-desc-it" className="block text-label-md text-brand-gray mb-2">
                   Descrizione (IT)
                 </label>
                 <textarea
+                  id="product-desc-it"
                   value={editingProduct.descriptionIt || ""}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, descriptionIt: e.target.value })
@@ -502,10 +511,11 @@ export default function AdminShopPage() {
                 />
               </div>
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="product-desc-en" className="block text-label-md text-brand-gray mb-2">
                   Descrizione (EN)
                 </label>
                 <textarea
+                  id="product-desc-en"
                   value={editingProduct.descriptionEn || ""}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, descriptionEn: e.target.value })
@@ -514,14 +524,14 @@ export default function AdminShopPage() {
                 />
               </div>
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="product-price" className="block text-label-md text-brand-gray mb-2">
                   Prezzo (€)
                 </label>
                 <input
+                  id="product-price"
                   type="number"
                   inputMode="decimal"
                   step="0.5"
-                  value={editingProduct.price || ""}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, price: parseNumber(e.target.value) })
                   }
@@ -536,8 +546,9 @@ export default function AdminShopPage() {
               />
               
               {/* Toggle per taglie */}
-              <label className="flex items-center gap-2">
+              <label htmlFor="product-has-sizes" className="flex items-center gap-2">
                 <input
+                  id="product-has-sizes"
                   type="checkbox"
                   checked={editingProduct.hasSizes ?? true}
                   onChange={(e) => {
@@ -567,8 +578,9 @@ export default function AdminShopPage() {
                   <div className="grid grid-cols-3 gap-2">
                     {SIZES.map((size) => (
                       <div key={size} className="flex items-center gap-2">
-                        <span className="text-body-sm w-8">{size}</span>
+                        <label htmlFor={`variant-${size}`} className="text-body-sm w-8">{size}</label>
                         <input
+                          id={`variant-${size}`}
                           type="number"
                           inputMode="numeric"
                           pattern="[0-9]*"
@@ -586,10 +598,11 @@ export default function AdminShopPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-label-md text-brand-gray mb-2">
+                  <label htmlFor="product-stock" className="block text-label-md text-brand-gray mb-2">
                     Quantità disponibile
                   </label>
                   <input
+                    id="product-stock"
                     type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -647,10 +660,11 @@ export default function AdminShopPage() {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="template-value" className="block text-label-md text-brand-gray mb-2">
                   Valore (€)
                 </label>
                 <input
+                  id="template-value"
                   type="number"
                   inputMode="decimal"
                   step="1"
@@ -665,10 +679,11 @@ export default function AdminShopPage() {
                 />
               </div>
               <div>
-                <label className="block text-label-md text-brand-gray mb-2">
+                <label htmlFor="template-price" className="block text-label-md text-brand-gray mb-2">
                   Prezzo vendita (€)
                 </label>
                 <input
+                  id="template-price"
                   type="number"
                   inputMode="decimal"
                   step="0.01"

@@ -32,6 +32,12 @@ enum GiftCardExpiryTime {
   TWO_YEARS
 }
 
+// Fonte dell'ordine (distingue tra online e POS)
+enum OrderSource {
+  ONLINE  // Ordine creato tramite Stripe checkout
+  MANUAL  // Ordine creato manualmente dal personale (POS/Contanti)
+}
+
 // Configurazione globale del sito
 model SiteConfig {
   id        String   @id @default(cuid())
@@ -162,22 +168,23 @@ model GiftCardTransaction {
 
 // Ordini
 model Order {
-  id              String    @id @default(cuid())
-  orderNumber     String    @unique
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
   type            String
-  status          String    @default("PENDING_PAYMENT")
+  status          String      @default("PENDING_PAYMENT")
   email           String
   phone           String?
   total           Float
   customerName    String?
-  lang            String    @default("it")  // Lingua usata dall'utente durante l'ordine (it/en)
+  lang            String      @default("it")  // Lingua usata dall'utente durante l'ordine (it/en)
   stripePaymentId       String?  // ID della checkout session (cs_...)
   stripePaymentIntentId String?  // ID del payment intent (pi_...)
-  isArchived      Boolean   @default(false)
-  emailSent       Boolean   @default(false)  // Previene invio doppio email
-  paidAt          DateTime? // Data pagamento completato (quando status passa a COMPLETED/DELIVERED) - CRITICO per contabilità
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  isArchived      Boolean     @default(false)
+  orderSource     OrderSource @default(ONLINE)  // Fonte ordine: ONLINE o MANUAL (POS)
+  emailSent       Boolean     @default(false)  // Previene invio doppio email
+  paidAt          DateTime?   // Data pagamento completato (quando status passa a COMPLETED/DELIVERED) - CRITICO per contabilità
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   
   items           OrderItem[]
   giftCards       GiftCard[]

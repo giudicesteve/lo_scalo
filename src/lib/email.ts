@@ -137,6 +137,16 @@ interface EmailResult {
 /**
  * Genera PDF Gift Card
  */
+export async function createGiftCardPDF(giftCard: { code: string; value: number; expiresAt?: Date | null }): Promise<Buffer> {
+  // Converti il formato del parametro al formato interno
+  const giftCardInfo: GiftCardInfo = {
+    code: giftCard.code,
+    initialValue: giftCard.value,
+    expiresAt: giftCard.expiresAt
+  }
+  return generateGiftCardPDF(giftCardInfo)
+}
+
 async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create()
   const page = pdfDoc.addPage([595.28, 841.89]) // A4

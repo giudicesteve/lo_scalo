@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { Upload, X, Loader2 } from "lucide-react"
 
 interface ImageUploadProps {
@@ -83,10 +84,13 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       
       {preview ? (
         <div className="relative w-48 h-48 rounded-2xl overflow-hidden border-2 border-brand-light-gray">
-          <img
+          <Image
             src={preview}
             alt="Preview"
+            width={192}
+            height={192}
             className="w-full h-full object-cover"
+            unoptimized
           />
           <button
             onClick={handleClear}

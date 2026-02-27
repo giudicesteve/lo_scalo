@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Plus, Trash2, Mail, Shield, Bell, X, User } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
@@ -30,11 +30,7 @@ export default function AdminManagementPage() {
     canManageAdmins: false,
   })
 
-  useEffect(() => {
-    fetchAdmins()
-  }, [])
-
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/admins")
       if (res.status === 403) {
@@ -49,7 +45,11 @@ export default function AdminManagementPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showToast])
+
+  useEffect(() => {
+    fetchAdmins()
+  }, [fetchAdmins])
 
   const handleAddAdmin = async () => {
     if (!newAdmin.email) {

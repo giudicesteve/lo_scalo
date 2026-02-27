@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useLanguage } from "@/store/language"
 import { MapPin, Phone, Mail, Instagram } from "lucide-react"
 
@@ -85,9 +86,11 @@ export function Footer() {
                 aria-label="TripAdvisor"
               >
                 {/* Icona TripAdvisor */}
-                <img 
+                <Image 
                   src="/resources/Tripadvisor.svg" 
                   alt="TripAdvisor" 
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
                 />
               </a>

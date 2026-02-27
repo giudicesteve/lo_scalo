@@ -24,6 +24,7 @@ import {
 const menuItems = [
   { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
   { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet },
+  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard },
   { href: "/admin/accounting", label: "Contabilità", icon: Calculator },
 ]
 
@@ -68,10 +69,10 @@ export default function AdminLayout({
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left: Hamburger (mobile) + Logo + Navigation */}
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Hamburger Menu Button (mobile and tablet) */}
+            {/* Hamburger Menu Button (mobile, tablet, and small desktop) */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-brand-light-gray/50 transition-colors"
+              className="xl:hidden p-2 -ml-2 rounded-lg hover:bg-brand-light-gray/50 transition-colors"
               aria-label="Menu"
             >
               <Menu className="w-6 h-6 text-brand-dark" />
@@ -82,7 +83,7 @@ export default function AdminLayout({
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden xl:flex items-center gap-1">
               {menuItems.map((item) => (
                 <Link
                   key={item.href}
@@ -181,12 +182,12 @@ export default function AdminLayout({
         <>
           {/* Overlay */}
           <div 
-            className="fixed inset-0 bg-black/50 z-50 md:hidden"
+            className="fixed inset-0 bg-black/50 z-50 xl:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
           
           {/* Drawer */}
-          <div className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 lg:hidden shadow-2xl flex flex-col">
+          <div className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 xl:hidden shadow-2xl flex flex-col">
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-4 border-b border-brand-light-gray">
               <span className="font-bold text-brand-dark">Menu</span>

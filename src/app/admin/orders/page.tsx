@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 
@@ -35,6 +35,8 @@ interface Order {
   total: number
   createdAt: string
   isArchived: boolean
+  orderSource?: "ONLINE" | "MANUAL"
+  customerName?: string  // Usato per memorizzare metodo di pagamento per ordini POS
   stripePaymentId?: string
   stripePaymentIntentId?: string
   items: OrderItem[]
@@ -320,10 +322,22 @@ export default function AdminOrdersPage() {
             <div key={order.id} className="bg-white rounded-2xl shadow-card p-4">
               {/* Header: Numero Ordine + Status */}
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-mono text-title-md font-bold text-brand-dark">
                     #{order.orderNumber}
                   </h3>
+                  {/* Order Source Badge */}
+                  {order.orderSource === "MANUAL" ? (
+                    <span className="px-2 py-1 rounded-full text-label-sm bg-purple-100 text-purple-700 flex items-center gap-1">
+                      <Store className="w-3 h-3" />
+                      In negozio
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 rounded-full text-label-sm bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      Online
+                    </span>
+                  )}
                   <span
                     className={`px-2 py-1 rounded-full text-label-sm flex items-center gap-1 ${
                       statusColors[order.status]
@@ -338,8 +352,8 @@ export default function AdminOrdersPage() {
                 </span>
               </div>
 
-              {/* Warning: Missing Stripe Payment ID */}
-              {["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
+              {/* Warning: Missing Stripe Payment ID (solo per ordini online) */}
+              {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-start gap-2">
                   <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
@@ -350,6 +364,15 @@ export default function AdminOrdersPage() {
                       Verificare su Stripe se il pagamento è andato a buon fine
                     </p>
                   </div>
+                </div>
+              )}
+
+              {/* Info pagamento per ordini MANUAL */}
+              {order.orderSource === "MANUAL" && order.customerName && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mb-3">
+                  <p className="text-body-sm text-purple-700">
+                    <span className="font-medium">{order.customerName}</span>
+                  </p>
                 </div>
               )}
 
@@ -562,7 +585,7 @@ export default function AdminOrdersPage() {
         onConfirm={handleResendOrderEmail}
       />
 
-      {/* Dialog conferma azioni (archivia/ripristina) */}
+      {/* Dialog conferma azioni (archivia/ripristina/elimina) */}
       {actionDialog.isOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">

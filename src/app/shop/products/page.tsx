@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 import { Logo } from "@/components/Logo"
@@ -246,10 +247,13 @@ export default function ShopProductsPage() {
                   className="bg-[#FBEEEB] rounded-2xl overflow-hidden drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)] flex flex-col"
                 >
                   <div className="relative aspect-square bg-brand-light-gray flex-shrink-0">
-                    <img
+                    <Image
                       src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      unoptimized={product.image.startsWith('data:')}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 25vw"
                     />
                     {product.hasSizes && (
                       <div className="absolute top-2 left-2 bg-brand-primary/90 text-white text-label-sm px-2 py-1 rounded-full">

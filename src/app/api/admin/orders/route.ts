@@ -11,7 +11,10 @@ export async function GET(req: Request) {
     const archivedParam = searchParams.get("archived")
     const status = searchParams.get("status")
 
-    const where: { isArchived?: boolean; status?: string } = {}
+    const where: { 
+      isArchived?: boolean
+      status?: string 
+    } = {}
     
     // Se archived è specificato, filtra, altrimenti restituisci tutti
     if (archivedParam !== null) {
@@ -44,12 +47,14 @@ export async function PUT(req: Request) {
   
   try {
     const body = await req.json()
+    const data: { status?: string; isArchived?: boolean } = {}
+    
+    if (body.status !== undefined) data.status = body.status
+    if (body.isArchived !== undefined) data.isArchived = body.isArchived
+    
     const order = await prisma.order.update({
       where: { id: body.id },
-      data: {
-        status: body.status,
-        isArchived: body.isArchived,
-      },
+      data,
     })
     return NextResponse.json(order)
   } catch {

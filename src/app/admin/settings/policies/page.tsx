@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Plus, Eye, Power, X, Save, FileText, Shield, Cookie, Archive, Copy } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
@@ -49,11 +49,7 @@ export default function AdminPoliciesPage() {
   })
   const [activeLang, setActiveLang] = useState<"it" | "en">("it")
 
-  useEffect(() => {
-    fetchPolicies()
-  }, [])
-
-  const fetchPolicies = async () => {
+  const fetchPolicies = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/policies")
       if (!res.ok) throw new Error("Failed to fetch")
@@ -65,7 +61,11 @@ export default function AdminPoliciesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showToast])
+
+  useEffect(() => {
+    fetchPolicies()
+  }, [fetchPolicies])
 
   // Revalidate public pages after policy changes
   const revalidatePages = async () => {

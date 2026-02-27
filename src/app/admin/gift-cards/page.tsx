@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
+import NextImage from "next/image"
 import { QRScanner } from "@/components/QRScanner"
 import {
   ArrowLeft,
@@ -610,7 +611,7 @@ export default function AdminGiftCardsPage() {
   const archivedCount = giftCards.filter((gc) => gc.isArchived).length
 
   // Funzione per cercare gift card che matchano la query (in tutti i tab)
-  const searchAllGiftCards = (query: string) => {
+  const searchAllGiftCards = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase().trim()
     if (!lowerQuery) return { active: [], archived: [] }
     
@@ -633,7 +634,7 @@ export default function AdminGiftCardsPage() {
     )
     
     return { active, archived }
-  }
+  }, [giftCards])
 
   // Auto-switch tab quando la ricerca trova risultati solo nell'altro tab
   useEffect(() => {
@@ -647,7 +648,7 @@ export default function AdminGiftCardsPage() {
     } else if (activeTab === "archived" && archived.length === 0 && active.length > 0) {
       setActiveTab("active")
     }
-  }, [searchQuery])
+  }, [searchQuery, activeTab, searchAllGiftCards])
 
   // Gift card filtrate per il tab attivo
   const filteredGiftCards = giftCards
@@ -1035,9 +1036,12 @@ export default function AdminGiftCardsPage() {
                       
                       {receiptImage ? (
                         <div className="relative">
-                          <img
+                          <NextImage
                             src={receiptImage}
                             alt="Scontrino"
+                            width={400}
+                            height={160}
+                            unoptimized
                             className="w-full h-40 object-contain bg-brand-light-gray/30 rounded-xl"
                           />
                           <button
@@ -1171,9 +1175,12 @@ export default function AdminGiftCardsPage() {
                         {/* Foto Scontrino */}
                         {transaction.receiptImage && (
                           <div className="mt-2">
-                            <img
+                            <NextImage
                               src={transaction.receiptImage}
                               alt={`Scontrino ${transaction.receiptNumber || ''}`}
+                              width={96}
+                              height={96}
+                              unoptimized
                               className="h-24 w-auto object-contain rounded-lg border border-brand-light-gray cursor-pointer hover:opacity-80"
                               onClick={() => setFullscreenImage({ 
                                 url: transaction.receiptImage!, 
@@ -1236,9 +1243,12 @@ export default function AdminGiftCardsPage() {
             </div>
             
             {/* Immagine */}
-            <img
+            <NextImage
               src={fullscreenImage.url}
               alt="Scontrino"
+              width={1200}
+              height={800}
+              unoptimized
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />

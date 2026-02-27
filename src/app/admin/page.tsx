@@ -19,7 +19,8 @@ import {
 
 const quickAccessItems = [
   { href: "/admin/orders", label: "Ordini", icon: ShoppingBag, description: "Gestisci tutti gli ordini" },
-  { href: "/admin/gift-cards", label: "Gift Card", icon: Wallet, description: "Gestisci le gift card" },
+  { href: "/admin/gift-cards", label: "Gift Card", icon: Wallet, description: "Gestisci le gift card attivate" },
+  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede" },
   { href: "/admin/accounting", label: "Contabilità", icon: Calculator, description: "Riepilogo giornaliero ordini" },
 ]
 

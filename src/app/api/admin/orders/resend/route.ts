@@ -68,7 +68,8 @@ export async function POST(req: Request) {
       })),
       giftCards: order.giftCards.map(gc => ({
         code: gc.code,
-        initialValue: gc.initialValue
+        initialValue: gc.initialValue,
+        expiresAt: gc.expiresAt
       })),
       createdAt: order.createdAt
     }

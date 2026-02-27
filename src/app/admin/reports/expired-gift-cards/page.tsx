@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -58,11 +58,7 @@ export default function ExpiredGiftCardsReportPage() {
   })
   const [searchQuery, setSearchQuery] = useState("")
 
-  useEffect(() => {
-    fetchExpiredGiftCards()
-  }, [selectedDate])
-
-  const fetchExpiredGiftCards = async () => {
+  const fetchExpiredGiftCards = useCallback(async () => {
     setLoading(true)
     try {
       const [year, month] = selectedDate.split('-').map(Number)
@@ -78,7 +74,11 @@ export default function ExpiredGiftCardsReportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDate])
+
+  useEffect(() => {
+    fetchExpiredGiftCards()
+  }, [fetchExpiredGiftCards])
 
   const filteredGiftCards = useMemo(() => {
     if (!searchQuery.trim()) return giftCards
