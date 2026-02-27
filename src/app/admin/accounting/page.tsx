@@ -374,7 +374,7 @@ function DailyReportContent() {
       
       // Order header row
       const orderNumberText = order.orderSource === "MANUAL" 
-        ? `#${order.orderNumber} (MANUALE)` 
+        ? `#${order.orderNumber} (ORDINE MANUALE)` 
         : `#${order.orderNumber}`
       page.drawText(orderNumberText, {
         x: margin,
@@ -385,7 +385,7 @@ function DailyReportContent() {
       })
       
       page.drawText(time, {
-        x: margin + 80,
+        x: margin + 200,
         y,
         size: 9,
         font,
@@ -393,7 +393,7 @@ function DailyReportContent() {
       })
       
       page.drawText(order.email?.length > 35 ? order.email?.substring(0, 35) + "..." : (order.email || "N/A"), {
-        x: margin + 130,
+        x: margin + 250,
         y,
         size: 9,
         font,
@@ -736,12 +736,6 @@ function DailyReportContent() {
                               <div className="font-mono text-body-sm font-bold text-brand-dark">
                                 #{order.orderNumber}
                               </div>
-                              {/* Badge for MANUAL orders */}
-                              {order.orderSource === "MANUAL" && (
-                                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
-                                  MANUALE
-                                </span>
-                              )}
                               {/* Warning for missing Stripe ID */}
                               {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
                               {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
@@ -764,7 +758,7 @@ function DailyReportContent() {
                           {/* Fonte */}
                           <td className="py-3 px-4">
                             {order.orderSource === "MANUAL" ? (
-                              <span className="px-2 py-1 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                              <span className="text-label-sm text-brand-gray font-bold">
                                 MANUALE
                               </span>
                             ) : (
