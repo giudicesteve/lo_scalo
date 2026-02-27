@@ -21,8 +21,12 @@ export async function POST(req: Request) {
     
     // Validazione: alcoholLevel obbligatorio solo se showAlcoholLevel è true
     // (questo lo gestiamo nel frontend, ma qui verifichiamo che sia un numero valido se fornito)
-    if (body.alcoholLevel !== undefined && body.alcoholLevel !== null && (body.alcoholLevel < 0 || body.alcoholLevel > 5)) {
-      return NextResponse.json({ error: "Il livello alcolico deve essere tra 0 e 5" }, { status: 400 })
+    // Scala 0-10 (interi), visualizzati come 5 punti con mezzi
+    if (body.alcoholLevel !== undefined && body.alcoholLevel !== null) {
+      const level = Math.floor(body.alcoholLevel)
+      if (level < 0 || level > 10) {
+        return NextResponse.json({ error: "Il livello alcolico deve essere tra 0 e 10" }, { status: 400 })
+      }
     }
     
     const cocktail = await prisma.cocktail.create({
@@ -34,7 +38,7 @@ export async function POST(req: Request) {
         descriptionIt: body.descriptionIt?.trim() || null,
         descriptionEn: body.descriptionEn?.trim() || null,
         price: body.price,
-        alcoholLevel: body.alcoholLevel ?? null,
+        alcoholLevel: body.alcoholLevel !== undefined && body.alcoholLevel !== null ? Math.floor(body.alcoholLevel) : null,
         categoryId: body.categoryId,
         order: body.order || 0,
       },
@@ -61,6 +65,14 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Il prezzo è obbligatorio" }, { status: 400 })
     }
     
+    // Validazione alcoholLevel per aggiornamento (scala 0-10 interi)
+    if (body.alcoholLevel !== undefined && body.alcoholLevel !== null) {
+      const level = Math.floor(body.alcoholLevel)
+      if (level < 0 || level > 10) {
+        return NextResponse.json({ error: "Il livello alcolico deve essere tra 0 e 10" }, { status: 400 })
+      }
+    }
+    
     const cocktail = await prisma.cocktail.update({
       where: { id: body.id },
       data: {
@@ -71,7 +83,7 @@ export async function PUT(req: Request) {
         descriptionIt: body.descriptionIt !== undefined ? (body.descriptionIt?.trim() || null) : undefined,
         descriptionEn: body.descriptionEn !== undefined ? (body.descriptionEn?.trim() || null) : undefined,
         price: body.price,
-        alcoholLevel: body.alcoholLevel !== undefined ? (body.alcoholLevel ?? null) : undefined,
+        alcoholLevel: body.alcoholLevel !== undefined ? (body.alcoholLevel !== null ? Math.floor(body.alcoholLevel) : null) : undefined,
         categoryId: body.categoryId,
         order: body.order,
         isActive: body.isActive,

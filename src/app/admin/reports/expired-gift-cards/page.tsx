@@ -86,8 +86,8 @@ export default function ExpiredGiftCardsReportPage() {
     const query = searchQuery.toLowerCase()
     return giftCards.filter(g => 
       g.code.toLowerCase().includes(query) ||
-      g.order.email.toLowerCase().includes(query) ||
-      g.order.orderNumber.toLowerCase().includes(query)
+      g.order?.email?.toLowerCase().includes(query) ||
+      g.order?.orderNumber?.toLowerCase().includes(query)
     )
   }, [giftCards, searchQuery])
 
@@ -95,7 +95,7 @@ export default function ExpiredGiftCardsReportPage() {
     const totalInitialValue = filteredGiftCards.reduce((sum, g) => sum + g.initialValue, 0)
     const totalUnusedBalance = filteredGiftCards.reduce((sum, g) => sum + g.remainingValue, 0)
     const totalUsed = filteredGiftCards.reduce((sum, g) => sum + (g.initialValue - g.remainingValue), 0)
-    const uniqueCustomers = new Set(filteredGiftCards.map(g => g.order.email)).size
+    const uniqueCustomers = new Set(filteredGiftCards.map(g => g.order?.email).filter(Boolean)).size
     return { totalInitialValue, totalUnusedBalance, totalUsed, uniqueCustomers }
   }, [filteredGiftCards])
 
@@ -137,9 +137,9 @@ export default function ExpiredGiftCardsReportPage() {
         "Residuo Non Utilizzato": g.remainingValue,
         "Data Acquisto": purchaseDate.toLocaleDateString("it-IT"),
         "Data Scadenza": expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-",
-        "Cliente": g.order.email,
-        "Telefono": g.order.phone || "-",
-        "Ordine Acquisto": g.order.orderNumber,
+        "Cliente": g.order?.email || "N/A",
+        "Telefono": g.order?.phone || "-",
+        "Ordine Acquisto": g.order?.orderNumber || "N/A",
         "Numero Transazioni": g.transactions.length,
       })
     })
@@ -292,12 +292,12 @@ export default function ExpiredGiftCardsReportPage() {
       x += colWidths[5]
       
       // Client Email (truncated)
-      const email = g.order.email.length > 35 ? g.order.email.substring(0, 35) + "..." : g.order.email
+      const email = g.order?.email ? (g.order.email.length > 35 ? g.order.email.substring(0, 35) + "..." : g.order.email) : "N/A"
       page.drawText(email, { x, y, size: 8, font })
       x += colWidths[6]
       
       // Order Number
-      page.drawText(g.order.orderNumber, { x, y, size: 8, font, color: rgb(0.5, 0.5, 0.5) })
+      page.drawText(g.order?.orderNumber || "N/A", { x, y, size: 8, font, color: rgb(0.5, 0.5, 0.5) })
       
       y -= 25
     })
@@ -566,17 +566,17 @@ export default function ExpiredGiftCardsReportPage() {
                             Acquistata: {purchaseDate.toLocaleDateString("it-IT")}
                           </div>
                           <div className="text-label-sm text-brand-gray">
-                            Ordine: {g.order.orderNumber}
+                            Ordine: {g.order?.orderNumber || "N/A"}
                           </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1 text-body-sm text-brand-dark">
                             <User className="w-3 h-3 text-brand-gray" />
-                            {g.order.email}
+                            {g.order?.email || "N/A"}
                           </div>
-                          {g.order.phone && (
+                          {g.order?.phone && (
                             <div className="text-label-sm text-brand-gray">
-                              {g.order.phone}
+                              {g.order?.phone}
                             </div>
                           )}
                         </td>

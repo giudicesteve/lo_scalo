@@ -43,11 +43,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json(configObject)
   } catch (error) {
-    console.error("Error fetching config:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch config" },
-      { status: 500 }
-    )
+    console.error('[API SiteConfig] Error:', error)
+    // Return defaults on error
+    return NextResponse.json({
+      MENU_ENABLED: "true",
+      SHOP_ENABLED: "true",
+    })
   }
 }
 

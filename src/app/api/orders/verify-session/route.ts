@@ -1,87 +1,44 @@
-import { NextResponse } from "next/server"
-import { stripe } from "@/lib/stripe"
-import { prisma } from "@/lib/prisma"
-import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email"
+import { NextResponse } from "next/server";
+import { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
+import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
 
 // POST - Verifica sessione Stripe e completa ordine se necessario
 export async function POST(req: Request) {
   try {
-    const { orderNumber, sessionId } = await req.json()
+    const { orderNumber, sessionId } = await req.json();
 
     if (!orderNumber || !sessionId) {
       return NextResponse.json(
         { error: "Missing orderNumber or sessionId" },
         { status: 400 }
-      )
+      );
     }
 
     // 1. Recupera l'ordine
     const order = await prisma.order.findUnique({
       where: { orderNumber },
-      include: { 
-        items: { include: { product: { select: { name: true } } } },
-        giftCards: true 
+      include: {
+        items: {
+          include: {
+            Product: true,
+          },
+        },
+        giftCards: true,
       },
-    })
+    });
 
     if (!order) {
       return NextResponse.json(
         { error: "Order not found" },
         { status: 404 }
-      )
+      );
     }
 
-    // 2. Se già completato, controlla se email sono state inviate
-    console.log(`🔍 [VERIFY] Ordine ${orderNumber} - status: ${order.status}, emailSent: ${order.emailSent}, lang: ${order.lang || 'it (default)'}`)
+    // 2. Se già completato, ritorna direttamente
+    console.log(`🔍 [VERIFY] Ordine ${orderNumber} - status: ${order.status}`);
     if (order.status !== "PENDING_PAYMENT") {
-      // Se email non inviate (fallback se webhook ha fallito), invia ora
-      if (!order.emailSent) {
-        console.log(`📧 [VERIFY] 🚀 FALLBACK - Invio email per ordine già completato ${orderNumber} (lang: ${order.lang || 'it'})`)
-        const orderDetails = {
-          orderNumber: order.orderNumber,
-          email: order.email,
-          phone: order.phone || undefined,
-          total: order.total,
-          lang: order.lang,
-          items: order.items.map(item => ({
-            name: item.product?.name || "Prodotto",
-            quantity: item.quantity,
-            size: item.size || undefined,
-            totalPrice: item.totalPrice
-          })),
-          giftCards: order.giftCards.map(gc => ({
-            code: gc.code,
-            initialValue: gc.initialValue,
-            expiresAt: gc.expiresAt
-          })),
-          createdAt: order.createdAt
-        }
-        console.log(`🌐 [VERIFY-FALLBACK] orderDetails.lang = ${orderDetails.lang || 'it (default)'}`)
-
-        try {
-          // Invia email sequenzialmente con delay per rate limit
-          const results = []
-          
-          // Email cliente (include gift card se presenti)
-          results.push(await sendOrderConfirmation(orderDetails))
-          await new Promise(r => setTimeout(r, 600))
-          
-          // Email admin
-          results.push(await sendAdminNotification(orderDetails))
-
-          if (results[0].success) {
-            await prisma.order.update({
-              where: { id: order.id },
-              data: { emailSent: true }
-            })
-            console.log(`✅ [VERIFY] FALLBACK Email SENT e MARKED per order ${order.id}`)
-          }
-        } catch (err) {
-          console.error('Error sending fallback emails:', err)
-        }
-      }
-
-      console.log(`⏭️ [VERIFY] SKIP - Ordine già completato e email già inviata per ${orderNumber}`)
+      console.log(`⏭️ [VERIFY] SKIP - Ordine già completato per ${orderNumber}`);
       return NextResponse.json({
         success: true,
         order: {
@@ -91,14 +48,14 @@ export async function POST(req: Request) {
           email: order.email,
           total: order.total,
           createdAt: order.createdAt,
-          items: order.items.map(item => ({
+          items: order.items.map((item) => ({
             id: item.id,
-            name: item.product?.name || "Prodotto",
+            name: item.Product?.name || "Unknown",
             quantity: item.quantity,
             size: item.size,
             totalPrice: item.totalPrice,
           })),
-          giftCards: order.giftCards.map(gc => ({
+          giftCards: order.giftCards.map((gc) => ({
             id: gc.id,
             code: gc.code,
             initialValue: gc.initialValue,
@@ -107,24 +64,24 @@ export async function POST(req: Request) {
           })),
         },
         source: "database",
-      })
+      });
     }
 
     // 3. Verifica con Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid" || session.status !== "complete") {
       return NextResponse.json({
         success: false,
         status: session.payment_status,
         message: "Payment not completed",
-      })
+      });
     }
 
     // 4. Completa l'ordine (idempotente - come il webhook)
-    const hasProducts = order.items.length > 0
-    const hasGiftCards = order.giftCards.length > 0
-    const newStatus = (hasGiftCards && !hasProducts) ? "DELIVERED" : "COMPLETED"
+    const hasProducts = order.items.length > 0;
+    const hasGiftCards = order.giftCards.length > 0;
+    const newStatus = hasGiftCards && !hasProducts ? "DELIVERED" : "COMPLETED";
 
     const updateResult = await prisma.order.updateMany({
       where: {
@@ -134,86 +91,86 @@ export async function POST(req: Request) {
       data: {
         status: newStatus,
         stripePaymentId: session.id,
-        stripePaymentIntentId: typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id,
-        paidAt: new Date(),  // Data effettiva del pagamento - CRITICO per contabilità
+        stripePaymentIntentId:
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id,
+        paidAt: new Date(),
       },
-    })
+    });
 
     // Attiva gift card
     if (updateResult.count > 0 && hasGiftCards) {
       await prisma.giftCard.updateMany({
         where: { orderId: order.id },
-        data: { isActive: true, activatedAt: new Date() },
-      })
+        data: { isActive: true },
+      });
     }
 
-    // 5. Invia email se non già inviate (idempotenza)
-    console.log(`📧 [VERIFY] Check invio: updateResult.count=${updateResult.count}, emailSent=${order.emailSent}`)
-    if (updateResult.count > 0 && !order.emailSent) {
-      console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id} (lang: ${order.lang || 'it'})`)
+    // 5. Invia email
+    console.log(`📧 [VERIFY] Check invio: updateResult.count=${updateResult.count}`);
+    if (updateResult.count > 0) {
+      console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id}`);
       const orderDetails = {
         orderNumber: order.orderNumber,
         email: order.email,
         phone: order.phone || undefined,
         total: order.total,
-        lang: order.lang,
-        items: order.items.map(item => ({
-          name: item.product?.name || "Prodotto",
+        lang: "it",
+        items: order.items.map((item) => ({
+          name: item.Product?.name || "Unknown",
           quantity: item.quantity,
           size: item.size || undefined,
-          totalPrice: item.totalPrice
+          totalPrice: item.totalPrice,
         })),
-        giftCards: order.giftCards.map(gc => ({
+        giftCards: order.giftCards.map((gc) => ({
           code: gc.code,
           initialValue: gc.initialValue,
-          expiresAt: gc.expiresAt
+          expiresAt: gc.expiresAt,
         })),
-        createdAt: order.createdAt
-      }
-      console.log(`🌐 [VERIFY] orderDetails.lang = ${orderDetails.lang || 'it (default)'}`)
+        createdAt: order.createdAt,
+      };
 
       try {
         // Invia email sequenzialmente con delay per rate limit (2 req/sec)
-        const results = []
-        
+        const results = [];
+
         // Email cliente (include gift card se presenti)
-        results.push(await sendOrderConfirmation(orderDetails))
-        await new Promise(r => setTimeout(r, 600))
-        
+        results.push(await sendOrderConfirmation(orderDetails));
+        await new Promise((r) => setTimeout(r, 600));
+
         // Email admin
-        results.push(await sendAdminNotification(orderDetails))
+        results.push(await sendAdminNotification(orderDetails));
 
         if (results[0].success) {
-          await prisma.order.update({
-            where: { id: order.id },
-            data: { emailSent: true }
-          })
-          console.log(`✅ [VERIFY] Email SENT e MARKED per order ${order.id}`)
+          console.log(`✅ [VERIFY] Email SENT per order ${order.id}`);
         } else {
-          console.log(`❌ [VERIFY] Email FALLITA per order ${order.id}`)
+          console.log(`❌ [VERIFY] Email FALLITA per order ${order.id}`);
         }
       } catch (err) {
-        console.error('Error sending emails from verify-session:', err)
+        console.error("Error sending emails from verify-session:", err);
         // Non bloccare la risposta, il webhook potrebbe ritentare
       }
     }
 
-    // 6. Ritorna ordine aggiornato (stesso formato di /api/orders/[orderNumber])
+    // 6. Ritorna ordine aggiornato
     const updatedOrder = await prisma.order.findUnique({
       where: { id: order.id },
       include: {
-        items: { include: { product: { select: { name: true } } } },
+        items: {
+          include: {
+            Product: true,
+          },
+        },
         giftCards: true,
       },
-    })
+    });
 
     if (!updatedOrder) {
       return NextResponse.json(
         { error: "Failed to reload order" },
         { status: 500 }
-      )
+      );
     }
 
     // Sanitizza come l'altro endpoint
@@ -224,34 +181,35 @@ export async function POST(req: Request) {
       email: updatedOrder.email,
       total: updatedOrder.total,
       createdAt: updatedOrder.createdAt,
-      items: updatedOrder.items.map(item => ({
+      items: updatedOrder.items.map((item) => ({
         id: item.id,
-        name: item.product.name,
+        name: item.Product?.name || "Unknown",
         quantity: item.quantity,
         size: item.size,
         totalPrice: item.totalPrice,
       })),
-      giftCards: updatedOrder.giftCards.map(gc => ({
+      giftCards: updatedOrder.giftCards.map((gc) => ({
         id: gc.id,
         code: gc.code,
         initialValue: gc.initialValue,
         isActive: gc.isActive,
         expiresAt: gc.expiresAt,
       })),
-    }
+    };
 
-    console.log(`✅ [VERIFY] Completato per ${orderNumber}, source=stripe-verification`)
+    console.log(
+      `✅ [VERIFY] Completato per ${orderNumber}, source=stripe-verification`
+    );
     return NextResponse.json({
       success: true,
       order: sanitizedOrder,
       source: "stripe-verification",
-    })
-
+    });
   } catch (error) {
-    console.error("Error verifying session:", error)
+    console.error("Error verifying session:", error);
     return NextResponse.json(
       { error: "Failed to verify session" },
       { status: 500 }
-    )
+    );
   }
 }

@@ -80,8 +80,8 @@ export default function PosGiftCardPage() {
       }
 
       setSuccess({
-        orderNumber: data.order.orderNumber,
-        giftCardCode: data.giftCard.code,
+        orderNumber: data.order?.orderNumber || "N/A",
+        giftCardCode: data.giftCard?.code || "N/A",
       })
       
       showToast("Gift Card creata con successo!", "success")

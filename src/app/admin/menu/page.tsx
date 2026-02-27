@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 
 import { ArrowLeft, Plus, Edit2, Trash2, Save, X, ArrowUp, ArrowDown, Power, AlertCircle } from "lucide-react"
+import { AlcoholLevelPreview } from "@/components/AlcoholIndicator"
 
 // Helper to parse number with both comma and dot as decimal separator
 const parseNumber = (value: string): number => {
@@ -389,7 +390,7 @@ export default function AdminMenuPage() {
                         nameIt: "",
                         nameEn: "",
                         price: 10,
-                        alcoholLevel: category.showAlcoholLevel ? 3 : undefined,
+                        alcoholLevel: category.showAlcoholLevel ? 5 : undefined,
                       })
                       setFieldErrors({})
                       setError(null)
@@ -411,7 +412,7 @@ export default function AdminMenuPage() {
                         <h4 className="font-medium text-brand-dark">{cocktail.nameIt}</h4>
                         <p className="text-body-sm text-brand-gray">
                           {cocktail.price.toFixed(2)}€
-                          {category.showAlcoholLevel && cocktail.alcoholLevel !== undefined && ` • Alcohol: ${cocktail.alcoholLevel}/5`}
+                          {category.showAlcoholLevel && cocktail.alcoholLevel !== undefined && ` • Alcohol: ${cocktail.alcoholLevel}/10`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -640,14 +641,17 @@ export default function AdminMenuPage() {
               {getCategoryForCocktail()?.showAlcoholLevel && (
                 <div>
                   <label className="block text-label-md text-brand-gray mb-2">
-                    Livello Alcolico (1-5) <span className="text-red-500">*</span>
+                    Livello Alcolico (0-10) <span className="text-red-500">*</span>
                   </label>
+                  <div className="mb-2">
+                    <AlcoholLevelPreview level={editingCocktail.alcoholLevel} />
+                  </div>
                   <input
                     type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     min="0"
-                    max="5"
+                    max="10"
                     step="1"
                     value={editingCocktail.alcoholLevel ?? ""}
                     onChange={(e) =>

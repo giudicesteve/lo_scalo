@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo"
 import { useLanguage } from "@/store/language"
 import { ArrowLeft, Instagram } from "lucide-react"
 import { MapIcon } from "@/components/MapIcon"
+import { AlcoholIndicator } from "@/components/AlcoholIndicator"
 
 interface Cocktail {
   id: string
@@ -71,19 +72,36 @@ export default function MenuPage() {
       const cached = localStorage.getItem('menu-categories')
       const cachedActive = localStorage.getItem('menu-active-category')
       if (cached) {
-        hasCache = true
-        const parsed = JSON.parse(cached)
-        setCategories(parsed)
-        if (cachedActive) {
-          setActiveCategory(cachedActive)
-        } else if (parsed.length > 0) {
-          setActiveCategory(parsed[0].id)
+        try {
+          const parsed = JSON.parse(cached)
+          // Only use cache if it's a valid array
+          if (Array.isArray(parsed)) {
+            hasCache = true
+            setCategories(parsed)
+            if (cachedActive) {
+              setActiveCategory(cachedActive)
+            } else if (parsed.length > 0) {
+              setActiveCategory(parsed[0].id)
+            }
+            setLoading(false)
+          }
+        } catch {
+          // Invalid cache, ignore
+          localStorage.removeItem('menu-categories')
         }
-        setLoading(false)
       }
 
       const res = await fetch("/api/categories", { cache: 'no-store' })
       const data = await res.json()
+      
+      // Handle error response from API
+      if (!Array.isArray(data)) {
+        console.error("Categories API returned non-array:", data)
+        if (!hasCache) {
+          setCategories([])
+        }
+        return
+      }
       
       localStorage.setItem('menu-categories', JSON.stringify(data))
       
@@ -286,18 +304,7 @@ export default function MenuPage() {
                         <span className="text-[12px] font-normal text-brand-dark leading-[16px] tracking-[0.4px]">
                           {t("menu.alcohol")}
                         </span>
-                        <div className="flex gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-4 h-4 rounded-full ${
-                                i < cocktail.alcoholLevel!
-                                  ? "bg-brand-primary"
-                                  : "border-2 border-brand-primary"
-                              }`}
-                            />
-                          ))}
-                        </div>
+                        <AlcoholIndicator level={cocktail.alcoholLevel} size="sm" />
                       </div>
                     )}
                   </div>

@@ -618,18 +618,18 @@ export default function AdminGiftCardsPage() {
     const active = giftCards.filter(
       (gc) => gc.isActive && !gc.isArchived && (
         gc.code.toLowerCase().includes(lowerQuery) ||
-        gc.order?.email.toLowerCase().includes(lowerQuery) ||
-        gc.order?.orderNumber.toLowerCase().includes(lowerQuery) ||
-        (gc.order?.phone && gc.order.phone.toLowerCase().includes(lowerQuery))
+        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
+        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
+        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
       )
     )
     
     const archived = giftCards.filter(
       (gc) => gc.isArchived && (
         gc.code.toLowerCase().includes(lowerQuery) ||
-        gc.order?.email.toLowerCase().includes(lowerQuery) ||
-        gc.order?.orderNumber.toLowerCase().includes(lowerQuery) ||
-        (gc.order?.phone && gc.order.phone.toLowerCase().includes(lowerQuery))
+        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
+        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
+        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
       )
     )
     
@@ -662,12 +662,12 @@ export default function AdminGiftCardsPage() {
     .filter(
       (gc) =>
         gc.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gc.order?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        gc.order?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         gc.order?.orderNumber
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
         (gc.order?.phone &&
-          gc.order.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+          gc.order?.phone?.toLowerCase().includes(searchQuery.toLowerCase()))
     )
 
   if (loading) {
@@ -811,7 +811,7 @@ export default function AdminGiftCardsPage() {
                   {gc.order?.phone && (
                     <p className="text-body-sm text-brand-dark">
                       <span className="text-brand-gray">Tel:</span>{" "}
-                      {gc.order.phone}
+                      {gc.order?.phone}
                     </p>
                   )}
                   <p className="text-body-sm text-brand-dark">

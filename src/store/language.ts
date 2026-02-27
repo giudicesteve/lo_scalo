@@ -110,6 +110,7 @@ const translations: Record<Language, Record<string, string>> = {
     'cart.support-subject': 'Richiesta supporto ordine',
     'cart.verified-by-system': 'Verificato dal sistema',
     'cart.back': 'Torna indietro',
+    'cart.remove': 'Rimuovi',
     'cart.order-number': 'Ordine',
     
     // Cart - Errori e validazione
@@ -295,6 +296,7 @@ const translations: Record<Language, Record<string, string>> = {
     'cart.support-subject': 'Support request order',
     'cart.verified-by-system': 'Verified by system',
     'cart.back': 'Go back',
+    'cart.remove': 'Remove',
     'cart.order-number': 'Order',
     
     // Cart - Errori e validazione

@@ -1,10 +1,25 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+// WebSocket configuration for Neon
+neonConfig.webSocketConstructor = ws;
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined");
+}
+
+const adapter = new PrismaNeon({ connectionString });
+
+const prisma = new PrismaClient({ adapter });
 
 async function cleanup() {
   try {
-    console.log('Cancellazione in corso...');
+    console.log("Cancellazione in corso...");
 
     // 1. Cancella transazioni gift card
     const deletedTransactions = await prisma.giftCardTransaction.deleteMany({});
@@ -22,9 +37,9 @@ async function cleanup() {
     const deletedOrders = await prisma.order.deleteMany({});
     console.log(`✓ Cancellati ${deletedOrders.count} ordini`);
 
-    console.log('\n✅ Database pulito con successo!');
+    console.log("\n✅ Database pulito con successo!");
   } catch (error) {
-    console.error('❌ Errore:', error);
+    console.error("❌ Errore:", error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

@@ -112,28 +112,32 @@ export default function AdminLayout({
                   {item.label}
                 </Link>
               ))}
-              <Link
-                href="/admin/reports"
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
-                  pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
-                    ? "bg-brand-primary/10 text-brand-primary"
-                    : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                Report
-              </Link>
-              <Link
-                href="/admin/settings"
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
-                  pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")
-                    ? "bg-brand-primary/10 text-brand-primary"
-                    : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                Impostazioni
-              </Link>
+              {canManageAdmins && (
+                <>
+                  <Link
+                    href="/admin/reports"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                      pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Report
+                  </Link>
+                  <Link
+                    href="/admin/settings"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors ${
+                      pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray/50"
+                    }`}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Impostazioni
+                  </Link>
+                </>
+              )}
               {canManageAdmins && (
                 <a
                   href="https://dashboard.stripe.com"
@@ -238,31 +242,35 @@ export default function AdminLayout({
 
               <div className="my-2 border-t border-brand-light-gray" />
               
-              <Link
-                href="/admin/reports"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                  pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
-                    ? "bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary"
-                    : "text-brand-dark hover:bg-brand-light-gray/30"
-                }`}
-              >
-                <FileText className="w-5 h-5" />
-                <span className="font-medium">Report</span>
-              </Link>
+              {canManageAdmins && (
+                <>
+                  <Link
+                    href="/admin/reports"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                      pathname === "/admin/reports" || pathname.startsWith("/admin/reports/")
+                        ? "bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary"
+                        : "text-brand-dark hover:bg-brand-light-gray/30"
+                    }`}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="font-medium">Report</span>
+                  </Link>
 
-              <Link
-                href="/admin/settings"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                  pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")
-                    ? "bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary"
-                    : "text-brand-dark hover:bg-brand-light-gray/30"
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span className="font-medium">Impostazioni</span>
-              </Link>
+                  <Link
+                    href="/admin/settings"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                      pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")
+                        ? "bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary"
+                        : "text-brand-dark hover:bg-brand-light-gray/30"
+                    }`}
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span className="font-medium">Impostazioni</span>
+                  </Link>
+                </>
+              )}
 
               {canManageAdmins && (
                 <>
@@ -277,10 +285,11 @@ export default function AdminLayout({
                     <span className="font-medium">Stripe</span>
                     <ExternalLink className="w-3 h-3 ml-auto text-brand-gray" />
                   </a>
+                  <div className="my-2 border-t border-brand-light-gray" />
                 </>
               )}
               
-              <div className="my-2 border-t border-brand-light-gray" />
+
               
               <button
                 onClick={() => {

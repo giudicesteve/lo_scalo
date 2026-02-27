@@ -12,6 +12,18 @@ export const dynamic = 'force-dynamic'
  * Used by the frontend to display expiry policy to customers
  */
 export async function GET() {
+  // During build time, database might not be available - return defaults
+  if (!process.env.DATABASE_URL) {
+    const previewExpiryDate = calculateGiftCardExpiry("END_OF_MONTH", "ONE_YEAR", new Date())
+    return NextResponse.json({
+      expiryType: "END_OF_MONTH",
+      expiryTime: "ONE_YEAR",
+      previewExpiryDate: previewExpiryDate.toISOString(),
+      policyIt: getExpiryPolicyDescription("END_OF_MONTH", "ONE_YEAR", "it"),
+      policyEn: getExpiryPolicyDescription("END_OF_MONTH", "ONE_YEAR", "en"),
+    })
+  }
+
   try {
     // Get or create the global expiry settings
     const config = await prisma.giftCardExpiryConfig.upsert({
@@ -43,9 +55,14 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Error fetching gift card settings:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch settings" },
-      { status: 500 }
-    )
+    // Return defaults on error
+    const previewExpiryDate = calculateGiftCardExpiry("END_OF_MONTH", "ONE_YEAR", new Date())
+    return NextResponse.json({
+      expiryType: "END_OF_MONTH",
+      expiryTime: "ONE_YEAR",
+      previewExpiryDate: previewExpiryDate.toISOString(),
+      policyIt: getExpiryPolicyDescription("END_OF_MONTH", "ONE_YEAR", "it"),
+      policyEn: getExpiryPolicyDescription("END_OF_MONTH", "ONE_YEAR", "en"),
+    })
   }
 }

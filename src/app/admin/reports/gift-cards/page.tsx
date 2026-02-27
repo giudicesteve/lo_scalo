@@ -88,7 +88,7 @@ export default function GiftCardsMonthlyReportPage() {
     const query = searchQuery.toLowerCase()
     return transactions.filter(t => 
       t.giftCard.code.toLowerCase().includes(query) ||
-      t.giftCard.order.email.toLowerCase().includes(query) ||
+      t.giftCard.order?.email?.toLowerCase().includes(query) ||
       t.receiptNumber?.toLowerCase().includes(query) ||
       t.note?.toLowerCase().includes(query)
     )
@@ -97,7 +97,7 @@ export default function GiftCardsMonthlyReportPage() {
   const totals = useMemo(() => {
     const totalUsed = filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
     const uniqueGiftCards = new Set(filteredTransactions.map(t => t.giftCard.id)).size
-    const uniqueCustomers = new Set(filteredTransactions.map(t => t.giftCard.order.email)).size
+    const uniqueCustomers = new Set(filteredTransactions.map(t => t.giftCard.order?.email).filter(Boolean)).size
     return { totalUsed, uniqueGiftCards, uniqueCustomers }
   }, [filteredTransactions])
 
@@ -138,9 +138,9 @@ export default function GiftCardsMonthlyReportPage() {
         "Residuo Post-Utilizzo": t.giftCard.remainingValue,
         "Numero Scontrino": t.receiptNumber || "-",
         "Nota": t.note || "-",
-        "Cliente": t.giftCard.order.email,
-        "Telefono": t.giftCard.order.phone || "-",
-        "Ordine Acquisto": t.giftCard.order.orderNumber,
+        "Cliente": t.giftCard.order?.email || "N/A",
+        "Telefono": t.giftCard.order?.phone || "-",
+        "Ordine Acquisto": t.giftCard.order?.orderNumber || "N/A",
         "Data Acquisto": new Date(t.giftCard.purchasedAt).toLocaleDateString("it-IT"),
         "Foto Scontrino": t.receiptImage ? "Presente" : "-",
       })
@@ -292,7 +292,7 @@ export default function GiftCardsMonthlyReportPage() {
       y -= 18
       
       // Row 3: Cliente
-      page.drawText(`Cliente: ${t.giftCard.order.email}`, {
+      page.drawText(`Cliente: ${t.giftCard.order?.email || "N/A"}`, {
         x: margin + 35,
         y,
         size: 9,
@@ -622,9 +622,9 @@ export default function GiftCardsMonthlyReportPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-body-sm text-brand-dark">{t.giftCard.order.email}</div>
-                          {t.giftCard.order.phone && (
-                            <div className="text-label-sm text-brand-gray">{t.giftCard.order.phone}</div>
+                          <div className="text-body-sm text-brand-dark">{t.giftCard.order?.email || "N/A"}</div>
+                          {t.giftCard.order?.phone && (
+                            <div className="text-label-sm text-brand-gray">{t.giftCard.order?.phone}</div>
                           )}
                         </td>
                         <td className="py-3 px-4">

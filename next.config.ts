@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     unoptimized: true,
   },
@@ -22,13 +21,12 @@ const nextConfig: NextConfig = {
       permanent: true,
     },
   ],
-  // Abilita source maps per il debugging
   productionBrowserSourceMaps: true,
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config: { devtool: string }, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
     if (dev && isServer) {
-      config.devtool = 'source-map'
+      config.devtool = "source-map";
     }
-    return config
+    return config;
   },
 };
 

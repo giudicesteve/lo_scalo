@@ -308,7 +308,7 @@ export default function CartContent() {
     <main className="min-h-screen bg-brand-cream">
       <header className="sticky top-0 z-40 bg-brand-cream/95 backdrop-blur-sm drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.2)]">
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => window.history.back()} className="p-2 -ml-2">
+          <button onClick={() => window.history.back()} className="p-2 -ml-2" aria-label={t("cart.back")}>
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </button>
           <Link href="/" className="p-2 -mr-2">
@@ -366,7 +366,7 @@ export default function CartContent() {
                         {(item.price * item.quantity).toFixed(2)}€
                       </td>
                       <td className="p-4">
-                        <button onClick={() => removeItem(item.id, item.size)} className="text-brand-gray hover:text-brand-primary">
+                        <button onClick={() => removeItem(item.id, item.size)} className="text-brand-gray hover:text-brand-primary" aria-label={t("cart.remove")}>
                           <X className="w-5 h-5" />
                         </button>
                       </td>

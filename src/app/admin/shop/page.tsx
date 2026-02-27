@@ -135,13 +135,20 @@ export default function AdminShopPage() {
 
     const method = editingProduct.id ? "PUT" : "POST"
     
+    // Transform variants to API format (size + stock instead of quantity)
+    const sizes = editingProduct.hasSizes 
+      ? (editingProduct.variants || []).map(v => ({
+          id: v.id,
+          size: v.size,
+          stock: v.quantity, // API expects 'stock', frontend uses 'quantity'
+        }))
+      : undefined
+    
     const bodyData = {
       ...editingProduct,
       hasSizes: editingProduct.hasSizes,
       hasSizesChanged: editingProduct.hasSizesChanged,
-      variants: editingProduct.hasSizes 
-        ? (editingProduct.variants || [])
-        : undefined,
+      sizes,
       stock: !editingProduct.hasSizes 
         ? (editingProduct.stock || 0)
         : undefined,
@@ -350,12 +357,25 @@ export default function AdminShopPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setEditingProduct({ 
-                            ...product, 
-                            stock: product.hasSizes ? undefined : (product.variants[0]?.quantity || 0),
-                            originalHasSizes: product.hasSizes,
-                            hasSizesChanged: false,
-                          })}
+                          onClick={() => {
+                            // Ensure variants is always an array and initialize missing sizes with 0
+                            const variants = product.variants || []
+                            // For products with sizes, ensure all SIZES are present in variants
+                            const completeVariants = product.hasSizes 
+                              ? SIZES.map(size => {
+                                  const existing = variants.find((v: ProductVariant) => v.size === size)
+                                  return existing || { size, quantity: 0 }
+                                })
+                              : variants
+                            
+                            setEditingProduct({ 
+                              ...product, 
+                              variants: completeVariants,
+                              stock: product.hasSizes ? undefined : (variants[0]?.quantity || 0),
+                              originalHasSizes: product.hasSizes,
+                              hasSizesChanged: false,
+                            })
+                          }}
                           className="p-1.5 text-brand-gray hover:text-brand-primary"
                           aria-label={`Modifica ${product.name}`}
                         >
@@ -532,6 +552,7 @@ export default function AdminShopPage() {
                   type="number"
                   inputMode="decimal"
                   step="0.5"
+                  value={editingProduct.price || 0}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, price: parseNumber(e.target.value) })
                   }

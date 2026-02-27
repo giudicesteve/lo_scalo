@@ -4,10 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// Utenti Admin
 model Admin {
   id                   String   @id @default(cuid())
   email                String   @unique
@@ -19,26 +17,6 @@ model Admin {
   updatedAt            DateTime @updatedAt
 }
 
-// Enum for gift card expiry type
-enum GiftCardExpiryType {
-  EXACT_DATE
-  END_OF_MONTH
-}
-
-// Enum for gift card expiry time
-enum GiftCardExpiryTime {
-  SIX_MONTHS
-  ONE_YEAR
-  TWO_YEARS
-}
-
-// Fonte dell'ordine (distingue tra online e POS)
-enum OrderSource {
-  ONLINE  // Ordine creato tramite Stripe checkout
-  MANUAL  // Ordine creato manualmente dal personale (POS/Contanti)
-}
-
-// Configurazione globale del sito
 model SiteConfig {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -46,33 +24,22 @@ model SiteConfig {
   updatedAt DateTime @updatedAt
 }
 
-// Gift Card Expiry Configuration (single row, always id = "gift-card-expiry")
-model GiftCardExpiryConfig {
-  id         String           @id @default("gift-card-expiry")
-  expiryType GiftCardExpiryType @default(END_OF_MONTH)
-  expiryTime GiftCardExpiryTime @default(ONE_YEAR)
-  updatedAt  DateTime         @updatedAt
-}
-
-// Categorie per il menu
 model Category {
-  id                String    @id @default(cuid())
-  nameIt            String
-  nameEn            String
-  macroCategoryIt   String?
-  macroCategoryEn   String?
-  showAlcoholLevel  Boolean   @default(true)
-  order             Int       @default(0)
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  cocktails         Cocktail[]
+  id               String     @id @default(cuid())
+  nameIt           String
+  nameEn           String
+  macroCategoryIt  String?
+  macroCategoryEn  String?
+  showAlcoholLevel Boolean    @default(true)
+  order            Int        @default(0)
+  isActive         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  cocktails        Cocktail[]
 }
 
-// Cocktail/Drink nel menu
 model Cocktail {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   nameIt        String
   nameEn        String
   ingredientsIt String?
@@ -81,173 +48,173 @@ model Cocktail {
   descriptionEn String?
   price         Float
   alcoholLevel  Int?
-  isActive      Boolean   @default(true)
-  order         Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isActive      Boolean  @default(true)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
-// Prodotti per il negozio
-model Product {
-  id            String    @id @default(cuid())
-  name          String
-  descriptionIt String
-  descriptionEn String
-  price         Float
-  image         String
-  hasSizes      Boolean   @default(true)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  variants      ProductVariant[]
-  orderItems    OrderItem[]
-}
-
-// Varianti prodotto (taglie)
-model ProductVariant {
-  id            String    @id @default(cuid())
-  size          String
-  quantity      Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId     String
-  
-  orderItems    OrderItem[]
-  
-  @@unique([productId, size])
-}
-
-// Gift Card Template
 model GiftCardTemplate {
-  id            String    @id @default(cuid())
-  value         Float
-  price         Float
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  value     Float
+  price     Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// Gift Card acquistate
 model GiftCard {
-  id               String    @id @default(cuid())
-  code             String    @unique
-  initialValue     Float
-  remainingValue   Float
-  isActive         Boolean   @default(true)
-  isArchived       Boolean   @default(false)
-  isExpired        Boolean   @default(false)
-  purchasedAt      DateTime  @default(now())
-  activatedAt      DateTime?
-  expiresAt        DateTime?
-  
-  order            Order     @relation(fields: [orderId], references: [id])
-  orderId          String
-  
-  transactions     GiftCardTransaction[]
+  id             String                @id @default(cuid())
+  code           String                @unique
+  initialValue   Float
+  remainingValue Float
+  isActive       Boolean               @default(true)
+  isArchived     Boolean               @default(false)
+  purchasedAt    DateTime              @default(now())
+  activatedAt    DateTime?
+  expiresAt      DateTime?
+  orderId        String
+  isExpired      Boolean               @default(false)
+  order          Order                 @relation(fields: [orderId], references: [id])
+  transactions   GiftCardTransaction[]
 }
 
-// Transazioni sulle gift card
 model GiftCardTransaction {
-  id             String    @id @default(cuid())
-  amount         Float
-  type           String
-  note           String?
-  receiptNumber  String?   // Numero scontrino fiscale
-  receiptImage   String?   // URL immagine scontrino
-  createdAt      DateTime  @default(now())
-  
-  giftCard       GiftCard  @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
-  giftCardId     String
+  id            String   @id @default(cuid())
+  amount        Float
+  type          String
+  note          String?
+  createdAt     DateTime @default(now())
+  giftCardId    String
+  receiptImage  String?
+  receiptNumber String?
+  giftCard      GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
 }
 
-// Ordini
+model GiftCardExpiryConfig {
+  id         String             @id @default("gift-card-expiry")
+  expiryType GiftCardExpiryType @default(END_OF_MONTH)
+  expiryTime GiftCardExpiryTime @default(ONE_YEAR)
+  updatedAt  DateTime           @updatedAt
+}
+
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
-  type            String
-  status          String      @default("PENDING_PAYMENT")
-  email           String
-  phone           String?
-  total           Float
-  customerName    String?
-  lang            String      @default("it")  // Lingua usata dall'utente durante l'ordine (it/en)
-  stripePaymentId       String?  // ID della checkout session (cs_...)
-  stripePaymentIntentId String?  // ID del payment intent (pi_...)
-  isArchived      Boolean     @default(false)
-  orderSource     OrderSource @default(ONLINE)  // Fonte ordine: ONLINE o MANUAL (POS)
-  emailSent       Boolean     @default(false)  // Previene invio doppio email
-  paidAt          DateTime?   // Data pagamento completato (quando status passa a COMPLETED/DELIVERED) - CRITICO per contabilità
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  items           OrderItem[]
-  giftCards       GiftCard[]
+  id                    String      @id @default(cuid())
+  orderNumber           String      @unique
+  type                  String
+  status                String      @default("PENDING_PAYMENT")
+  email                 String
+  phone                 String?
+  total                 Float
+  customerName          String?
+  stripePaymentId       String?
+  stripePaymentIntentId String?
+  isArchived            Boolean     @default(false)
+  emailSent             Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  lang                  String      @default("it")
+  paidAt                DateTime?
+  isHidden              Boolean     @default(false)
+  orderSource           OrderSource @default(ONLINE)
+  giftCards             GiftCard[]
+  items                 OrderItem[]
 }
 
-// Item singoli negli ordini
 model OrderItem {
-  id            String    @id @default(cuid())
-  quantity      Int
-  unitPrice     Float
-  totalPrice    Float
-  size          String?
-  
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId       String
-  
-  product       Product   @relation(fields: [productId], references: [id])
-  productId     String
-  
-  variant       ProductVariant? @relation(fields: [variantId], references: [id])
-  variantId     String?
+  id             String          @id @default(cuid())
+  quantity       Int
+  unitPrice      Float
+  totalPrice     Float
+  size           String?
+  orderId        String
+  productId      String
+  variantId      String?
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Product        Product         @relation(fields: [productId], references: [id])
+  ProductVariant ProductVariant? @relation(fields: [variantId], references: [id])
 }
 
-// ============================================
-// POLICY DOCUMENTS (Terms, Privacy, Cookies)
-// ============================================
-
-enum PolicyType {
-  TERMS
-  PRIVACY
-  COOKIES
+model Product {
+  id             String           @id @default(cuid())
+  name           String
+  descriptionIt  String
+  descriptionEn  String
+  price          Float
+  image          String
+  hasSizes       Boolean          @default(true)
+  isActive       Boolean          @default(true)
+  isDeleted      Boolean          @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  OrderItem      OrderItem[]
+  ProductVariant ProductVariant[]
 }
 
 model PolicyDocument {
-  id            String    @id @default(cuid())
+  id            String             @id @default(cuid())
   type          PolicyType
-  version       String          // Date-based: "2026-02-26"
-  contentIt     String          // HTML content (Italian)
-  contentEn     String          // HTML content (English)
-  isActive      Boolean   @default(false)
-  isArchived    Boolean   @default(false)  // Archiviazione invece di eliminazione
-  effectiveDate DateTime        // When this version becomes enforceable
-  createdAt     DateTime  @default(now())
-  createdBy     String?         // Admin email who created it
-  
+  version       String
+  isActive      Boolean            @default(false)
+  effectiveDate DateTime
+  createdAt     DateTime           @default(now())
+  createdBy     String?
+  isArchived    Boolean            @default(false)
+  contentIt     String
+  contentEn     String
   acceptances   PolicyAcceptance[]
-  
+
   @@index([type, isActive])
   @@index([type, isArchived])
 }
 
 model PolicyAcceptance {
-  id            String   @id @default(cuid())
-  policyId      String
-  policy        PolicyDocument @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  
-  // User identification
-  email         String   // From order
-  ipAddress     String?  // GDPR audit requirement
-  
-  acceptedAt    DateTime @default(now())
-  orderId       String   // Link to order
-  
+  id         String         @id @default(cuid())
+  policyId   String
+  email      String
+  ipAddress  String?
+  acceptedAt DateTime       @default(now())
+  orderId    String
+  policy     PolicyDocument @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
   @@index([orderId])
   @@index([email])
+}
+
+model ProductVariant {
+  id        String      @id
+  size      String
+  quantity  Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  productId String
+  OrderItem OrderItem[]
+  Product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, size])
+}
+
+enum GiftCardExpiryType {
+  EXACT_DATE
+  END_OF_MONTH
+}
+
+enum GiftCardExpiryTime {
+  SIX_MONTHS
+  ONE_YEAR
+  TWO_YEARS
+}
+
+enum OrderSource {
+  ONLINE
+  MANUAL
+}
+
+enum PolicyType {
+  TERMS
+  PRIVACY
+  COOKIES
 }

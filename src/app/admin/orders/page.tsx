@@ -116,8 +116,8 @@ export default function AdminOrdersPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(order => 
-        order.orderNumber.toLowerCase().includes(query) ||
-        order.email.toLowerCase().includes(query) ||
+        order.orderNumber?.toLowerCase().includes(query) ||
+        order.email?.toLowerCase().includes(query) ||
         (order.phone && order.phone.toLowerCase().includes(query))
       )
     }
@@ -431,7 +431,7 @@ export default function AdminOrdersPage() {
                     {order.items.map((item) => (
                       <div key={item.id} className="flex justify-between text-body-sm mb-1">
                         <span>
-                          {item.quantity} x {item.product.name} {item.size && `(${item.size})`}
+                          {item.quantity} x {item.product?.name || 'Prodotto eliminato'} {item.size && `(${item.size})`}
                         </span>
                         <span className="font-medium">{item.totalPrice.toFixed(2)}€</span>
                       </div>
@@ -575,7 +575,7 @@ export default function AdminOrdersPage() {
         title="Reinvia Email"
         description={
           confirmDialog.order
-            ? confirmDialog.order.giftCards.length > 0
+            ? confirmDialog.order.giftCards?.length > 0
               ? `Vuoi reinviare l'email di conferma con ${confirmDialog.order.giftCards.length} PDF delle Gift Card a ${confirmDialog.order.email}?`
               : `Vuoi reinviare l'email di conferma ordine a ${confirmDialog.order.email}?`
             : ""

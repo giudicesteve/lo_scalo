@@ -131,6 +131,7 @@ export default function MetricsReportPage() {
     const productMap = new Map<string, ProductSales>()
     filteredOrders.forEach(order => {
       order.items.forEach(item => {
+        if (!item.product) return // Skip if product was deleted
         const name = item.size ? `${item.product.name} (${item.size})` : item.product.name
         const existing = productMap.get(name)
         if (existing) {

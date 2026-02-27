@@ -230,10 +230,16 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   
   // QR Code
   try {
-    const qrDataUrl = await QRCode.toDataURL(giftCard.code, { width: 200 })
-    const qrBase64 = qrDataUrl.split(',')[1]
-    const qrImage = await pdfDoc.embedPng(Buffer.from(qrBase64, 'base64'))
-    
+    // 1. Genera direttamente un Buffer invece di una DataURL (evita il passaggio in base64)
+    const qrBuffer = await QRCode.toBuffer(giftCard.code, { 
+        width: 200,
+        errorCorrectionLevel: 'M', // Livello medio: ottimo compromesso tra leggibilità e resistenza ai danni
+    });
+
+    // 2. Incorpora direttamente il Buffer nel PDF
+    const qrImage = await pdfDoc.embedPng(qrBuffer);
+
+    // 3. Disegna l'immagine (esempio di posizionamento)
     page.drawImage(qrImage, {
       x: width / 2 - 100,
       y: height - 455,
@@ -245,15 +251,16 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   }
 
   // Gift Card code
-  const textWidth3 = fontBold.widthOfTextAtSize(giftCard.code, 20)
+  const monoFont = await pdfDoc.embedFont(StandardFonts.CourierBold)
+  const textWidth3 = monoFont.widthOfTextAtSize(giftCard.code, 20)
   page.drawText(giftCard.code, {
-    x: width / 2 - textWidth3 / 2,
-    y: height - 482,
-    size: 20,
-    font: fontBold,
-    color: rgb(0.137, 0.122, 0.125)
-  })
-  
+      x: width / 2 - textWidth3 / 2,
+      y: height - 482,
+      size: 20,
+      font: monoFont,
+      color: rgb(0.1, 0.1, 0.1),
+  });
+    
   // Instructions IT
   const textWidth4 = fontBold.widthOfTextAtSize('Come utilizzare la tua Gift Card', 12)
   page.drawText('Come utilizzare la tua Gift Card', {

@@ -215,7 +215,7 @@ function DailyReportContent() {
           "Email": "",
           "Telefono": "",
           "Tipo": "",
-          "Prodotto": item.product.name,
+          "Prodotto": item.product?.name || 'Prodotto eliminato',
           "Taglia": item.size || "-",
           "Qty": item.quantity,
           "Prezzo": item.totalPrice,
@@ -386,7 +386,7 @@ function DailyReportContent() {
         color: rgb(0.4, 0.4, 0.4),
       })
       
-      page.drawText(order.email.length > 35 ? order.email.substring(0, 35) + "..." : order.email, {
+      page.drawText(order.email?.length > 35 ? order.email?.substring(0, 35) + "..." : (order.email || "N/A"), {
         x: margin + 130,
         y,
         size: 9,
@@ -419,7 +419,7 @@ function DailyReportContent() {
         
         order.items.forEach(item => {
           const sizeText = item.size ? ` (${item.size})` : ""
-          page.drawText(`• ${item.quantity}x ${item.product.name}${sizeText}`, {
+          page.drawText(`• ${item.quantity}x ${item.product?.name || 'Prodotto eliminato'}${sizeText}`, {
             x: margin + 30,
             y,
             size: 8,
@@ -760,7 +760,7 @@ function DailyReportContent() {
                             <div className="space-y-1">
                               {order.items.map((item, idx) => (
                                 <div key={idx} className="text-body-sm text-brand-dark">
-                                  {item.quantity}x {item.product.name} {item.size && `(${item.size})`}
+                                  {item.quantity}x {item.product?.name || 'Prodotto eliminato'} {item.size && `(${item.size})`}
                                   <span className="text-brand-gray ml-1">- {item.totalPrice.toFixed(2)}€</span>
                                 </div>
                               ))}
@@ -905,7 +905,7 @@ function DailyReportContent() {
                             <div className="space-y-1">
                               {order.items.map((item, idx) => (
                                 <div key={idx} className="text-body-sm text-brand-dark">
-                                  • {item.quantity} x {item.product.name} {item.size && `(${item.size})`}
+                                  • {item.quantity} x {item.product?.name || 'Prodotto eliminato'} {item.size && `(${item.size})`}
                                   <span className="text-brand-gray ml-1">({item.totalPrice.toFixed(2)}€)</span>
                                 </div>
                               ))}

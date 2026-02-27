@@ -191,7 +191,7 @@ export default function ShopProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-brand-cream">
+    <main className="min-h-screen bg-brand-cream" suppressHydrationWarning>
       {/* Header */}
       <header className="sticky top-0 z-40 bg-brand-cream/95 backdrop-blur-sm drop-shadow drop-shadow-[0_2px_2px_rgba(0,0,0,0.2)]">
         <div className="flex items-center justify-between px-4 py-3">

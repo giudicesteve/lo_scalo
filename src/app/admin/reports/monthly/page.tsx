@@ -150,7 +150,7 @@ export default function MonthlyReportPage() {
           "Email": "",
           "Telefono": "",
           "Tipo": "PRODOTTO",
-          "Prodotto": `${item.product.name}${item.size ? ` (${item.size})` : ''}`,
+          "Prodotto": `${item.product?.name || 'Prodotto eliminato'}${item.size ? ` (${item.size})` : ''}`,
           "Qty": item.quantity,
           "Prezzo Unitario": item.unitPrice,
           "Totale Riga": item.totalPrice,
