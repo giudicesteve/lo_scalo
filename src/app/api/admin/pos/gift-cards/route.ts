@@ -92,11 +92,12 @@ export async function POST(req: NextRequest) {
         data: {
           orderNumber,
           status: "DELIVERED", // Già consegnato perché pagato in sede
-          type: "MANUAL",
+          type: "GIFT_CARD",
           email: email,
           phone: phone,
           total: template.value,
           orderSource: "MANUAL",
+          paidAt: new Date(), // Pagamento immediato (POS/Contanti)
           // Note interne per identificare il pagamento
           customerName: `Pagamento: ${paymentMethod === "CASH" ? "Contanti" : "POS"}`,
         },
@@ -141,6 +142,13 @@ export async function POST(req: NextRequest) {
         lang: "it",
       });
       emailSent = true;
+      
+      // Aggiorna il flag emailSent nel database
+      await prisma.order.update({
+        where: { id: result.order.id },
+        data: { emailSent: true },
+      });
+      console.log(`✅ [POS] emailSent flag aggiornato per order ${result.order.id}`);
     } catch (emailError) {
       console.error("Error sending email:", emailError);
       // Non blocchiamo la risposta se l'email fallisce, ma logghiamo l'errore
@@ -175,7 +183,6 @@ export async function POST(req: NextRequest) {
 
 // GET /api/admin/pos/gift-cards/templates
 // Recupera i template disponibili per le gift card
-// Nota: L'autenticazione è gestita dal middleware in middleware.ts
 export async function GET() {
   try {
     const templates = await prisma.giftCardTemplate.findMany({

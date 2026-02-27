@@ -180,6 +180,15 @@ export async function POST(req: Request) {
             attachments: results[0].attachments || 0,
           });
 
+          // Aggiorna il flag emailSent nel database
+          if (results[0].success) {
+            await prisma.order.update({
+              where: { id: orderId },
+              data: { emailSent: true },
+            });
+            console.log(`✅ [WEBHOOK] emailSent flag aggiornato per order ${orderId}`);
+          }
+
           console.log(`✅ [WEBHOOK] Email processed per order ${orderId}`);
         } catch (err) {
           console.error("Error sending emails (will retry later):", err);

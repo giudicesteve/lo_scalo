@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { ArrowLeft, Store, CreditCard, Banknote, Gift, Mail, CheckCircle, Loader2 } from "lucide-react"
+import { ArrowLeft, Store, CreditCard, Banknote, Gift, Mail, CheckCircle, Loader2, AlertCircle, X } from "lucide-react"
 import { Toast, useToast } from "@/components/Toast"
 
 interface GiftCardTemplate {
@@ -29,6 +29,15 @@ export default function PosGiftCardPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   
   const { toast, showToast, hideToast } = useToast()
+  
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [formData, setFormData] = useState<{
+    email: string
+    phone: string
+    paymentMethod: PaymentMethod
+    giftCardTemplateId: string
+  } | null>(null)
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -51,7 +60,7 @@ export default function PosGiftCardPage() {
     fetchTemplates()
   }, [fetchTemplates])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!email || !phone || !selectedTemplate) {
@@ -59,18 +68,27 @@ export default function PosGiftCardPage() {
       return
     }
 
+    // Save form data and show confirmation modal
+    setFormData({
+      email,
+      phone,
+      paymentMethod,
+      giftCardTemplateId: selectedTemplate,
+    })
+    setShowConfirmModal(true)
+  }
+  
+  const handleConfirmCreate = async () => {
+    if (!formData) return
+    
+    setShowConfirmModal(false)
     setSubmitting(true)
     
     try {
       const res = await fetch("/api/admin/pos/gift-cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          phone,
-          paymentMethod,
-          giftCardTemplateId: selectedTemplate,
-        }),
+        body: JSON.stringify(formData),
       })
 
       const data = await res.json()
@@ -91,12 +109,18 @@ export default function PosGiftCardPage() {
       setPhone("")
       setSelectedTemplate(templates[0]?.id || "")
       setPaymentMethod("CASH")
+      setFormData(null)
     } catch (error) {
       console.error("Error creating gift card:", error)
       showToast(error instanceof Error ? error.message : "Errore durante la creazione", "error")
     } finally {
       setSubmitting(false)
     }
+  }
+  
+  const handleCancelCreate = () => {
+    setShowConfirmModal(false)
+    setFormData(null)
   }
 
   const handleNewOrder = () => {
@@ -334,6 +358,79 @@ export default function PosGiftCardPage() {
           </form>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="text-headline-sm font-bold text-brand-dark">
+                  Conferma Pagamento
+                </h3>
+              </div>
+              <button
+                onClick={handleCancelCreate}
+                className="p-2 rounded-full hover:bg-brand-light-gray/50 transition-colors"
+              >
+                <X className="w-5 h-5 text-brand-gray" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="space-y-4 mb-6">
+              <p className="text-body-md text-brand-dark">
+                Il pagamento è stato effettuato correttamente?
+              </p>
+              
+              <div className="bg-brand-light-gray/30 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-body-sm">
+                  <span className="text-brand-gray">Metodo:</span>
+                  <span className="font-medium text-brand-dark">
+                    {paymentMethod === "CASH" ? "Contanti" : "POS"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-body-sm">
+                  <span className="text-brand-gray">Importo:</span>
+                  <span className="font-bold text-brand-primary">
+                    €{templates.find(t => t.id === selectedTemplate)?.value}
+                  </span>
+                </div>
+                <div className="flex justify-between text-body-sm">
+                  <span className="text-brand-gray">Cliente:</span>
+                  <span className="font-medium text-brand-dark truncate max-w-[150px]">
+                    {email}
+                  </span>
+                </div>
+              </div>
+              
+              <p className="text-label-sm text-brand-gray">
+                Conferma solo se il pagamento è stato ricevuto. Questa azione non può essere annullata.
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelCreate}
+                className="flex-1 py-3 px-4 bg-brand-light-gray/50 text-brand-dark rounded-xl font-medium hover:bg-brand-light-gray transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleConfirmCreate}
+                className="flex-1 py-3 px-4 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-dark transition-colors"
+              >
+                Sì, procedi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Toast isOpen={toast.isOpen} message={toast.message} type={toast.type} onClose={hideToast} />
     </main>

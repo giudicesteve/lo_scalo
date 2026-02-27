@@ -144,6 +144,13 @@ export async function POST(req: Request) {
 
         if (results[0].success) {
           console.log(`✅ [VERIFY] Email SENT per order ${order.id}`);
+          
+          // Aggiorna il flag emailSent nel database
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { emailSent: true },
+          });
+          console.log(`✅ [VERIFY] emailSent flag aggiornato per order ${order.id}`);
         } else {
           console.log(`❌ [VERIFY] Email FALLITA per order ${order.id}`);
         }

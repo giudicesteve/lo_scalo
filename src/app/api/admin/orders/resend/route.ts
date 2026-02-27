@@ -87,6 +87,13 @@ export async function POST(req: Request) {
       `📧 Order confirmation resent for order ${order.orderNumber} to ${order.email}`
     );
 
+    // Aggiorna il flag emailSent nel database
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { emailSent: true },
+    });
+    console.log(`✅ [RESEND] emailSent flag aggiornato per order ${orderId}`);
+
     return NextResponse.json({
       success: true,
       message: `Email inviata a ${order.email}`,

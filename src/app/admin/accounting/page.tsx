@@ -193,6 +193,7 @@ function DailyReportContent() {
         "Data": new Date(order.createdAt).toLocaleDateString("it-IT"),
         "Ora": new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
         "Ordine": order.orderNumber,
+        "Fonte": order.orderSource === "MANUAL" ? "MANUALE (POS/Contanti)" : "ONLINE",
         "Email": order.email,
         "Telefono": order.phone || "-",
         "Tipo": order.items.length > 0 && order.giftCards.length > 0 ? "MIXED" : order.giftCards.length > 0 ? "GIFT CARD" : "PRODOTTI",
@@ -212,6 +213,7 @@ function DailyReportContent() {
           "Data": "",
           "Ora": "",
           "Ordine": "",
+          "Fonte": "",
           "Email": "",
           "Telefono": "",
           "Tipo": "",
@@ -232,6 +234,7 @@ function DailyReportContent() {
           "Data": "",
           "Ora": "",
           "Ordine": "",
+          "Fonte": "",
           "Email": "",
           "Telefono": "",
           "Tipo": "",
@@ -370,12 +373,15 @@ function DailyReportContent() {
       })
       
       // Order header row
-      page.drawText(`#${order.orderNumber}`, {
+      const orderNumberText = order.orderSource === "MANUAL" 
+        ? `#${order.orderNumber} (MANUALE)` 
+        : `#${order.orderNumber}`
+      page.drawText(orderNumberText, {
         x: margin,
         y,
         size: 10,
         font: fontBold,
-        color: rgb(0, 0, 0),
+        color: order.orderSource === "MANUAL" ? rgb(0.8, 0.5, 0.1) : rgb(0, 0, 0),
       })
       
       page.drawText(time, {
@@ -670,7 +676,8 @@ function DailyReportContent() {
             <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
               <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
               <p className="text-body-sm text-red-700">
-                Attenzione: {paidOrdersWithoutPaidAtCount} ordine pagato senza data di pagamento registrata. Aggiorna manualmente il database.
+                Attenzione: {paidOrdersWithoutPaidAtCount} {paidOrdersWithoutPaidAtCount === 1 ? 'ordine in stato pagato' : 'ordini in stato pagati'} senza data di pagamento registrata. Controlla su stripe se sono effettivamente stati pagati.
+                {paidOrdersWithoutPaidAtCount === 1 ? ' Aggiornare l\'ordine' : ' Aggiornare gli ordini'} sul database contattando l'amministratore di sistema.
               </p>
             </div>
           )}
@@ -711,6 +718,7 @@ function DailyReportContent() {
                   <thead className="bg-brand-cream border-b border-brand-light-gray">
                     <tr>
                       <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Ordine</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Fonte</th>
                       <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Cliente</th>
                       <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Prodotti</th>
                       <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Stripe ID</th>
@@ -728,6 +736,12 @@ function DailyReportContent() {
                               <div className="font-mono text-body-sm font-bold text-brand-dark">
                                 #{order.orderNumber}
                               </div>
+                              {/* Badge for MANUAL orders */}
+                              {order.orderSource === "MANUAL" && (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                                  MANUALE
+                                </span>
+                              )}
                               {/* Warning for missing Stripe ID */}
                               {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
                               {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
@@ -745,6 +759,17 @@ function DailyReportContent() {
                                 minute: "2-digit",
                               })}
                             </div>
+                          </td>
+
+                          {/* Fonte */}
+                          <td className="py-3 px-4">
+                            {order.orderSource === "MANUAL" ? (
+                              <span className="px-2 py-1 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                                MANUALE
+                              </span>
+                            ) : (
+                              <span className="text-label-sm text-brand-gray">Online</span>
+                            )}
                           </td>
 
                           {/* Client Info */}
@@ -814,7 +839,7 @@ function DailyReportContent() {
                   </tbody>
                   <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                     <tr>
-                      <td colSpan={3} className="py-4 px-4 text-right">
+                      <td colSpan={4} className="py-4 px-4 text-right">
                         <div className="space-y-1">
                           <div className="text-body-sm text-blue-600">
                             Prodotti: <span className="font-bold">{totals.productRevenue.toFixed(2)}€</span>
@@ -845,8 +870,15 @@ function DailyReportContent() {
                     {/* Header: Order Number + Total */}
                     <div className="flex items-start justify-between mb-3 pb-3 border-b border-brand-light-gray">
                       <div>
-                        <div className="font-mono text-title-md font-bold text-brand-dark">
-                          #{order.orderNumber}
+                        <div className="flex items-center gap-2">
+                          <div className="font-mono text-title-md font-bold text-brand-dark">
+                            #{order.orderNumber}
+                          </div>
+                          {order.orderSource === "MANUAL" && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                              MANUALE
+                            </span>
+                          )}
                         </div>
                         <div className="text-body-sm text-brand-gray">
                           {new Date(order.createdAt).toLocaleTimeString("it-IT", {
