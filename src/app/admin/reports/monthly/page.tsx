@@ -39,6 +39,7 @@ interface Order {
   orderNumber: string
   type: string
   status: string
+  orderSource?: string
   email: string
   phone?: string
   total: number
