@@ -758,11 +758,11 @@ function DailyReportContent() {
                           {/* Fonte */}
                           <td className="py-3 px-4">
                             {order.orderSource === "MANUAL" ? (
-                              <span className="text-label-sm text-brand-gray font-bold">
-                                MANUALE
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-sm font-small rounded">
+                                Manuale
                               </span>
                             ) : (
-                              <span className="text-label-sm text-brand-gray">Online</span>
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-label-sm font-small rounded">Online</span>
                             )}
                           </td>
 
@@ -869,7 +869,7 @@ function DailyReportContent() {
                             #{order.orderNumber}
                           </div>
                           {order.orderSource === "MANUAL" && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-xs font-medium rounded">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-sm font-small rounded">
                               MANUALE
                             </span>
                           )}
