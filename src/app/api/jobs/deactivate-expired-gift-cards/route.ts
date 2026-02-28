@@ -26,8 +26,7 @@ export async function POST(req: Request) {
     const cronSecret = process.env.CRON_SECRET
     
     // Fallback to hardcoded secret from vercel.json for backward compatibility
-    const FALLBACK_CRON_SECRET = "4990bd47-12a6-489f-af88-7845143e8f34"
-    const effectiveSecret = cronSecret || FALLBACK_CRON_SECRET
+    const effectiveSecret = cronSecret
     
     if (!cronSecret) {
       console.warn("[CRON] Warning: CRON_SECRET environment variable not set, using fallback secret")
