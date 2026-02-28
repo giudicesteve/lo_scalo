@@ -5,6 +5,46 @@ import { prisma } from "@/lib/prisma"
 export const dynamic = 'force-dynamic'
 
 /**
+ * Check if request is authorized
+ * Vercel Cron sends requests with a specific user-agent header
+ */
+function isAuthorizedRequest(req: Request): boolean {
+  const url = new URL(req.url)
+  const secretFromQuery = url.searchParams.get("secret")
+  const authHeader = req.headers.get("authorization")
+  const cronSecret = process.env.CRON_SECRET
+  
+  // Vercel Cron Jobs send a specific user-agent
+  const userAgent = req.headers.get("user-agent") || ""
+  const isVercelCron = userAgent.includes("Vercelbot") || userAgent.includes("Vercel")
+  
+  // Check if secret matches via query param or auth header
+  const hasValidSecret = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
+  
+  // For Vercel Cron: if query params are stripped but it's from Vercel's cron bot, 
+  // we trust it as long as CRON_SECRET is configured
+  if (isVercelCron && cronSecret) {
+    console.log("[CRON] Request from Vercel Cron Bot detected")
+    return true
+  }
+  
+  // For manual/external requests: require secret
+  if (hasValidSecret) {
+    return true
+  }
+  
+  // Log debugging info
+  console.error("[CRON] Unauthorized access attempt")
+  console.error(`[CRON] Query param: ${secretFromQuery ? 'present' : 'missing'}`)
+  console.error(`[CRON] Auth header: ${authHeader ? 'present' : 'missing'}`)
+  console.error(`[CRON] User-Agent: ${userAgent}`)
+  console.error(`[CRON] CRON_SECRET configured: ${!!cronSecret}`)
+  console.error(`[CRON] Is Vercel Cron: ${isVercelCron}`)
+  
+  return false
+}
+
+/**
  * POST /api/jobs/deactivate-expired-gift-cards
  * 
  * This endpoint should be called daily at 2:00 AM Italian time
@@ -18,26 +58,8 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(req: Request) {
   try {
-    // Verify cron secret for security
-    // Support both query param (for Vercel Cron) and Authorization header (for manual calls)
-    const url = new URL(req.url)
-    const secretFromQuery = url.searchParams.get("secret")
-    const authHeader = req.headers.get("authorization")
-    const cronSecret = process.env.CRON_SECRET
-    
-    // Fallback to hardcoded secret from vercel.json for backward compatibility
-    const effectiveSecret = cronSecret
-    
-    if (!cronSecret) {
-      console.warn("[CRON] Warning: CRON_SECRET environment variable not set, using fallback secret")
-    }
-    
-    const isAuthorized = secretFromQuery === effectiveSecret || authHeader === `Bearer ${effectiveSecret}`
-    
-    if (!isAuthorized) {
-      console.error("[CRON] Unauthorized access attempt")
-      console.error(`[CRON] Query secret match: ${secretFromQuery === effectiveSecret}`)
-      console.error(`[CRON] Auth header match: ${authHeader === `Bearer ${effectiveSecret}`}`)
+    // Verify authorization
+    if (!isAuthorizedRequest(req)) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -123,24 +145,8 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    // Verify cron secret for security
-    // Support both query param (for Vercel Cron) and Authorization header (for manual calls)
-    const url = new URL(req.url)
-    const secretFromQuery = url.searchParams.get("secret")
-    const authHeader = req.headers.get("authorization")
-    const cronSecret = process.env.CRON_SECRET
-    
-    // Fallback to hardcoded secret from vercel.json for backward compatibility
-    const FALLBACK_CRON_SECRET = "4990bd47-12a6-489f-af88-7845143e8f34"
-    const effectiveSecret = cronSecret || FALLBACK_CRON_SECRET
-    
-    if (!cronSecret) {
-      console.warn("[CRON] Warning: CRON_SECRET environment variable not set, using fallback secret")
-    }
-    
-    const isAuthorized = secretFromQuery === effectiveSecret || authHeader === `Bearer ${effectiveSecret}`
-    
-    if (!isAuthorized) {
+    // Verify authorization
+    if (!isAuthorizedRequest(req)) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
