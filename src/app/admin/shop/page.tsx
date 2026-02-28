@@ -506,7 +506,7 @@ export default function AdminShopPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="product-name" className="block text-label-md text-brand-gray mb-2">
-                  Nome
+                  Nome (Italiano)
                 </label>
                 <input
                   id="product-name"
@@ -514,6 +514,20 @@ export default function AdminShopPage() {
                   value={editingProduct.name || ""}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, name: e.target.value })
+                  }
+                  className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="product-name-en" className="block text-label-md text-brand-gray mb-2">
+                  Nome (English)
+                </label>
+                <input
+                  id="product-name-en"
+                  type="text"
+                  value={editingProduct.nameEn || ""}
+                  onChange={(e) =>
+                    setEditingProduct({ ...editingProduct, nameEn: e.target.value })
                   }
                   className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
                 />
