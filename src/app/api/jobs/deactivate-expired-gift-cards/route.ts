@@ -25,37 +25,39 @@ export async function POST(req: Request) {
     const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     
+    // Fallback to hardcoded secret from vercel.json for backward compatibility
+    const FALLBACK_CRON_SECRET = "4990bd47-12a6-489f-af88-7845143e8f34"
+    const effectiveSecret = cronSecret || FALLBACK_CRON_SECRET
+    
     if (!cronSecret) {
-      return NextResponse.json(
-        { error: "CRON_SECRET not configured" },
-        { status: 500 }
-      )
+      console.warn("[CRON] Warning: CRON_SECRET environment variable not set, using fallback secret")
     }
     
-    const isAuthorized = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
+    const isAuthorized = secretFromQuery === effectiveSecret || authHeader === `Bearer ${effectiveSecret}`
     
     if (!isAuthorized) {
+      console.error("[CRON] Unauthorized access attempt")
+      console.error(`[CRON] Query secret match: ${secretFromQuery === effectiveSecret}`)
+      console.error(`[CRON] Auth header match: ${authHeader === `Bearer ${effectiveSecret}`}`)
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       )
     }
 
-    // Get current time in Italian timezone
+    // Get current time
     const now = new Date()
-    const italianNow = new Date(
-      now.toLocaleString("en-US", { timeZone: "Europe/Rome" })
-    )
-
-    console.log(`[CRON] Running deactivate-expired-gift-cards job at ${italianNow.toISOString()} (Italian time)`)
+    
+    console.log(`[CRON] Running deactivate-expired-gift-cards job at ${now.toISOString()} (UTC)`)
 
     // Find all gift cards that:
     // 1. Have an expiry date set (expiresAt is not null)
-    // 2. Have expired (expiresAt < now in Italian timezone)
+    // 2. Have expired (expiresAt < current time)
     // 3. Are not already marked as expired
     // 4. Are not already archived
     
-    // We need to convert the comparison to Italian timezone
+    // Note: expiresAt is stored in UTC (calculated as end of day in Italian timezone, converted to UTC)
+    // So we compare against NOW() which is also UTC
     const expiredGiftCards = await prisma.$queryRaw<Array<{ id: string; code: string; expiresAt: Date }>>`
       SELECT id, code, "expiresAt"
       FROM "GiftCard"
@@ -129,14 +131,15 @@ export async function GET(req: Request) {
     const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
     
+    // Fallback to hardcoded secret from vercel.json for backward compatibility
+    const FALLBACK_CRON_SECRET = "4990bd47-12a6-489f-af88-7845143e8f34"
+    const effectiveSecret = cronSecret || FALLBACK_CRON_SECRET
+    
     if (!cronSecret) {
-      return NextResponse.json(
-        { error: "CRON_SECRET not configured" },
-        { status: 500 }
-      )
+      console.warn("[CRON] Warning: CRON_SECRET environment variable not set, using fallback secret")
     }
     
-    const isAuthorized = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
+    const isAuthorized = secretFromQuery === effectiveSecret || authHeader === `Bearer ${effectiveSecret}`
     
     if (!isAuthorized) {
       return NextResponse.json(

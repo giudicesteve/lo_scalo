@@ -12,17 +12,6 @@
 
 ---
 
-## Screenshots
-
-<p align="center">
-  <img src="./docs/screenshots/landing.png" alt="Landing Page" width="45%" />
-  <img src="./docs/screenshots/admin.png" alt="Admin Dashboard" width="45%" />
-</p>
-
-*Landing page and Admin Dashboard (add your screenshots to `docs/screenshots/`)*
-
----
-
 ## Features
 
 ### Customer Experience
@@ -329,7 +318,7 @@ This is a proprietary project for Lo Scalo. For issues or feature requests, plea
 
 ## Acknowledgments
 
-- **Design & Development**: [Steve Giudice](mailto:steve.giudice@example.com)
+- **Design & Development**: [Steve Giudice](mailto:giudice.steve@gmail.com)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Icons**: [Lucide](https://lucide.dev/)
 
@@ -342,5 +331,5 @@ Proprietary - All rights reserved by Lo Scalo and Steve Giudice.
 ---
 
 <p align="center">
-  Made with ❤️ for Lo Scalo, Cremia (CO)
+  Made with ❤️ for Lo Scalo - Craft Drinks By The Lake, Cremia (CO)
 </p>
