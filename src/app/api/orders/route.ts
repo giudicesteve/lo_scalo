@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     logToFile(`Body ricevuto: ${JSON.stringify(body)}`);
 
-    const { email, phone, items, total, type: orderType } = body;
+    const { email, phone, items, total, type: orderType, lang = "it" } = body;
 
     logToFile(
       `🌐 [ORDERS] Dati: email=${email}, phone=${phone}, items=${items?.length}, total=${total}`
@@ -256,6 +256,7 @@ export async function POST(req: Request) {
           email: email,
           phone: phone,
           total,
+          lang: lang,
         },
       });
       logToFile(`  ✅ Ordine creato: ${order.id}`);
@@ -289,6 +290,8 @@ export async function POST(req: Request) {
             unitPrice: item.price,
             totalPrice: item.price * item.quantity,
             size: item.size || "Unica",
+            productName: product?.name || "Prodotto",
+            productNameEn: product?.nameEn || product?.name || "Prodotto",
           },
         });
       }

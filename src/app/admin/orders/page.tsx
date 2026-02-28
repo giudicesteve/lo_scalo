@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, RotateCcwIcon } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
+import { RefundModal } from "@/components/admin/refunds"
 
 interface OrderItem {
   id: string
@@ -41,6 +42,13 @@ interface Order {
   stripePaymentIntentId?: string
   items: OrderItem[]
   giftCards: GiftCard[]
+  hasRefund?: boolean
+  refunds?: Array<{
+    id: string
+    refundNumber: string
+    totalRefunded: number
+    refundedAt: string
+  }>
 }
 
 const statusLabels: Record<string, string> = {
@@ -92,6 +100,23 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
+    
+    // Check if user is super admin
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch("/api/admin/admins")
+        if (res.ok) {
+          const admins = await res.json()
+          const sessionRes = await fetch("/api/auth/session")
+          const session = await sessionRes.json()
+          const currentAdmin = admins.find((a: { email: string }) => a.email === session?.user?.email)
+          setIsSuperAdmin(currentAdmin?.canManageAdmins || false)
+        }
+      } catch (err) {
+        console.error("Error checking admin:", err)
+      }
+    }
+    checkAdmin()
   }, [fetchOrders])
 
   // Ricarica quando la pagina prende focus (utente torna sulla tab)
@@ -172,6 +197,11 @@ export default function AdminOrdersPage() {
     isOpen: boolean
     order: Order | null
   }>({ isOpen: false, order: null })
+  
+  // Refund modal state
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
 
   const [actionDialog, setActionDialog] = useState<{
     isOpen: boolean
@@ -193,6 +223,18 @@ export default function AdminOrdersPage() {
 
   const closeActionDialog = () => {
     setActionDialog({ isOpen: false, orderId: null, action: null })
+  }
+
+  const handleOpenRefund = (order: Order) => {
+    setSelectedOrderForRefund(order)
+    setRefundModalOpen(true)
+  }
+  
+  const handleRefundComplete = () => {
+    fetchOrders()
+    setRefundModalOpen(false)
+    setSelectedOrderForRefund(null)
+    showToast("Rimborso completato con successo!", "success")
   }
 
   const handleResendOrderEmail = async () => {
@@ -517,6 +559,17 @@ export default function AdminOrdersPage() {
                         )}
                       </button>
                     )}
+                    
+                    {/* Rimborso - solo super admin */}
+                    {isSuperAdmin && order.status !== "PENDING_PAYMENT" && (
+                      <button
+                        onClick={() => handleOpenRefund(order)}
+                        className="px-3 py-2 bg-red-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-red-600 transition-colors"
+                      >
+                        <RotateCcwIcon className="w-4 h-4" />
+                        Rimborso
+                      </button>
+                    )}
                   </>
                 ) : (
                   /* Archiviati: mostra azioni in base allo stato */
@@ -585,6 +638,20 @@ export default function AdminOrdersPage() {
         onConfirm={handleResendOrderEmail}
       />
 
+      {/* Refund Modal */}
+      {selectedOrderForRefund && (
+        <RefundModal
+          isOpen={refundModalOpen}
+          onClose={() => {
+            setRefundModalOpen(false)
+            setSelectedOrderForRefund(null)
+          }}
+          orderId={selectedOrderForRefund.id}
+          orderNumber={selectedOrderForRefund.orderNumber}
+          onRefundComplete={handleRefundComplete}
+        />
+      )}
+      
       {/* Dialog conferma azioni (archivia/ripristina/elimina) */}
       {actionDialog.isOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">

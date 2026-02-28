@@ -47,11 +47,21 @@ export async function GET(req: Request) {
     });
 
     // Transform to include product in items (lowercase for frontend compatibility)
+    // Use productName (snapshot at purchase time) if available, fallback to current Product name
     const transformedOrders = orders.map((order) => ({
       ...order,
       items: order.items.map((item) => ({
         ...item,
-        product: item.Product, // Map Product (Prisma) to product (frontend)
+        product: item.Product ? {
+          ...item.Product,
+          // Override name with snapshot if available
+          name: item.productName || item.Product.name,
+          nameEn: item.productNameEn || item.Product.nameEn || item.Product.name,
+        } : {
+          id: item.productId,
+          name: item.productName || "Prodotto eliminato",
+          nameEn: item.productNameEn || "Prodotto eliminato",
+        },
       })),
     }));
 

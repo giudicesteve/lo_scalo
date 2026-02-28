@@ -23,6 +23,7 @@ interface ProductVariant {
 interface Product {
   id: string
   name: string
+  nameEn: string
   descriptionIt: string
   descriptionEn: string
   price: number

@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+
 }
 
 model Admin {
@@ -79,6 +80,14 @@ model GiftCard {
   isExpired      Boolean               @default(false)
   order          Order                 @relation(fields: [orderId], references: [id])
   transactions   GiftCardTransaction[]
+  
+  // Soft delete per rimborso
+  isSoftDeleted  Boolean               @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?               // Admin ID
+  deletionNote   String?
+  refundId       String?               // Riferimento al rimborso
+  refund         Refund?               @relation(fields: [refundId], references: [id])
 }
 
 model GiftCardTransaction {
@@ -121,6 +130,7 @@ model Order {
   orderSource           OrderSource @default(ONLINE)
   giftCards             GiftCard[]
   items                 OrderItem[]
+  refunds               Refund[]    // Rimborsi associati all'ordine
 }
 
 model OrderItem {
@@ -132,6 +142,8 @@ model OrderItem {
   orderId        String
   productId      String
   variantId      String?
+  productName    String?         // Nome del prodotto in italiano (snapshot)
+  productNameEn  String?         // Nome del prodotto in inglese (snapshot)
   order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   Product        Product         @relation(fields: [productId], references: [id])
   ProductVariant ProductVariant? @relation(fields: [variantId], references: [id])
@@ -139,7 +151,8 @@ model OrderItem {
 
 model Product {
   id             String           @id @default(cuid())
-  name           String
+  name           String           // Nome in italiano
+  nameEn         String?          // Nome in inglese (opzionale)
   descriptionIt  String
   descriptionEn  String
   price          Float
@@ -217,4 +230,54 @@ enum PolicyType {
   TERMS
   PRIVACY
   COOKIES
+}
+
+// Modello per la gestione rimborsi
+model Refund {
+  id            String   @id @default(cuid())
+  
+  // Riferimento all'ordine originale
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+  
+  // Numero rimborso (formato: RIM-YYYY-XXXX-RAND)
+  refundNumber  String   @unique
+  
+  // Item rimborsati (dettagli completi per storico)
+  // Esempio: [{ type: 'PRODUCT', productId: '...', name: 'Maglietta', size: 'XL', price: 25.00, quantity: 1 },
+  //           { type: 'GIFT_CARD', giftCardId: '...', code: 'GC-ABC123', value: 50.00 }]
+  items         Json
+  
+  // Totale rimborsato
+  totalRefunded Float
+  
+  // Metadati
+  reason        String?
+  notes         String?
+  
+  // Chi ha fatto il rimborso
+  refundedBy    String   // Admin ID
+  refundedAt    DateTime @default(now())
+  
+  // Metodo rimborso
+  refundMethod  RefundMethod // STRIPE, CASH, POS
+  externalRef   String?      // Stripe refund ID o numero scontrino rimborso
+  
+  // Flag per reportistica
+  isArchived    Boolean  @default(false)
+  
+  // Relazione con gift card rimborsate
+  giftCards     GiftCard[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([orderId])
+  @@index([refundedAt])
+}
+
+enum RefundMethod {
+  STRIPE
+  CASH
+  POS
 }

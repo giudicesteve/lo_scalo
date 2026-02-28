@@ -20,6 +20,7 @@ interface ProductVariant {
 interface Product {
   id: string
   name: string
+  nameEn: string
   descriptionIt: string
   descriptionEn: string
   price: number
@@ -92,18 +93,19 @@ export default function ShopProductsPage() {
         return
       }
       
+      const productName = lang === "en" ? (selectedProduct.nameEn || selectedProduct.name) : selectedProduct.name
       addItem({
         id: selectedProduct.id,
         type: "product",
-        name: `${selectedProduct.name} - ${selectedSize}`,
+        name: `${productName} - ${selectedSize}`,
         price: selectedProduct.price,
         quantity: 1,
         size: selectedSize,
         image: selectedProduct.image,
-        maxStock: available, // Salva disponibilità per controllo nel carrello
+        maxStock: available,
       })
       
-      showAddedToast(`${selectedProduct.name} (${selectedSize})`)
+      showAddedToast(`${productName} (${selectedSize})`)
       setSelectedProduct(null)
       setSelectedSize("")
     } else {
@@ -115,17 +117,18 @@ export default function ShopProductsPage() {
         return
       }
 
+      const productName = lang === "en" ? (selectedProduct.nameEn || selectedProduct.name) : selectedProduct.name
       addItem({
         id: selectedProduct.id,
         type: "product",
-        name: selectedProduct.name,
+        name: productName,
         price: selectedProduct.price,
         quantity: 1,
         image: selectedProduct.image,
-        maxStock: available, // Salva disponibilità per controllo nel carrello
+        maxStock: available,
       })
       
-      showAddedToast(selectedProduct.name)
+      showAddedToast(productName)
       setSelectedProduct(null)
     }
   }
@@ -144,16 +147,17 @@ export default function ShopProductsPage() {
       }
 
       // Aggiungi direttamente
+      const productName = lang === "en" ? (product.nameEn || product.name) : product.name
       addItem({
         id: product.id,
         type: "product",
-        name: product.name,
+        name: productName,
         price: product.price,
         quantity: 1,
         image: product.image,
-        maxStock: available, // Salva disponibilità per controllo nel carrello
+        maxStock: available,
       })
-      showAddedToast(product.name)
+      showAddedToast(productName)
     }
   }
 
@@ -249,7 +253,7 @@ export default function ShopProductsPage() {
                   <div className="relative aspect-square bg-brand-light-gray flex-shrink-0">
                     <Image
                       src={product.image.startsWith('data:') ? product.image : `${product.image}${product.image.includes('?') ? '&' : '?'}t=${product.id}`}
-                      alt={product.name}
+                      alt={lang === "en" ? (product.nameEn || product.name) : product.name}
                       fill
                       className="object-cover"
                       unoptimized={product.image.startsWith('data:')}
@@ -263,7 +267,7 @@ export default function ShopProductsPage() {
                   </div>
                   <div className="p-4 flex flex-col flex-grow">
                     <h3 className="text-headline-sm font-bold text-brand-primary mb-2">
-                      {product.name}
+                      {lang === "en" ? (product.nameEn || product.name) : product.name}
                     </h3>
                     <p className="text-body-sm text-brand-gray mb-4 flex-grow">
                       {lang === "it" ? product.descriptionIt : product.descriptionEn}

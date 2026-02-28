@@ -145,9 +145,11 @@ export async function POST(req: Request) {
           email: order.email,
           phone: order.phone || undefined,
           total: order.total,
-          lang: "it",
+          lang: order.lang || "it",
           items: order.items.map((item) => ({
-            name: item.Product?.name || "Unknown",
+            name: order.lang === "en" 
+              ? (item.productNameEn || item.productName || item.Product?.name || "Product")
+              : (item.productName || item.Product?.name || "Prodotto"),
             quantity: item.quantity,
             size: item.size || undefined,
             totalPrice: item.totalPrice,

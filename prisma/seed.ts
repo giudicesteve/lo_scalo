@@ -210,6 +210,7 @@ async function main() {
     await prisma.product.create({
       data: {
         name: 'Maglietta "Lo Scalo"',
+        nameEn: '"Lo Scalo" T-Shirt',
         descriptionIt: "Maglietta 100% cotone organico con stampa serigrafica.",
         descriptionEn: "100% organic cotton t-shirt with screen printing.",
         price: 25.0,
@@ -231,6 +232,7 @@ async function main() {
     await prisma.product.create({
       data: {
         name: "Tote Bag",
+        nameEn: "Tote Bag",
         descriptionIt: "Borsa in canvas con stampa Lo Scalo.",
         descriptionEn: "Canvas bag with Lo Scalo print.",
         price: 15.0,
@@ -246,6 +248,7 @@ async function main() {
     await prisma.product.create({
       data: {
         name: "Bicchiere Logo",
+        nameEn: "Logo Glass",
         descriptionIt: "Bicchiere da cocktail con logo inciso.",
         descriptionEn: "Cocktail glass with engraved logo.",
         price: 12.0,

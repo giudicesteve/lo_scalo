@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     const product = await prisma.product.create({
       data: {
         name: body.name,
+        nameEn: body.nameEn || body.name,
         descriptionIt: body.descriptionIt || "",
         descriptionEn: body.descriptionEn || "",
         price: body.price,
@@ -90,6 +91,7 @@ export async function PUT(req: Request) {
     // Aggiorna il prodotto base
     const data: Record<string, unknown> = {
       name: body.name,
+      nameEn: body.nameEn || body.name,
       descriptionIt: body.descriptionIt || "",
       descriptionEn: body.descriptionEn || "",
       price: body.price,
