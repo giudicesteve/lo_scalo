@@ -14,38 +14,32 @@ function isAuthorizedRequest(req: Request): boolean {
   const authHeader = req.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
   
-  // Fallback secret (same as the one you set in Vercel)
-  const FALLBACK_SECRET = "4990bd47-12a6-489f-af88-7845143e8f34"
-  const effectiveSecret = cronSecret || FALLBACK_SECRET
-  
   // Vercel Cron Jobs send a specific user-agent
   const userAgent = req.headers.get("user-agent") || ""
   const isVercelCron = userAgent.includes("Vercelbot") || userAgent.includes("Vercel")
   
   // Check if secret matches via query param or auth header
-  const hasValidSecret = secretFromQuery === effectiveSecret || authHeader === `Bearer ${effectiveSecret}`
+  const hasValidSecret = secretFromQuery === cronSecret || authHeader === `Bearer ${cronSecret}`
   
   // For Vercel Cron: if query params are stripped but it's from Vercel's cron bot, 
-  // we trust it as long as we have some secret configured
-  if (isVercelCron && effectiveSecret) {
+  // we trust it as long as CRON_SECRET is configured
+  if (isVercelCron && cronSecret) {
     console.log("[CRON] Request from Vercel Cron Bot detected")
     return true
   }
   
-  // For manual/external requests: require valid secret
+  // For manual/external requests: require secret
   if (hasValidSecret) {
-    console.log("[CRON] Authorized via secret")
     return true
   }
   
   // Log debugging info
   console.error("[CRON] Unauthorized access attempt")
-  console.error(`[CRON] Query param: ${secretFromQuery || 'none'}`)
-  console.error(`[CRON] Expected secret: ${effectiveSecret}`)
-  console.error(`[CRON] Secret match: ${secretFromQuery === effectiveSecret}`)
-  console.error(`[CRON] Auth header: ${authHeader || 'none'}`)
+  console.error(`[CRON] Query param: ${secretFromQuery ? 'present' : 'missing'}`)
+  console.error(`[CRON] Auth header: ${authHeader ? 'present' : 'missing'}`)
   console.error(`[CRON] User-Agent: ${userAgent}`)
-  console.error(`[CRON] CRON_SECRET env: ${cronSecret || 'NOT SET'}`)
+  console.error(`[CRON] CRON_SECRET configured: ${!!cronSecret}`)
+  console.error(`[CRON] Is Vercel Cron: ${isVercelCron}`)
   
   return false
 }
