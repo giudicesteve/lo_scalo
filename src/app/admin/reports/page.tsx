@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, FileText, Calendar, BarChart3, Gift, AlertCircle } from "lucide-react"
+import { ArrowLeft, ChevronRight, FileText, Calendar, BarChart3, Gift, AlertCircle, Package } from "lucide-react"
 
 const reportItems = [
   { 
@@ -9,6 +9,13 @@ const reportItems = [
     label: "Metriche", 
     icon: BarChart3, 
     description: "Metriche di vendita: totali, medie e statistiche mensili" 
+  },
+  { 
+    href: "/admin/reports/complete", 
+    label: "Report Contabile Completo", 
+    icon: Package, 
+    description: "Scarica tutti i report contabili in un unico file Excel o PDF. Possibilità di invio via email.",
+    highlight: true,
   },
   { 
     href: "/admin/reports/monthly", 
@@ -53,23 +60,43 @@ export default function ReportsMenuPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="bg-white rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-shadow group block"
+              className={`rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-shadow group block ${
+                item.highlight 
+                  ? 'bg-brand-primary text-white' 
+                  : 'bg-white'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center">
-                    <item.icon className="w-6 h-6 text-brand-primary" />
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    item.highlight 
+                      ? 'bg-white/20' 
+                      : 'bg-brand-primary/10'
+                  }`}>
+                    <item.icon className={`w-6 h-6 ${
+                      item.highlight ? 'text-white' : 'text-brand-primary'
+                    }`} />
                   </div>
                   <div>
-                    <h2 className="text-headline-sm font-bold text-brand-dark group-hover:text-brand-primary transition-colors">
+                    <h2 className={`text-headline-sm font-bold transition-colors ${
+                      item.highlight 
+                        ? 'text-white' 
+                        : 'text-brand-dark group-hover:text-brand-primary'
+                    }`}>
                       {item.label}
                     </h2>
-                    <p className="text-body-sm text-brand-gray">
+                    <p className={`text-body-sm ${
+                      item.highlight ? 'text-white/80' : 'text-brand-gray'
+                    }`}>
                       {item.description}
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-brand-gray group-hover:text-brand-primary transition-colors" />
+                <ChevronRight className={`w-5 h-5 transition-colors ${
+                  item.highlight 
+                    ? 'text-white/60 group-hover:text-white' 
+                    : 'text-brand-gray group-hover:text-brand-primary'
+                }`} />
               </div>
             </Link>
           ))}
