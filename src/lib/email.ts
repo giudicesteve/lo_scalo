@@ -702,4 +702,46 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
   `
 }
 
+/**
+ * Generic send email function
+ */
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  attachments,
+}: {
+  to: string
+  subject: string
+  html: string
+  text?: string
+  attachments?: { filename: string; content: string }[]
+}): Promise<EmailResult> {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject,
+      html,
+      text,
+      attachments: attachments?.map(att => ({
+        filename: att.filename,
+        content: att.content,
+      })),
+    })
+
+    if (error) {
+      console.error('Error sending email:', error)
+      return { success: false, error }
+    }
+
+    console.log(`Email sent: ${data?.id} to ${to}`)
+    return { success: true, id: data?.id }
+  } catch (err) {
+    console.error('Exception sending email:', err)
+    return { success: false, error: err }
+  }
+}
+
 export { resend }

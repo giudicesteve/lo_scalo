@@ -337,6 +337,19 @@ export default function CompleteReportPage() {
       ]
       ws1['!cols'] = colWidths1
 
+      const range = XLSX.utils.decode_range(ws1['!ref'] || "A1");
+      for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        [7, 8, 9].forEach(colIdx => {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIdx });
+          const cell = ws1[cellAddress];
+      
+          if (cell) {
+            cell.t = 'n'; // 'n' sta per number
+            cell.z = '#,##0.00 €'; // Questo è il formato numerico di Excel
+          }
+        });
+      } 
+
       // ========== SHEET 2: TRANSAZIONI GIFT CARD (from /admin/reports/gift-cards) ==========
       const sheet2Rows: Record<string, string | number>[] = []
       
@@ -375,6 +388,19 @@ export default function CompleteReportPage() {
         { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }
       ]
       ws2['!cols'] = colWidths2
+
+      const range2 = XLSX.utils.decode_range(ws2['!ref'] || "A1");
+      for (let R = range2.s.r + 1; R <= range2.e.r; ++R) {
+        [3].forEach(colIdx => {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIdx });
+          const cell = ws2[cellAddress];
+      
+          if (cell) {
+            cell.t = 'n'; // 'n' sta per number
+            cell.z = '#,##0.00 €'; // Questo è il formato numerico di Excel
+          }
+        });
+      }
 
       // ========== SHEET 3: GIFT CARD SCADUTE (from /admin/reports/expired-gift-cards) ==========
       const sheet3Rows: Record<string, string | number>[] = []
@@ -426,6 +452,19 @@ export default function CompleteReportPage() {
         { wch: 15 }, { wch: 15 }, { wch: 18 }
       ]
       ws3['!cols'] = colWidths3
+
+      const range3 = XLSX.utils.decode_range(ws3['!ref'] || "A1");
+      for (let R = range3.s.r + 1; R <= range3.e.r; ++R) {
+        [1, 2, 3].forEach(colIdx => {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIdx });
+          const cell = ws3[cellAddress];
+      
+          if (cell) {
+            cell.t = 'n'; // 'n' sta per number
+            cell.z = '#,##0.00 €'; // Questo è il formato numerico di Excel
+          }
+        });
+      }
 
       XLSX.writeFile(wb, `LoScalo_ReportCompleto_${selectedDate}.xlsx`)
     } catch (error) {
@@ -482,13 +521,13 @@ export default function CompleteReportPage() {
 
       // Section 1: Vendite e Rimborsi
       await addReportSection(
-        "1. VENDITE E RIMBORSI",
+        "Lo Scalo - Report Mensile Vendite/Rimborsi Contabili",
         `Periodo: ${formatMonthYear(selectedDate)}`,
         async (page, startY) => {
           let y = startY
           const margin = 40
           const rowHeight = 12
-          const colWidths = [60, 60, 95, 85, 50, 55, 170, 130, 60]
+          const colWidths = [60, 60, 95, 85, 50, 65, 220, 95, 60]
           const colPositions = colWidths.reduce((acc, w, i) => {
             acc.push((acc[i - 1] || margin - 5) + w)
             return acc
@@ -509,10 +548,10 @@ export default function CompleteReportPage() {
             color: rgb(0.95, 0.95, 0.9),
           })
           
-          const headers = ["Data", "Tipo", "Codice", "Rif. Ord.", "Fonte", "Metodo", "Stripe ID", "Dettaglio", "Totale"]
+          const headers = ["Data", "Tipo", "Codice", "Rif. Ord.", "Fonte", "Metodo Rimborso", "Stripe ID", "Dettaglio", "Totale"]
           headers.forEach((h, i) => {
             page.drawText(h, {
-              x: (i === 0 ? margin : colPositions[i - 1]) + 3,
+              x: (i === 0 ? margin : colPositions[i - 1]),
               y,
               size: 7,
               font: fontBold,
@@ -524,7 +563,7 @@ export default function CompleteReportPage() {
           // Data rows (max 15 per page)
           let rowCount = 0
           for (const row of allRows) {
-            if (rowCount >= 15) {
+            if (rowCount >= 20) {
               // Add new page and continue
               page = pdfDoc.addPage([842, 595])
               y = page.getSize().height - 50
@@ -601,7 +640,7 @@ export default function CompleteReportPage() {
                 color: rgb(0.4, 0.4, 0.4),
               })
 
-              const marginExtra = 190;
+              const marginExtra = 140;
               const pageWidth = page.getWidth();
               const rightAlignX = pageWidth - marginExtra; 
               const textWidth = font.widthOfTextAtSize(`Prod: +${productTotal.toFixed(2)}€`, 7);
@@ -631,7 +670,7 @@ export default function CompleteReportPage() {
                 })
               }
 
-              const marginExtra2 = 80;
+              const marginExtra2 = 60;
               const rightAlignX2 = pageWidth - marginExtra2; 
               const textWidth3 = font.widthOfTextAtSize(`+${order.total.toFixed(2)}€`, 7);
               
@@ -712,15 +751,15 @@ export default function CompleteReportPage() {
                 color: rgb(0.4, 0.4, 0.4),
               })
 
-              const marginExtra = 190;
+              const marginExtra = 140;
               const pageWidth = page.getWidth();
               const rightAlignX = pageWidth - marginExtra; 
-              const textWidth = font.widthOfTextAtSize(`Prod: +${refund.productTotal.toFixed(2)}€`, 7);
+              const textWidth = font.widthOfTextAtSize(`Prod: -${refund.productTotal.toFixed(2)}€`, 7);
               
               // Dettaglio
               let dettaglioY = y
               if (refund.productTotal > 0) {
-                page.drawText(`Prod: +${refund.productTotal.toFixed(2)}€`, {
+                page.drawText(`Prod: -${refund.productTotal.toFixed(2)}€`, {
                   x: rightAlignX - textWidth,
                   y: dettaglioY,
                   size: 7,
@@ -730,10 +769,10 @@ export default function CompleteReportPage() {
                 dettaglioY -= 10
               }
 
-              const textWidth2 = font.widthOfTextAtSize(`GC: +${refund.giftCardTotal.toFixed(2)}€`, 7);
+              const textWidth2 = font.widthOfTextAtSize(`GC: -${refund.giftCardTotal.toFixed(2)}€`, 7);
 
               if (refund.giftCardTotal > 0) {
-                page.drawText(`GC: +${refund.giftCardTotal.toFixed(2)}€`, {
+                page.drawText(`GC: -${refund.giftCardTotal.toFixed(2)}€`, {
                   x: rightAlignX - textWidth2,
                   y: dettaglioY,
                   size: 7,
@@ -742,17 +781,17 @@ export default function CompleteReportPage() {
                 })
               }
 
-              const marginExtra2 = 80;
+              const marginExtra2 = 60;
               const rightAlignX2 = pageWidth - marginExtra2; 
-              const textWidth3 = font.widthOfTextAtSize(`+${refund.totalRefunded.toFixed(2)}€`, 7);
+              const textWidth3 = font.widthOfTextAtSize(`-${refund.totalRefunded.toFixed(2)}€`, 7);
               
               // Totale
-              page.drawText(`+${refund.totalRefunded.toFixed(2)}€`, {
+              page.drawText(`-${refund.totalRefunded.toFixed(2)}€`, {
                 x: rightAlignX2 - textWidth3,
                 y,
                 size: 9,
                 font: fontBold,
-                color: rgb(0.2, 0.6, 0.2),
+                color: rgb(0.8, 0.2, 0.2),
               })
             }
             
@@ -811,7 +850,7 @@ export default function CompleteReportPage() {
             font,
             color: rgb(0.2, 0.4, 0.8),
           })
-          page.drawText(`${productRevenue.toFixed(2)}€`, {
+          page.drawText(`+${productRevenue.toFixed(2)}€`, {
             x: margin + 200,
             y,
             size: 9,
@@ -827,7 +866,7 @@ export default function CompleteReportPage() {
             font,
             color: rgb(0.6, 0.2, 0.6),
           })
-          page.drawText(`${giftCardRevenue.toFixed(2)}€`, {
+          page.drawText(`+${giftCardRevenue.toFixed(2)}€`, {
             x: margin + 200,
             y,
             size: 9,
@@ -878,7 +917,7 @@ export default function CompleteReportPage() {
               font,
               color: rgb(0.2, 0.4, 0.8),
             })
-            page.drawText(`${productRefunds.toFixed(2)}€`, {
+            page.drawText(`-${productRefunds.toFixed(2)}€`, {
               x: margin + 200,
               y,
               size: 9,
@@ -894,7 +933,7 @@ export default function CompleteReportPage() {
               font,
               color: rgb(0.6, 0.2, 0.6),
             })
-            page.drawText(`${giftCardRefunds.toFixed(2)}€`, {
+            page.drawText(`-${giftCardRefunds.toFixed(2)}€`, {
               x: margin + 200,
               y,
               size: 9,
@@ -934,13 +973,13 @@ export default function CompleteReportPage() {
       // Section 2: Transazioni Gift Card
       if (transactions.length > 0) {
         await addReportSection(
-          "2. TRANSAZIONI GIFT CARD",
+          "Lo Scalo - Report Transazioni Gift Card",
           `${transactions.length} transazioni`,
           async (page, startY) => {
             let y = startY
             const margin = 40
             const rowHeight = 12
-            const colWidths = [60, 100, 180, 180, 100, 80]
+            const colWidths = [60, 100, 180, 180, 140, 80]
             const colPositions = colWidths.reduce((acc, w, i) => {
               acc.push((acc[i - 1] || margin - 5) + w)
               return acc
@@ -955,7 +994,7 @@ export default function CompleteReportPage() {
               color: rgb(0.95, 0.95, 0.9),
             })
             
-            const headers = ["Data", "Gift Card", "Dettaglio", "Importo", "Residuo"]
+            const headers = ["Data", "Gift Card", "Dettaglio", "", "", "Importo"]
             headers.forEach((h, i) => {
               page.drawText(h, {
                 x: (i === 0 ? margin : colPositions[i - 1]) + 3,
@@ -967,10 +1006,10 @@ export default function CompleteReportPage() {
             })
             y -= rowHeight + 8
 
-            // Data rows (max 20 per page)
+            // Data rows (max 15 per page)
             let rowCount = 0
             for (const t of transactions) {
-              if (rowCount >= 20) {
+              if (rowCount >= 15) {
                 page = pdfDoc.addPage([842, 595])
                 y = page.getSize().height - 50
                 rowCount = 0
@@ -1069,7 +1108,7 @@ export default function CompleteReportPage() {
       // Section 3: Gift Card Scadute
       if (expiredCards.length > 0) {
         await addReportSection(
-          "3. GIFT CARD SCADUTE",
+          "Lo Scalo - Report Gift Card Scadute",
           `${expiredCards.length} card scadute`,
           async (page, startY) => {
             let y = startY
@@ -1106,7 +1145,7 @@ export default function CompleteReportPage() {
             let rowCount = 0
             for (let i = 0; i < expiredCards.length; i++) {
               const g = expiredCards[i]
-              if (rowCount >= 20) {
+              if (rowCount >= 10) {
                 page = pdfDoc.addPage([842, 595])
                 y = page.getSize().height - 50
                 rowCount = 0
@@ -1118,7 +1157,7 @@ export default function CompleteReportPage() {
               page.drawText(`${i + 1}`, { x: margin, y, size: 8, font })
               page.drawText(g.code, { x: colPositions[0], y, size: 8, font: fontBold })
               page.drawText(`${g.initialValue.toFixed(2)}€`, { x: colPositions[1], y, size: 8, font })
-              page.drawText(`${usedAmount.toFixed(2)}€`, { x: colPositions[2], y, size: 8, font, color: rgb(0.2, 0.6, 0.2) })
+              page.drawText(`${usedAmount.toFixed(2)}€`, { x: colPositions[2], y, size: 8, font, color: rgb(0.2, 0.4, 0.8) })
               page.drawText(`${g.remainingValue.toFixed(2)}€`, { x: colPositions[3] + 10, y, size: 9, font: fontBold, color: rgb(0.2, 0.6, 0.2) })
               page.drawText(expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-", { x: colPositions[4], y, size: 8, font, color: rgb(0.5, 0.5, 0.5) })
               

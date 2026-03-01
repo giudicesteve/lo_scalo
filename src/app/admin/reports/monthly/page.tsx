@@ -341,7 +341,7 @@ export default function MonthlyReportPage() {
     let y = height - 50
     const margin = 40
     const rowHeight = 14
-    const colWidths = [60, 60, 95, 85, 50, 55, 170, 130, 60]
+    const colWidths = [60, 60, 95, 85, 50, 80, 195, 100, 60]
     const colPositions = colWidths.reduce((acc, w, i) => {
       acc.push((acc[i - 1] || margin - 5) + w)
       return acc
@@ -395,10 +395,10 @@ export default function MonthlyReportPage() {
         color: rgb(0.95, 0.95, 0.9),
       })
       
-      const headers = ["Data", "Tipo", "Codice Univoco", "Rif. Ordine", "Fonte", "Metodo", "Stripe ID / Rif.", "Dettaglio", "Totale"]
+      const headers = ["Data", "Tipo", "Codice Univoco", "Rif. Ordine", "Fonte", "Metodo Rimborso", "Stripe ID / Rif.", "Dettaglio", "Totale"]
       headers.forEach((h, i) => {
         page.drawText(h, {
-          x: (i === 0 ? margin : colPositions[i - 1]) + 3,
+          x: (i === 0 ? margin : colPositions[i - 1]),
           y,
           size: 8,
           font: fontBold,
@@ -488,7 +488,7 @@ export default function MonthlyReportPage() {
           color: rgb(0.4, 0.4, 0.4),
         })
 
-        const marginExtra = 190;
+        const marginExtra = 140;
         const pageWidth = page.getWidth();
         const rightAlignX = pageWidth - marginExtra; 
         const textWidth = font.widthOfTextAtSize(`Prod: +${productTotal.toFixed(2)}€`, 7);
@@ -518,7 +518,7 @@ export default function MonthlyReportPage() {
           })
         }
 
-        const marginExtra2 = 80;
+        const marginExtra2 = 60;
         const rightAlignX2 = pageWidth - marginExtra2; 
         const textWidth3 = font.widthOfTextAtSize(`+${order.total.toFixed(2)}€`, 7);
         
@@ -600,15 +600,15 @@ export default function MonthlyReportPage() {
         })
 
 
-        const marginExtra = 190;
+        const marginExtra = 140;
         const pageWidth = page.getWidth();
         const rightAlignX = pageWidth - marginExtra; 
-        const textWidth = font.widthOfTextAtSize(`Prod: +${refund.productTotal.toFixed(2)}€`, 7);
+        const textWidth = font.widthOfTextAtSize(`Prod: -${refund.productTotal.toFixed(2)}€`, 7);
         
         // Dettaglio
         let dettaglioY = y
         if (refund.productTotal > 0) {
-          page.drawText(`Prod: +${refund.productTotal.toFixed(2)}€`, {
+          page.drawText(`Prod: -${refund.productTotal.toFixed(2)}€`, {
             x: rightAlignX - textWidth,
             y: dettaglioY,
             size: 7,
@@ -618,10 +618,10 @@ export default function MonthlyReportPage() {
           dettaglioY -= 10
         }
 
-        const textWidth2 = font.widthOfTextAtSize(`GC: +${refund.giftCardTotal.toFixed(2)}€`, 7);
+        const textWidth2 = font.widthOfTextAtSize(`GC: -${refund.giftCardTotal.toFixed(2)}€`, 7);
 
         if (refund.giftCardTotal > 0) {
-          page.drawText(`GC: +${refund.giftCardTotal.toFixed(2)}€`, {
+          page.drawText(`GC: -${refund.giftCardTotal.toFixed(2)}€`, {
             x: rightAlignX - textWidth2,
             y: dettaglioY,
             size: 7,
@@ -630,17 +630,17 @@ export default function MonthlyReportPage() {
           })
         }
 
-        const marginExtra2 = 80;
+        const marginExtra2 = 60;
         const rightAlignX2 = pageWidth - marginExtra2; 
-        const textWidth3 = font.widthOfTextAtSize(`+${refund.totalRefunded.toFixed(2)}€`, 7);
+        const textWidth3 = font.widthOfTextAtSize(`-${refund.totalRefunded.toFixed(2)}€`, 7);
         
         // Totale
-        page.drawText(`+${refund.totalRefunded.toFixed(2)}€`, {
+        page.drawText(`-${refund.totalRefunded.toFixed(2)}€`, {
           x: rightAlignX2 - textWidth3,
           y,
           size: 9,
           font: fontBold,
-          color: rgb(0.2, 0.6, 0.2),
+          color: rgb(0.8, 0.2, 0.2),
         })
 
       }
