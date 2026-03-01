@@ -452,7 +452,7 @@ export default function GiftCardsMonthlyReportPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Report Gift Card
+            Report Mensile transazioni Gift Card
           </h1>
         </div>
       </header>

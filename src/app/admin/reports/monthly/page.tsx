@@ -203,9 +203,10 @@ export default function MonthlyReportPage() {
     
     // Riepilogo
     rows.push({})
+    rows.push({"Data": "=== ORDINI ==="})
     
     rows.push({
-      "Data": "TOTALI ORDINI",
+      "Data": "Prodotti:",
       "Tipo": "",
       "Codice Univoco": "",
       "Rif. Ordine": "",
@@ -213,21 +214,92 @@ export default function MonthlyReportPage() {
       "Metodo Rimborso": "",
       "Stripe ID / Rif. Documento": "",
       "Dettaglio Prodotti": +totals.productRevenue,
-      "Dettaglio Gift Card": +totals.giftCardRevenue,
-      "Totale": +totals.totalRevenue,
+      "Dettaglio Gift Card": "",
+      "Totale": "",
     })
     
     rows.push({
-      "Data": "TOTALI RIMBORSI",
+      "Data": "Gift Card:",
       "Tipo": "",
       "Codice Univoco": "",
       "Rif. Ordine": "",
       "Fonte": "",
       "Metodo Rimborso": "",
       "Stripe ID / Rif. Documento": "",
-      "Dettaglio Prodotti": -totals.productRefunds,
-      "Dettaglio Gift Card": -totals.giftCardRefunds,
-      "Totale": -totals.totalRefunds,
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": +totals.giftCardRevenue,
+      "Totale": "",
+    })
+    
+    rows.push({
+      "Data": "TOTALE ORDINI",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": "",
+      "Totale": +totals.totalRevenue,
+    })
+    
+    if (totals.totalRefunds > 0) {
+      rows.push({})
+      rows.push({"Data": "=== RIMBORSI ==="})
+      
+      rows.push({
+        "Data": "Prodotti:",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": -totals.productRefunds,
+        "Dettaglio Gift Card": "",
+        "Totale": "",
+      })
+      
+      rows.push({
+        "Data": "Gift Card:",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": "",
+        "Dettaglio Gift Card": -totals.giftCardRefunds,
+        "Totale": "",
+      })
+      
+      rows.push({
+        "Data": "TOTALE RIMBORSI",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": "",
+        "Dettaglio Gift Card": "",
+        "Totale": -totals.totalRefunds,
+      })
+    }
+    
+    rows.push({})
+    rows.push({
+      "Data": "NETTO MESE",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": "",
+      "Totale": +totals.netRevenue,
     })
     
 
@@ -254,7 +326,7 @@ export default function MonthlyReportPage() {
       });
     }
 
-    XLSX.writeFile(wb, `LoScalo_ReportMensile_${selectedDate}.xlsx`)
+    XLSX.writeFile(wb, `LoScalo_ReportMensileVenditeRimborsi_${selectedDate}.xlsx`)
   }
 
   const generatePDF = async () => {
@@ -275,7 +347,7 @@ export default function MonthlyReportPage() {
       return acc
     }, [] as number[])
     
-    page.drawText("Lo Scalo - Report Mensile Contabile", {
+    page.drawText("Lo Scalo - Report Mensile Vendite/Rimborsi Contabili", {
       x: margin,
       y,
       size: 16,
@@ -585,7 +657,7 @@ export default function MonthlyReportPage() {
     })
     
     // Totals
-    checkNewPage(160)
+    checkNewPage(200)
     
     y -= 10
     page.drawLine({
@@ -604,67 +676,86 @@ export default function MonthlyReportPage() {
       color: rgb(0, 0, 0),
     })
     
+    // ORDINI section
     y -= 18
+    page.drawText("ORDINI", {
+      x: margin,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.6, 0.2),
+    })
+    
+    y -= 16
     page.drawText(`Prodotti:`, {
       x: margin + 20,
       y,
-      size: 10,
+      size: 9,
       font,
       color: rgb(0.2, 0.4, 0.8),
     })
     page.drawText(`${totals.productRevenue.toFixed(2)}€`, {
       x: margin + 200,
       y,
-      size: 10,
+      size: 9,
       font: fontBold,
       color: rgb(0.2, 0.4, 0.8),
     })
     
-    y -= 16
+    y -= 14
     page.drawText(`Gift Card:`, {
       x: margin + 20,
       y,
-      size: 10,
+      size: 9,
       font,
       color: rgb(0.6, 0.2, 0.6),
     })
     page.drawText(`${totals.giftCardRevenue.toFixed(2)}€`, {
       x: margin + 200,
       y,
-      size: 10,
+      size: 9,
       font: fontBold,
       color: rgb(0.6, 0.2, 0.6),
     })
     
+    y -= 16
+    page.drawLine({
+      start: { x: margin + 15, y },
+      end: { x: margin + 250, y },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8),
+    })
     
-    y -= 20
+    y -= 16
     page.drawText(`TOTALE ORDINI:`, {
       x: margin,
       y,
-      size: 11,
+      size: 10,
       font: fontBold,
       color: rgb(0.2, 0.6, 0.2),
     })
     page.drawText(`+${totals.totalRevenue.toFixed(2)}€`, {
       x: margin + 200,
       y,
-      size: 11,
+      size: 10,
       font: fontBold,
       color: rgb(0.2, 0.6, 0.2),
     })
     
-
-      y -= 18
-      page.drawLine({
-        start: { x: margin + 20, y },
-        end: { x: margin + 250, y },
-        thickness: 0.5,
-        color: rgb(0.8, 0.8, 0.8),
+    // RIMBORSI section
+    if (totals.totalRefunds > 0) {
+      y -= 22
+      page.drawText("RIMBORSI", {
+        x: margin,
+        y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.8, 0.2, 0.2),
       })
       
       y -= 16
       page.drawText(`Prodotti:`, {
-        x: margin + 30,
+        x: margin + 20,
         y,
         size: 9,
         font,
@@ -680,7 +771,7 @@ export default function MonthlyReportPage() {
       
       y -= 14
       page.drawText(`Gift Card:`, {
-        x: margin + 30,
+        x: margin + 20,
         y,
         size: 9,
         font,
@@ -694,21 +785,30 @@ export default function MonthlyReportPage() {
         color: rgb(0.6, 0.2, 0.6),
       })
       
-      y -= 18
+      y -= 16
+      page.drawLine({
+        start: { x: margin + 15, y },
+        end: { x: margin + 250, y },
+        thickness: 0.5,
+        color: rgb(0.8, 0.8, 0.8),
+      })
+      
+      y -= 16
       page.drawText(`TOTALE RIMBORSI:`, {
         x: margin,
         y,
-        size: 11,
+        size: 10,
         font: fontBold,
         color: rgb(0.8, 0.2, 0.2),
       })
       page.drawText(`-${totals.totalRefunds.toFixed(2)}€`, {
         x: margin + 200,
         y,
-        size: 11,
+        size: 10,
         font: fontBold,
         color: rgb(0.8, 0.2, 0.2),
       })
+    }
       
 
     
@@ -716,7 +816,7 @@ export default function MonthlyReportPage() {
     const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `LoScalo_ReportMensile_${selectedDate}.pdf`
+    link.download = `LoScalo_ReportMensileVenditeRimborsi_${selectedDate}.pdf`
     link.click()
   }
 
@@ -738,7 +838,7 @@ export default function MonthlyReportPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Report Mensile
+            Report Mensile Vendite e Rimborsi
           </h1>
         </div>
       </header>
@@ -779,53 +879,53 @@ export default function MonthlyReportPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* ORDINI Section */}
           <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
               <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
                 <PlusCircle className="w-5 h-5 text-green-500" />
               </div>
-              <span className="text-label-md text-brand-gray">Incasso Ordini</span>
+              <span className="text-title-sm font-bold text-green-700">ORDINI</span>
             </div>
-            <p className="text-headline-lg font-bold text-green-600">
-              +{totals.totalRevenue.toFixed(2)}€
-            </p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Prodotti</span>
+                <span className="text-body-md font-semibold text-blue-600">{totals.productRevenue.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Gift Card</span>
+                <span className="text-body-md font-semibold text-purple-600">{totals.giftCardRevenue.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-brand-light-gray/50">
+                <span className="text-label-md font-medium text-green-700">Totale Ordini</span>
+                <span className="text-headline-md font-bold text-green-600">+{totals.totalRevenue.toFixed(2)}€</span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
+          {/* RIMBORSI Section */}
+          <div className={`bg-white rounded-2xl shadow-card p-4 ${totals.totalRefunds === 0 ? 'opacity-60' : ''}`}>
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
               <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
                 <MinusCircle className="w-5 h-5 text-red-500" />
               </div>
-              <span className="text-label-md text-brand-gray">Rimborsi</span>
+              <span className="text-title-sm font-bold text-red-700">RIMBORSI</span>
             </div>
-            <p className="text-headline-lg font-bold text-red-600">
-              -{totals.totalRefunds.toFixed(2)}€
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
-                <Gift className="w-5 h-5 text-purple-500" />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Prodotti</span>
+                <span className="text-body-md font-semibold text-blue-600">{totals.productRefunds.toFixed(2)}€</span>
               </div>
-              <span className="text-label-md text-brand-gray">Gift Card</span>
-            </div>
-            <p className="text-headline-lg font-bold text-purple-600">
-              {totals.giftCardRevenue.toFixed(2)}€
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                <Package className="w-5 h-5 text-blue-500" />
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Gift Card</span>
+                <span className="text-body-md font-semibold text-purple-600">{totals.giftCardRefunds.toFixed(2)}€</span>
               </div>
-              <span className="text-label-md text-brand-gray">Prodotti</span>
+              <div className="flex justify-between items-center pt-2 border-t border-brand-light-gray/50">
+                <span className="text-label-md font-medium text-red-700">Totale Rimborsi</span>
+                <span className="text-headline-md font-bold text-red-600">-{totals.totalRefunds.toFixed(2)}€</span>
+              </div>
             </div>
-            <p className="text-headline-lg font-bold text-blue-600">
-              {totals.productRevenue.toFixed(2)}€
-            </p>
           </div>
         </div>
 
@@ -1033,23 +1133,44 @@ export default function MonthlyReportPage() {
                 <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                   <tr>
                     <td colSpan={6} className="py-4 px-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-body-sm">
-                          <span className="text-brand-gray">Prodotti:</span>
-                          <span className="font-bold text-blue-600">{totals.productRevenue.toFixed(2)}€</span>
+                      <div className="space-y-3">
+                        {/* ORDERS */}
+                        <div className="space-y-1">
+                          <div className="text-label-sm font-bold text-green-700 uppercase tracking-wide">
+                            ORDINI
+                          </div>
+                          <div className="flex justify-between text-body-sm pl-2">
+                            <span className="text-brand-gray">Prodotti:</span>
+                            <span className="font-bold text-blue-600">{totals.productRevenue.toFixed(2)}€</span>
+                          </div>
+                          <div className="flex justify-between text-body-sm pl-2">
+                            <span className="text-brand-gray">Gift Card:</span>
+                            <span className="font-bold text-purple-600">{totals.giftCardRevenue.toFixed(2)}€</span>
+                          </div>
+                          <div className="flex justify-between text-body-sm border-t border-brand-light-gray/50 pt-1 mt-1">
+                            <span className="text-green-600 font-medium">Totale Ordini:</span>
+                            <span className="font-bold text-green-600">+{totals.totalRevenue.toFixed(2)}€</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-body-sm">
-                          <span className="text-brand-gray">Gift Card:</span>
-                          <span className="font-bold text-purple-600">{totals.giftCardRevenue.toFixed(2)}€</span>
-                        </div>
-                        <div className="flex justify-between text-body-sm border-t border-brand-light-gray pt-2 mt-2">
-                          <span className="text-green-600 font-medium">Totale Ordini:</span>
-                          <span className="font-bold text-green-600">+{totals.totalRevenue.toFixed(2)}€</span>
-                        </div>
+                        
+                        {/* REFUNDS */}
                         {totals.totalRefunds > 0 && (
-                          <div className="flex justify-between text-body-sm">
-                            <span className="text-red-600 font-medium">Totale Rimborsi:</span>
-                            <span className="font-bold text-red-600">-{totals.totalRefunds.toFixed(2)}€</span>
+                          <div className="space-y-1 pt-2 border-t border-brand-light-gray">
+                            <div className="text-label-sm font-bold text-red-700 uppercase tracking-wide">
+                              RIMBORSI
+                            </div>
+                            <div className="flex justify-between text-body-sm pl-2">
+                              <span className="text-brand-gray">Prodotti:</span>
+                              <span className="font-bold text-blue-600">-{totals.productRefunds.toFixed(2)}€</span>
+                            </div>
+                            <div className="flex justify-between text-body-sm pl-2">
+                              <span className="text-brand-gray">Gift Card:</span>
+                              <span className="font-bold text-purple-600">-{totals.giftCardRefunds.toFixed(2)}€</span>
+                            </div>
+                            <div className="flex justify-between text-body-sm border-t border-brand-light-gray/50 pt-1 mt-1">
+                              <span className="text-red-600 font-medium">Totale Rimborsi:</span>
+                              <span className="font-bold text-red-600">-{totals.totalRefunds.toFixed(2)}€</span>
+                            </div>
                           </div>
                         )}
                       </div>

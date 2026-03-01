@@ -12,9 +12,9 @@ const reportItems = [
   },
   { 
     href: "/admin/reports/monthly", 
-    label: "Report Mensile Prodotti e Gift Card vendute", 
+    label: "Report Mensile Prodotti/Gift Card vendute e Rimborsi", 
     icon: Calendar, 
-    description: "Riepilogo vendite prodotti e Gift Card con export Excel e PDF per contabilità" 
+    description: "Riepilogo vendite Prodotti/Gift Card e Rimborsi con export Excel e PDF per contabilità" 
   },
   { 
     href: "/admin/reports/gift-cards", 
