@@ -84,8 +84,13 @@ export default function ReportsMenuPage() {
                 Report Contabili
               </h3>
               <p className="text-body-sm text-blue-700">
-                I report includono solo ordini con pagamento completato (stati COMPLETED e DELIVERED).
-                I dati sono filtrati per data di pagamento effettiva.
+                I report includono solo ordini con pagamento completato (stati COMPLETED e DELIVERED), i dati sono filtrati per data di pagamento effettiva.
+              </p>
+              <p className="text-body-sm text-blue-700">
+                Il report sulle Gift Card scadute include solo quelle con residuo non utilizzato al momento della scadenza.
+              </p> 
+              <p className="text-body-sm text-blue-700">
+                Tutti i report sono esportabili in Excel e PDF per facilitare la contabilità.
               </p>
             </div>
           </div>

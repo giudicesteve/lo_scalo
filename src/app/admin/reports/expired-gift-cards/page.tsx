@@ -15,6 +15,9 @@ import {
   X,
   Clock,
   AlertCircle,
+  CreditCard,
+  MinusCircle,
+  Wallet,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
@@ -125,6 +128,7 @@ export default function ExpiredGiftCardsReportPage() {
 
     const rows: Record<string, string | number>[] = []
     
+    // Data rows
     filteredGiftCards.forEach((g) => {
       const expiryDate = g.expiresAt ? new Date(g.expiresAt) : null
       const purchaseDate = new Date(g.purchasedAt)
@@ -137,20 +141,28 @@ export default function ExpiredGiftCardsReportPage() {
         "Residuo Non Utilizzato": g.remainingValue,
         "Data Acquisto": purchaseDate.toLocaleDateString("it-IT"),
         "Data Scadenza": expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-",
-        "Cliente": g.order?.email || "N/A",
-        "Telefono": g.order?.phone || "-",
-        "Ordine Acquisto": g.order?.orderNumber || "N/A",
         "Numero Transazioni": g.transactions.length,
       })
     })
     
+    // Riepilogo
     rows.push({})
+    rows.push({"Codice Gift Card": "=== RIEPILOGO ==="})
     rows.push({
-      "Codice Gift Card": "TOTALI",
+      "Codice Gift Card": "Valore Iniziale:",
       "Valore Iniziale": totals.totalInitialValue,
+    })
+    rows.push({
+      "Codice Gift Card": "Importo Utilizzato:",
       "Importo Utilizzato": totals.totalUsed,
-      "Residuo Non Utilizzato": totals.totalUnusedBalance,
-      "Cliente": `${totals.uniqueCustomers} clienti`,
+    })
+    rows.push({
+      "Codice Gift Card": "Residuo Non Utilizzato:",
+      "Residuo Non Utilizzato": +totals.totalUnusedBalance,
+    })
+    rows.push({
+      "Codice Gift Card": "Card Scadute:",
+      "Numero Transazioni": filteredGiftCards.length,
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -158,10 +170,23 @@ export default function ExpiredGiftCardsReportPage() {
     XLSX.utils.book_append_sheet(wb, ws, "Gift Card Scadute")
     
     const colWidths = [
-      { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
-      { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 18 }
+      { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 22 },
+      { wch: 15 }, { wch: 15 }, { wch: 18 }
     ]
     ws['!cols'] = colWidths
+
+    const range = XLSX.utils.decode_range(ws['!ref'] || "A1");
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      [1, 2,3].forEach(colIdx => {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIdx });
+        const cell = ws[cellAddress];
+
+        if (cell) {
+          cell.t = 'n'; // 'n' sta per number
+          cell.z = '#,##0.00 €'; // Questo è il formato numerico di Excel
+        }
+      });
+    }
     
     XLSX.writeFile(wb, `LoScalo_GiftCardScadute_${selectedDate}.xlsx`)
   }
@@ -173,181 +198,241 @@ export default function ExpiredGiftCardsReportPage() {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     
-    let page = pdfDoc.addPage([842, 595]) // A4 Landscape
+    let page = pdfDoc.addPage([842, 595])
     const { width, height } = page.getSize()
     let y = height - 50
     const margin = 40
+    const rowHeight = 14
+    const colWidths = [30, 140, 80, 80, 90, 80, 200]
+    const colPositions = colWidths.reduce((acc, w, i) => {
+      acc.push((acc[i - 1] || margin - 5) + w)
+      return acc
+    }, [] as number[])
     
     // Header
     page.drawText("Lo Scalo - Report Gift Card Scadute", {
       x: margin,
       y,
-      size: 18,
+      size: 16,
       font: fontBold,
       color: rgb(0, 0, 0),
     })
     
-    y -= 25
+    y -= 22
     page.drawText(`Periodo: ${formatMonthYear(selectedDate)}`, {
       x: margin,
       y,
-      size: 12,
+      size: 11,
       font,
       color: rgb(0.4, 0.4, 0.4),
     })
     
-    y -= 20
+    y -= 18
     page.drawText(`Gift Card Scadute: ${filteredGiftCards.length} | Residuo Totale: ${totals.totalUnusedBalance.toFixed(2)}€`, {
       x: margin,
       y,
-      size: 10,
+      size: 9,
       font,
       color: rgb(0.4, 0.4, 0.4),
     })
     
-    y -= 35
+    y -= 25
     
     const checkNewPage = (neededSpace: number) => {
-      if (y < neededSpace + margin) {
+      if (y < neededSpace + 60) {
         page = pdfDoc.addPage([842, 595])
         y = height - 50
+        drawHeader()
         return true
       }
       return false
     }
     
-    // Table Header
-    const colWidths = [30, 140, 80, 80, 80, 80, 200, 200]
-    const headers = ["#", "Codice", "Valore Iniz.", "Utilizzato", "Residuo", "Data Scad.", "Cliente", "Ordine"]
-    
-    page.drawRectangle({
-      x: margin,
-      y: y - 10,
-      width: width - margin * 2,
-      height: 25,
-      color: rgb(0.95, 0.95, 0.95),
-    })
-    
-    let x = margin + 10
-    headers.forEach((header, i) => {
-      page.drawText(header, {
-        x,
-        y: y - 2,
-        size: 10,
-        font: fontBold,
-        color: rgb(0.2, 0.2, 0.2),
+    // Header row
+    const drawHeader = () => {
+      page.drawRectangle({
+        x: margin,
+        y: y - 5,
+        width: width - margin * 2,
+        height: 20,
+        color: rgb(0.95, 0.95, 0.9),
       })
-      x += colWidths[i]
-    })
+      
+      const headers = ["#", "Codice", "Valore Iniz.", "Utilizzato", "Residuo", "Data Scad."]
+      headers.forEach((h, i) => {
+        page.drawText(h, {
+          x: (i === 0 ? margin : colPositions[i - 1]) + 3,
+          y,
+          size: 8,
+          font: fontBold,
+          color: rgb(0.2, 0.2, 0.2),
+        })
+      })
+      y -= rowHeight + 10
+    }
     
-    y -= 35
+    drawHeader()
     
-    // Table Rows
+    // Data rows
     filteredGiftCards.forEach((g, index) => {
       const expiryDate = g.expiresAt ? new Date(g.expiresAt) : null
       const usedAmount = g.initialValue - g.remainingValue
       
-      checkNewPage(30)
-      
-      // Alternating background
-      if (index % 2 === 0) {
-        page.drawRectangle({
-          x: margin,
-          y: y - 5,
-          width: width - margin * 2,
-          height: 25,
-          color: rgb(0.98, 0.98, 0.98),
-        })
-      }
-      
-      x = margin + 10
+      checkNewPage(40)
       
       // Row number
-      page.drawText(`${index + 1}`, { x, y, size: 10, font })
-      x += colWidths[0]
+      page.drawText(`${index + 1}`, {
+        x: margin,
+        y,
+        size: 8,
+        font,
+        color: rgb(0, 0, 0),
+      })
       
       // Code
-      page.drawText(g.code, { x, y, size: 9, font: fontBold })
-      x += colWidths[1]
+      page.drawText(g.code, {
+        x: colPositions[0],
+        y,
+        size: 8,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      })
       
       // Initial Value
-      page.drawText(`${g.initialValue.toFixed(2)}€`, { x, y, size: 9, font })
-      x += colWidths[2]
+      page.drawText(`${g.initialValue.toFixed(2)}€`, {
+        x: colPositions[1],
+        y,
+        size: 8,
+        font,
+        color: rgb(0, 0, 0),
+      })
       
       // Used Amount
-      page.drawText(`${usedAmount.toFixed(2)}€`, { x, y, size: 9, font, color: rgb(0.2, 0.6, 0.2) })
-      x += colWidths[3]
-      
-      // Remaining (highlighted in red as it's expired)
-      page.drawText(`${g.remainingValue.toFixed(2)}€`, { 
-        x, y, size: 10, font: fontBold, color: rgb(0.8, 0.2, 0.2) 
+      page.drawText(`${usedAmount.toFixed(2)}€`, {
+        x: colPositions[2],
+        y,
+        size: 8,
+        font,
+        color: rgb(0.2, 0.4, 0.8),
       })
-      x += colWidths[4]
+      
+      // Remaining (highlighted in green as it's revenue)
+      page.drawText(`${g.remainingValue.toFixed(2)}€`, {
+        x: colPositions[3] + 10,
+        y,
+        size: 9,
+        font: fontBold,
+        color: rgb(0.2, 0.6, 0.2),
+      })
       
       // Expiry Date
       page.drawText(
-        expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-", 
-        { x, y, size: 9, font, color: rgb(0.5, 0.5, 0.5) }
+        expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-",
+        {
+          x: colPositions[4],
+          y,
+          size: 8,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        }
       )
-      x += colWidths[5]
       
-      // Client Email (truncated)
-      const email = g.order?.email ? (g.order.email.length > 35 ? g.order.email.substring(0, 35) + "..." : g.order.email) : "N/A"
-      page.drawText(email, { x, y, size: 8, font })
-      x += colWidths[6]
+      page.drawLine({
+        start: { x: 40, y: y+10 },
+        end: { x: 802, y: y+10 },
+        thickness: 0.5,
+        color: rgb(0.75, 0.75, 0.75),
+        opacity: 0.8,
+      })
       
-      // Order Number
-      page.drawText(g.order?.orderNumber || "N/A", { x, y, size: 8, font, color: rgb(0.5, 0.5, 0.5) })
-      
-      y -= 25
+      y -= rowHeight + 10
     })
     
     // Totals
-    checkNewPage(80)
+    checkNewPage(120)
+    
     y -= 10
     page.drawLine({
       start: { x: margin, y },
       end: { x: width - margin, y },
-      thickness: 2,
+      thickness: 1,
+      color: rgb(0.7, 0.7, 0.7),
+    })
+    
+    y -= 20
+    page.drawText("RIEPILOGO", {
+      x: margin,
+      y,
+      size: 11,
+      font: fontBold,
       color: rgb(0, 0, 0),
     })
     
-    y -= 25
-    page.drawText("TOTALI MESE", {
-      x: margin,
+    y -= 18
+    page.drawText(`Valore Iniziale:`, {
+      x: margin + 20,
       y,
-      size: 14,
+      size: 10,
+      font,
+      color: rgb(0.6, 0.2, 0.6),
+    })
+    page.drawText(`${totals.totalInitialValue.toFixed(2)}€`, {
+      x: margin + 200,
+      y,
+      size: 10,
       font: fontBold,
+      color: rgb(0.6, 0.2, 0.6),
     })
     
-    y -= 22
-    page.drawText(
-      `Valore Iniziale: ${totals.totalInitialValue.toFixed(2)}€ | ` +
-      `Utilizzato: ${totals.totalUsed.toFixed(2)}€ | ` +
-      `Residuo Scaduto: ${totals.totalUnusedBalance.toFixed(2)}€ | ` +
-      `Card: ${filteredGiftCards.length} | Clienti: ${totals.uniqueCustomers}`,
-      {
-        x: margin + 20,
-        y,
-        size: 11,
-        font: fontBold,
-        color: rgb(0.8, 0.2, 0.2),
-      }
-    )
+    y -= 16
+    page.drawText(`Importo Utilizzato:`, {
+      x: margin + 20,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.2, 0.4, 0.8),
+    })
+    page.drawText(`${totals.totalUsed.toFixed(2)}€`, {
+      x: margin + 200,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.4, 0.8),
+    })
     
-    // Note about expired balance becoming revenue
-    y -= 25
-    page.drawText(
-      "Nota: Il residuo non utilizzato delle gift card scadute diventa entrata del bar (come da normativa italiana).",
-      {
-        x: margin,
-        y,
-        size: 9,
-        font,
-        color: rgb(0.5, 0.5, 0.5),
-      }
-    )
+    y -= 16
+    page.drawText(`Residuo Non Utilizzato:`, {
+      x: margin + 20,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.2, 0.6, 0.2),
+    })
+    page.drawText(`${totals.totalUnusedBalance.toFixed(2)}€`, {
+      x: margin + 200,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.2, 0.6, 0.2),
+    })
     
+    y -= 16
+    page.drawText(`Card Scadute:`, {
+      x: margin + 20,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.8, 0.2, 0.2),
+    })
+    page.drawText(`${filteredGiftCards.length}`, {
+      x: margin + 200,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.8, 0.2, 0.2),
+    })
+    
+   
     const pdfBytes = await pdfDoc.save()
     const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
     const link = document.createElement("a")
@@ -412,54 +497,56 @@ export default function ExpiredGiftCardsReportPage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Summary Cards - Grouped Style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* VALORI Section */}
           <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
+              <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-purple-500" />
+              </div>
+              <span className="text-title-sm font-bold text-purple-700">VALORI</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Valore Iniziale</span>
+                <span className="text-body-md font-semibold text-purple-600">{totals.totalInitialValue.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Importo Utilizzato</span>
+                <span className="text-body-md font-semibold text-blue-600">{totals.totalUsed.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-brand-light-gray/50">
+                <span className="text-label-md font-medium text-green-700">Residuo Scaduto</span>
+                <span className="text-headline-md font-bold text-green-600">+{totals.totalUnusedBalance.toFixed(2)}€</span>
+              </div>
+            </div>
+          </div>
+
+          {/* STATISTICHE Section */}
+          <div className="bg-white rounded-2xl shadow-card p-4">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
               <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
                 <Gift className="w-5 h-5 text-red-500" />
               </div>
-              <span className="text-label-md text-brand-gray">Card Scadute</span>
+              <span className="text-title-sm font-bold text-red-700">STATISTICHE</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {filteredGiftCards.length}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-orange-500" />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Card Scadute</span>
+                <span className="text-body-md font-semibold text-red-600">{filteredGiftCards.length}</span>
               </div>
-              <span className="text-label-md text-brand-gray">Valore Iniziale</span>
-            </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.totalInitialValue.toFixed(2)}€
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-gray-600" />
+              <div className="flex justify-between items-center">
+                <span className="text-body-sm text-brand-gray">Media Residuo/Card</span>
+                <span className="text-body-md font-semibold text-brand-dark">
+                  {filteredGiftCards.length > 0 ? (totals.totalUnusedBalance / filteredGiftCards.length).toFixed(2) : "0.00"}€
+                </span>
               </div>
-              <span className="text-label-md text-brand-gray">Utilizzato</span>
-            </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.totalUsed.toFixed(2)}€
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-green-600" />
+              <div className="flex justify-between items-center pt-2 border-t border-brand-light-gray/50">
+                <span className="text-label-md font-medium text-brand-dark">Totale Card</span>
+                <span className="text-headline-md font-bold text-brand-dark">{filteredGiftCards.length}</span>
               </div>
-              <span className="text-label-md text-brand-gray">Residuo Scaduto</span>
             </div>
-            <p className="text-headline-lg font-bold text-green-600">
-              {totals.totalUnusedBalance.toFixed(2)}€
-            </p>
           </div>
         </div>
 
@@ -557,7 +644,7 @@ export default function ExpiredGiftCardsReportPage() {
                     const usedAmount = g.initialValue - g.remainingValue
                     
                     return (
-                      <tr key={g.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-brand-cream/50">
+                      <tr key={g.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-green-50/30">
                         <td className="py-3 px-4">
                           <div className="font-mono text-body-sm font-bold text-brand-dark">
                             {g.code}
@@ -612,8 +699,24 @@ export default function ExpiredGiftCardsReportPage() {
                 </tbody>
                 <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                   <tr>
-                    <td colSpan={2} className="py-4 px-4 text-right">
-                      <span className="text-title-md font-bold text-brand-dark">TOTALE:</span>
+                    <td colSpan={2} className="py-4 px-4">
+                      <div className="space-y-2">
+                        <div className="text-label-sm font-bold text-green-700 uppercase tracking-wide">
+                          RIEPILOGO
+                        </div>
+                        <div className="flex justify-between text-body-sm pl-2">
+                          <span className="text-brand-gray">Valore Iniziale:</span>
+                          <span className="font-bold text-purple-600">{totals.totalInitialValue.toFixed(2)}€</span>
+                        </div>
+                        <div className="flex justify-between text-body-sm pl-2">
+                          <span className="text-brand-gray">Importo Utilizzato:</span>
+                          <span className="font-bold text-blue-600">{totals.totalUsed.toFixed(2)}€</span>
+                        </div>
+                        <div className="flex justify-between text-body-sm pl-2">
+                          <span className="text-brand-gray">Card Scadute:</span>
+                          <span className="font-bold text-red-600">{filteredGiftCards.length}</span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-right">
                       <div className="text-title-md font-bold text-brand-dark">
@@ -635,7 +738,7 @@ export default function ExpiredGiftCardsReportPage() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="text-label-sm text-brand-gray">
-                        {filteredGiftCards.length} card • {totals.uniqueCustomers} clienti
+                        {filteredGiftCards.length} card
                       </div>
                     </td>
                   </tr>

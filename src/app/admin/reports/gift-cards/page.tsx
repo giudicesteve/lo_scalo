@@ -18,6 +18,8 @@ import {
   Camera,
   Download,
   History,
+  MinusCircle,
+  CreditCard,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
@@ -127,31 +129,29 @@ export default function GiftCardsMonthlyReportPage() {
 
     const rows: Record<string, string | number>[] = []
     
+    // Data rows
     filteredTransactions.forEach((t) => {
       rows.push({
-        "Data": new Date(t.createdAt).toLocaleDateString("it-IT"),
-        "Ora": new Date(t.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
+        "Data": new Date(t.giftCard.purchasedAt).toLocaleDateString("it-IT"),
+        "Ora": new Date(t.giftCard.purchasedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
         "Codice Gift Card": t.giftCard.code,
-        "Valore Iniziale": t.giftCard.initialValue,
-        "Residuo Pre-Utilizzo": t.giftCard.remainingValue + t.amount,
-        "Importo Utilizzato": t.amount,
-        "Residuo Post-Utilizzo": t.giftCard.remainingValue,
+        "Importo Utilizzato": -t.amount,
         "Numero Scontrino": t.receiptNumber || "-",
         "Nota": t.note || "-",
-        "Cliente": t.giftCard.order?.email || "N/A",
-        "Telefono": t.giftCard.order?.phone || "-",
-        "Ordine Acquisto": t.giftCard.order?.orderNumber || "N/A",
-        "Data Acquisto": new Date(t.giftCard.purchasedAt).toLocaleDateString("it-IT"),
         "Foto Scontrino": t.receiptImage ? "Presente" : "-",
       })
     })
     
+    // Riepilogo
     rows.push({})
+    rows.push({"Data": "=== RIEPILOGO ==="})
     rows.push({
-      "Data": "TOTALI",
-      "Importo Utilizzato": totals.totalUsed,
-      "Codice Gift Card": `${totals.uniqueGiftCards} card diverse`,
-      "Cliente": `${totals.uniqueCustomers} clienti`,
+      "Data": "Totale Utilizzato:",
+      "Importo Utilizzato": -totals.totalUsed,
+    })
+    rows.push({
+      "Data": "Gift Card Usate:",
+      "Codice Gift Card": totals.uniqueGiftCards,
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -159,11 +159,23 @@ export default function GiftCardsMonthlyReportPage() {
     XLSX.utils.book_append_sheet(wb, ws, "Transazioni Gift Card")
     
     const colWidths = [
-      { wch: 12 }, { wch: 8 }, { wch: 20 }, { wch: 12 }, { wch: 15 },
-      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 25 },
-      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }
+      { wch: 12 }, { wch: 8 }, { wch: 20 }, { wch: 15 },
+      { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }
     ]
     ws['!cols'] = colWidths
+
+    const range = XLSX.utils.decode_range(ws['!ref'] || "A1");
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      [3].forEach(colIdx => {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: colIdx });
+        const cell = ws[cellAddress];
+
+        if (cell) {
+          cell.t = 'n'; // 'n' sta per number
+          cell.z = '#,##0.00 €'; // Questo è il formato numerico di Excel
+        }
+      });
+    }
     
     XLSX.writeFile(wb, `LoScalo_TransazioniGiftCard_${selectedDate}.xlsx`)
   }
@@ -175,187 +187,211 @@ export default function GiftCardsMonthlyReportPage() {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     
-    let page = pdfDoc.addPage([842, 595]) // A4 Landscape
+    let page = pdfDoc.addPage([842, 595])
     const { width, height } = page.getSize()
     let y = height - 50
     const margin = 40
+    const rowHeight = 14
+    const colWidths = [120, 150, 140, 250]
+    const colPositions = colWidths.reduce((acc, w, i) => {
+      acc.push((acc[i - 1] || margin - 5) + w)
+      return acc
+    }, [] as number[])
     
     // Header
     page.drawText("Lo Scalo - Report Transazioni Gift Card", {
       x: margin,
       y,
-      size: 18,
+      size: 16,
       font: fontBold,
       color: rgb(0, 0, 0),
     })
     
-    y -= 25
+    y -= 22
     page.drawText(`Periodo: ${formatMonthYear(selectedDate)}`, {
       x: margin,
       y,
-      size: 12,
+      size: 11,
       font,
       color: rgb(0.4, 0.4, 0.4),
     })
     
-    y -= 20
+    y -= 18
     page.drawText(`Transazioni: ${filteredTransactions.length} | Totale Utilizzato: ${totals.totalUsed.toFixed(2)}€`, {
       x: margin,
       y,
-      size: 10,
+      size: 9,
       font,
       color: rgb(0.4, 0.4, 0.4),
     })
     
-    y -= 35
+    y -= 25
     
     const checkNewPage = (neededSpace: number) => {
-      if (y < neededSpace + margin) {
+      if (y < neededSpace + 60) {
         page = pdfDoc.addPage([842, 595])
         y = height - 50
+        drawHeader()
         return true
       }
       return false
     }
     
+    // Header row
+    const drawHeader = () => {
+      page.drawRectangle({
+        x: margin,
+        y: y - 5,
+        width: width - margin * 2,
+        height: 20,
+        color: rgb(0.95, 0.95, 0.9),
+      })
+      
+      const headers = ["Data", "Gift Card", "Dettaglio","", "Importo"]
+      headers.forEach((h, i) => {
+        page.drawText(h, {
+          x: (i === 0 ? margin : colPositions[i - 1]) + 3,
+          y,
+          size: 8,
+          font: fontBold,
+          color: rgb(0.2, 0.2, 0.2),
+        })
+      })
+      y -= rowHeight + 10
+    }
+    
+    drawHeader()
+    
     // Track transactions with images for later
     const transactionsWithImages: { index: number; t: Transaction }[] = []
     
-    // Multi-row layout for each transaction
+    // Data rows
     filteredTransactions.forEach((t, index) => {
-      const rowNum = index + 1
+      checkNewPage(40)
+      
       const date = new Date(t.createdAt)
-      const neededSpace = 70 // Height needed for each transaction block
+      const dateStr = date.toLocaleDateString("it-IT")
       
-      checkNewPage(neededSpace + 100)
-      
-      // Background box for the transaction
-      page.drawRectangle({
+      // Data
+      page.drawText(dateStr, {
         x: margin,
-        y: y - neededSpace + 12,
-        width: width - margin * 2,
-        height: neededSpace,
-        color: rgb(0.97, 0.97, 0.97),
-      })
-      
-      // Row 1: Number, Date, Amount, Remaining (right side)
-      page.drawText(`${rowNum}`, {
-        x: margin + 10,
         y,
-        size: 12,
-        font: fontBold,
-      })
-      
-      page.drawText(date.toLocaleDateString("it-IT"), {
-        x: margin + 35,
-        y,
-        size: 10,
+        size: 8,
         font,
-        color: rgb(0.4, 0.4, 0.4),
+        color: rgb(0, 0, 0),
       })
       
-      page.drawText(date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }), {
-        x: margin + 95,
+      // Gift Card Code
+      page.drawText(t.giftCard.code, {
+        x: colPositions[0],
+        y,
+        size: 8,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      })
+      
+      // Dettaglio (Scontrino/Nota)
+      const details = []
+      if (t.receiptNumber) details.push(`Scontrino: ${t.receiptNumber}`)
+      if (t.note) details.push(t.note)
+      if (t.receiptImage) details.push("[Foto]")
+      
+      const detailText = details.join(" | ")
+      page.drawText(detailText, {
+        x: colPositions[1],
+        y,
+        size: 7,
+        font,
+        color: rgb(0.2, 0.4, 0.8),
+      })
+      
+      const marginExtra = 115;
+      const pageWidth = page.getWidth();
+      const rightAlignX = pageWidth - marginExtra; 
+      const textWidth = fontBold.widthOfTextAtSize(`-${t.amount.toFixed(2)}€`, 9);
+        
+
+      // Importo
+      page.drawText(`-${t.amount.toFixed(2)}€`, {
+        x: rightAlignX - textWidth,
         y,
         size: 9,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      })
-      
-      // Importo (right aligned)
-      page.drawText(`-${t.amount.toFixed(2)}€`, {
-        x: width - margin - 150,
-        y,
-        size: 12,
         font: fontBold,
         color: rgb(0.8, 0.2, 0.2),
       })
       
-      // Residuo
-      page.drawText(`Residuo: ${t.giftCard.remainingValue.toFixed(2)}€`, {
-        x: width - margin - 80,
-        y,
-        size: 10,
-        font,
-      })
-      
-      y -= 20
-      
-      // Row 2: Gift Card Code
-      page.drawText(`Gift Card: ${t.giftCard.code}`, {
-        x: margin + 35,
-        y,
-        size: 10,
-        font: fontBold,
-      })
-      
-      y -= 18
-      
-      // Row 3: Cliente
-      page.drawText(`Cliente: ${t.giftCard.order?.email || "N/A"}`, {
-        x: margin + 35,
-        y,
-        size: 9,
-        font,
-      })
-      
-      y -= 16
-      
-      // Row 4: Dettaglio (Scontrino, Note)
-      const details = []
-      if (t.receiptNumber) details.push(`Scontrino: ${t.receiptNumber}`)
-      if (t.note) details.push(`Nota: ${t.note}`)
-      if (t.receiptImage) details.push("[Foto allegata]")
-      
-      if (details.length > 0) {
-        page.drawText(details.join(" | "), {
-          x: margin + 35,
-          y,
-          size: 8,
-          font,
-          color: rgb(0.2, 0.4, 0.8),
-        })
-      }
       
       // Track if has image
       if (t.receiptImage) {
-        transactionsWithImages.push({ index: rowNum, t })
+        transactionsWithImages.push({ index: index + 1, t })
       }
       
-      y -= 25
+      page.drawLine({
+        start: { x: 40, y: y+10 },
+        end: { x: 802, y: y+10 },
+        thickness: 0.5,
+        color: rgb(0.75, 0.75, 0.75),
+        opacity: 0.8,
+      })
+      
+      y -= rowHeight + 10
     })
     
-    // Totali
-    checkNewPage(80)
+    // Totals
+    checkNewPage(100)
+    
     y -= 10
     page.drawLine({
       start: { x: margin, y },
       end: { x: width - margin, y },
-      thickness: 2,
+      thickness: 1,
+      color: rgb(0.7, 0.7, 0.7),
+    })
+    
+    y -= 20
+    page.drawText("RIEPILOGO", {
+      x: margin,
+      y,
+      size: 11,
+      font: fontBold,
       color: rgb(0, 0, 0),
     })
     
-    y -= 25
-    page.drawText("TOTALI MESE", {
+    y -= 18
+    page.drawText(`Totale Utilizzato:`, {
       x: margin,
       y,
-      size: 14,
-      font: fontBold,
+      size: 10,
+      font,
+      color: rgb(0.8, 0.2, 0.2),
     })
-    
-    y -= 22
-    page.drawText(`Totale Utilizzato: ${totals.totalUsed.toFixed(2)}€ | Gift Card: ${totals.uniqueGiftCards} | Clienti: ${totals.uniqueCustomers}`, {
-      x: margin + 20,
+    page.drawText(`-${totals.totalUsed.toFixed(2)}€`, {
+      x: margin + 170,
       y,
-      size: 11,
+      size: 10,
       font: fontBold,
       color: rgb(0.8, 0.2, 0.2),
     })
     
+    y -= 16
+    page.drawText(`Gift Card Usate:`, {
+      x: margin,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.6, 0.2, 0.6),
+    })
+    page.drawText(`${totals.uniqueGiftCards}`, {
+      x: margin + 199,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.6, 0.2, 0.6),
+    })
+    
     // Add Receipt Images section if any
     if (transactionsWithImages.length > 0) {
-      // Add new page for images
-      page = pdfDoc.addPage([595, 842]) // A4 Portrait for images
+      page = pdfDoc.addPage([842, 595])
       y = height - 50
       
       page.drawText("Foto Scontrini", {
@@ -367,64 +403,84 @@ export default function GiftCardsMonthlyReportPage() {
       })
       
       y -= 30
-      
-      // Add each image
+
+
+      let currentColumn = 0; // 0 per sinistra, 1 per destra
+      const columnWidth = (pdfDoc.getPage(0).getWidth() - (margin * 3)) / 2; // Spazio disponibile per colonna
+      let rowMaxHeight = 0; // Per gestire immagini di altezze diverse nella stessa riga
+
       for (const { index, t } of transactionsWithImages) {
-        if (!t.receiptImage) continue
-        
+        if (!t.receiptImage) continue;
+
         try {
-          const base64Data = t.receiptImage.split(',')[1]
+          const base64Data = t.receiptImage.split(',')[1];
           if (base64Data) {
-            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-            const image = await pdfDoc.embedJpg(imageBytes).catch(() => 
-              pdfDoc.embedPng(imageBytes)
-            )
+            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const image = await pdfDoc.embedJpg(imageBytes).catch(() => pdfDoc.embedPng(imageBytes));
+
+            // Calcolo dimensioni per la colonna
+            const imgWidth = image.width > columnWidth ? columnWidth - 50 : image.width - 50;
+            const imgHeight = (image.height / image.width) * imgWidth;
             
-            // Calculate image size (max width 250px, keep aspect ratio)
-            const maxWidth = 250
-            const imgWidth = image.width > maxWidth ? maxWidth : image.width
-            const imgHeight = (image.height / image.width) * imgWidth
-            
-            // Check if need new page
-            if (y - imgHeight - 40 < margin) {
-              page = pdfDoc.addPage([595, 842])
-              y = height - 50
+            // Calcolo posizione X in base alla colonna
+            const xPos = margin + (currentColumn * (columnWidth + margin));
+
+            // Controllo cambio pagina: se l'altezza dell'immagine + testi supera lo spazio rimanente
+            // Nota: +60 è un buffer per i testi sopra l'immagine
+            if (y - imgHeight - 60 < margin) {
+              page = pdfDoc.addPage([842, 595]);
+              y = height - 50;
+              currentColumn = 0;
+              rowMaxHeight = 0;
             }
-            
-            // Row number label
+
+            // Testo Intestazione
             page.drawText(`Riga ${index} | GiftCard ${t.giftCard.code}`, {
-              x: margin,
+              x: xPos,
               y: y,
-              size: 11,
+              size: 10,
               font: fontBold,
               color: rgb(0.2, 0.4, 0.8),
-            })
-            
+            });
+
+            // Testo Scontrino (opzionale)
             if (t.receiptNumber) {
               page.drawText(`Scontrino: ${t.receiptNumber}`, {
-                x: margin + 250,
-                y: y,
-                size: 10,
+                x: xPos,
+                y: y - 15,
+                size: 9,
                 font,
                 color: rgb(0.4, 0.4, 0.4),
-              })
+              });
             }
-            
-            y -= 20
-            
-            // Draw image
+
+
+
+            // Disegno Immagine
             page.drawImage(image, {
-              x: margin,
-              y: y - imgHeight,
+              x: xPos,
+              y: y - 15 - (t.receiptNumber ? 15 : 0) - imgHeight,
               width: imgWidth,
               height: imgHeight,
-            })
-            
-            y -= imgHeight + 30
+            });
+
+            // Calcolo l'altezza massima della riga corrente per il salto successivo
+            const totalItemHeight = imgHeight + 40; 
+            if (totalItemHeight > rowMaxHeight) rowMaxHeight = totalItemHeight;
+
+            // Logica di switch colonna
+            if (currentColumn === 0) {
+              currentColumn = 1; // Vai a destra
+            } else {
+              currentColumn = 0; // Torna a sinistra
+              y -= rowMaxHeight + 20; // Vai alla riga successiva
+              rowMaxHeight = 0; // Reset altezza riga
+            }
           }
         } catch (e) {
-          console.error("Error embedding image:", e)
-        }
+          console.error("Error embedding image:", e);
+        }      
+     
       }
     }
     
@@ -452,7 +508,7 @@ export default function GiftCardsMonthlyReportPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Report Mensile transazioni Gift Card
+            Report Transazioni Gift Card
           </h1>
         </div>
       </header>
@@ -493,40 +549,28 @@ export default function GiftCardsMonthlyReportPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
               <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
-                <History className="w-5 h-5 text-red-500" />
+                <MinusCircle className="w-5 h-5 text-red-500" />
               </div>
-              <span className="text-label-md text-brand-gray">Totale Utilizzato</span>
+              <span className="text-title-sm font-bold text-red-700">TOTALE UTILIZZATO</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.totalUsed.toFixed(2)}€
+            <p className="text-headline-lg font-bold text-red-600">
+              -{totals.totalUsed.toFixed(2)}€
             </p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
-                <Gift className="w-5 h-5 text-green-500" />
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-brand-light-gray/50">
+              <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-purple-500" />
               </div>
-              <span className="text-label-md text-brand-gray">Gift Card Usate</span>
+              <span className="text-title-sm font-bold text-purple-700">GIFT CARD USATE</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
+            <p className="text-headline-lg font-bold text-purple-600">
               {totals.uniqueGiftCards}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-500" />
-              </div>
-              <span className="text-label-md text-brand-gray">Clienti</span>
-            </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.uniqueCustomers}
             </p>
           </div>
         </div>
@@ -604,7 +648,7 @@ export default function GiftCardsMonthlyReportPage() {
                   {filteredTransactions.map((t) => {
                     const date = new Date(t.createdAt)
                     return (
-                      <tr key={t.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-brand-cream/50">
+                      <tr key={t.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-red-50/30">
                         <td className="py-3 px-4">
                           <div className="text-body-sm text-brand-dark">
                             {date.toLocaleDateString("it-IT")}
@@ -672,15 +716,25 @@ export default function GiftCardsMonthlyReportPage() {
                 </tbody>
                 <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                   <tr>
-                    <td colSpan={4} className="py-4 px-4 text-right">
-                      <span className="text-title-md font-bold text-brand-dark">TOTALE MESE:</span>
+                    <td colSpan={4} className="py-4 px-4">
+                      <div className="space-y-2">
+                        <div className="text-label-sm font-bold text-red-700 uppercase tracking-wide">
+                          RIEPILOGO
+                        </div>
+                        <div className="flex justify-between text-body-sm pl-2">
+                          <span className="text-brand-gray">Totale Utilizzato:</span>
+                          <span className="font-bold text-red-600">{totals.totalUsed.toFixed(2)}€</span>
+                        </div>
+                        <div className="flex justify-between text-body-sm pl-2">
+                          <span className="text-brand-gray">Gift Card Usate:</span>
+                          <span className="font-bold text-purple-600">{totals.uniqueGiftCards}</span>
+                        </div>
+                      </div>
                     </td>
                     <td colSpan={2} className="py-4 px-4 text-right">
-                      <div className="text-headline-md font-bold text-red-500">
+                      <span className="text-title-md font-bold text-brand-dark">TOTALE:</span>
+                      <div className="text-headline-md font-bold text-red-600">
                         -{totals.totalUsed.toFixed(2)}€
-                      </div>
-                      <div className="text-label-sm text-brand-gray">
-                        {totals.uniqueGiftCards} card • {totals.uniqueCustomers} clienti
                       </div>
                     </td>
                   </tr>
