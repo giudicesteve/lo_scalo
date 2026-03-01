@@ -100,12 +100,13 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    // Generate Excel
+    // Generate Excel - Exact copy from individual report pages
     const wb = XLSX.utils.book_new()
 
-    // Sheet 1: Vendite e Rimborsi
+    // ========== SHEET 1: VENDITE E RIMBORSI (from /admin/reports/monthly) ==========
     const sheet1Rows: Record<string, string | number>[] = []
     
+    // Orders
     orders.forEach(order => {
       const productTotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
       const giftCardTotal = order.giftCards.reduce((sum, gc) => sum + gc.initialValue, 0)
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
       })
     })
     
+    // Refunds
     refunds.forEach(refund => {
       sheet1Rows.push({
         "Data": refund.refundedAt.toLocaleDateString("it-IT") + " " + refund.refundedAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
@@ -139,6 +141,7 @@ export async function POST(request: NextRequest) {
       })
     })
     
+    // Riepilogo
     const productRevenue = orders.reduce((sum, o) => sum + o.items.reduce((itemSum, item) => itemSum + item.totalPrice, 0), 0)
     const giftCardRevenue = orders.reduce((sum, o) => sum + o.giftCards.reduce((gcSum, gc) => gcSum + gc.initialValue, 0), 0)
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
@@ -148,33 +151,116 @@ export async function POST(request: NextRequest) {
     
     sheet1Rows.push({})
     sheet1Rows.push({"Data": "=== ORDINI ==="})
-    sheet1Rows.push({"Data": "Prodotti:", "Dettaglio Prodotti": +productRevenue})
-    sheet1Rows.push({"Data": "Gift Card:", "Dettaglio Gift Card": +giftCardRevenue})
-    sheet1Rows.push({"Data": "TOTALE ORDINI", "Totale": +totalRevenue})
+    
+    sheet1Rows.push({
+      "Data": "Prodotti:",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": +productRevenue,
+      "Dettaglio Gift Card": "",
+      "Totale": "",
+    })
+    
+    sheet1Rows.push({
+      "Data": "Gift Card:",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": +giftCardRevenue,
+      "Totale": "",
+    })
+    
+    sheet1Rows.push({
+      "Data": "TOTALE ORDINI",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": "",
+      "Totale": +totalRevenue,
+    })
     
     if (totalRefunds > 0) {
       sheet1Rows.push({})
       sheet1Rows.push({"Data": "=== RIMBORSI ==="})
-      sheet1Rows.push({"Data": "Prodotti:", "Dettaglio Prodotti": -productRefunds})
-      sheet1Rows.push({"Data": "Gift Card:", "Dettaglio Gift Card": -giftCardRefunds})
-      sheet1Rows.push({"Data": "TOTALE RIMBORSI", "Totale": -totalRefunds})
+      
+      sheet1Rows.push({
+        "Data": "Prodotti:",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": -productRefunds,
+        "Dettaglio Gift Card": "",
+        "Totale": "",
+      })
+      
+      sheet1Rows.push({
+        "Data": "Gift Card:",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": "",
+        "Dettaglio Gift Card": -giftCardRefunds,
+        "Totale": "",
+      })
+      
+      sheet1Rows.push({
+        "Data": "TOTALE RIMBORSI",
+        "Tipo": "",
+        "Codice Univoco": "",
+        "Rif. Ordine": "",
+        "Fonte": "",
+        "Metodo Rimborso": "",
+        "Stripe ID / Rif. Documento": "",
+        "Dettaglio Prodotti": "",
+        "Dettaglio Gift Card": "",
+        "Totale": -totalRefunds,
+      })
     }
     
     sheet1Rows.push({})
-    sheet1Rows.push({"Data": "NETTO MESE", "Totale": totalRevenue - totalRefunds})
+    sheet1Rows.push({
+      "Data": "NETTO MESE",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Stripe ID / Rif. Documento": "",
+      "Dettaglio Prodotti": "",
+      "Dettaglio Gift Card": "",
+      "Totale": totalRevenue - totalRefunds,
+    })
 
     const ws1 = XLSX.utils.json_to_sheet(sheet1Rows)
     XLSX.utils.book_append_sheet(wb, ws1, "Vendite e Rimborsi")
 
-    // Sheet 2: Transazioni Gift Card
+    // ========== SHEET 2: TRANSAZIONI GIFT CARD (from /admin/reports/gift-cards) ==========
     const sheet2Rows: Record<string, string | number>[] = []
     
-    transactions.forEach(t => {
+    transactions.forEach((t) => {
       sheet2Rows.push({
         "Data": t.createdAt.toLocaleDateString("it-IT"),
         "Ora": t.createdAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
         "Codice Gift Card": t.giftCard.code,
-        "Importo Utilizzato": t.amount,
+        "Importo Utilizzato": -t.amount,
         "Numero Scontrino": t.receiptNumber || "-",
         "Nota": t.note || "-",
         "Data Acquisto": t.giftCard.purchasedAt.toLocaleDateString("it-IT"),
@@ -187,16 +273,22 @@ export async function POST(request: NextRequest) {
     
     sheet2Rows.push({})
     sheet2Rows.push({"Data": "=== RIEPILOGO ==="})
-    sheet2Rows.push({"Data": "Totale Utilizzato:", "Importo Utilizzato": totalUsed})
-    sheet2Rows.push({"Data": "Gift Card Usate:", "Codice Gift Card": uniqueCards})
+    sheet2Rows.push({
+      "Data": "Totale Utilizzato:",
+      "Importo Utilizzato": -totalUsed,
+    })
+    sheet2Rows.push({
+      "Data": "Gift Card Usate:",
+      "Codice Gift Card": uniqueCards,
+    })
 
     const ws2 = XLSX.utils.json_to_sheet(sheet2Rows)
     XLSX.utils.book_append_sheet(wb, ws2, "Transazioni GC")
 
-    // Sheet 3: Gift Card Scadute
+    // ========== SHEET 3: GIFT CARD SCADUTE (from /admin/reports/expired-gift-cards) ==========
     const sheet3Rows: Record<string, string | number>[] = []
     
-    expiredCards.forEach(g => {
+    expiredCards.forEach((g) => {
       const expiryDate = g.expiresAt
       const usedAmount = g.initialValue - g.remainingValue
       
@@ -217,10 +309,22 @@ export async function POST(request: NextRequest) {
     
     sheet3Rows.push({})
     sheet3Rows.push({"Codice Gift Card": "=== RIEPILOGO ==="})
-    sheet3Rows.push({"Codice Gift Card": "Valore Iniziale:", "Valore Iniziale": totalInitial})
-    sheet3Rows.push({"Codice Gift Card": "Importo Utilizzato:", "Importo Utilizzato": totalExpiredUsed})
-    sheet3Rows.push({"Codice Gift Card": "Residuo Non Utilizzato:", "Residuo Non Utilizzato": totalUnused})
-    sheet3Rows.push({"Codice Gift Card": "Card Scadute:", "Numero Transazioni": expiredCards.length})
+    sheet3Rows.push({
+      "Codice Gift Card": "Valore Iniziale:",
+      "Valore Iniziale": totalInitial,
+    })
+    sheet3Rows.push({
+      "Codice Gift Card": "Importo Utilizzato:",
+      "Importo Utilizzato": totalExpiredUsed,
+    })
+    sheet3Rows.push({
+      "Codice Gift Card": "Residuo Non Utilizzato:",
+      "Residuo Non Utilizzato": +totalUnused,
+    })
+    sheet3Rows.push({
+      "Codice Gift Card": "Card Scadute:",
+      "Numero Transazioni": expiredCards.length,
+    })
 
     const ws3 = XLSX.utils.json_to_sheet(sheet3Rows)
     XLSX.utils.book_append_sheet(wb, ws3, "GC Scadute")
