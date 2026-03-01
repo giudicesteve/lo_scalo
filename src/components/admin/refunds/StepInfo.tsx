@@ -124,8 +124,8 @@ export function StepInfo({ order, existingRefunds, canRefund }: StepInfoProps) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Giorni trascorsi:</span>
-            <span className={`font-medium ${daysSinceOrder > 14 ? "text-red-600" : "text-green-600"}`}>
+            <span className="text-gray-500">Giorni dal pagamento:</span>
+            <span className="font-medium text-brand-primary">
               {daysSinceOrder} giorni
             </span>
           </div>
@@ -161,64 +161,30 @@ export function StepInfo({ order, existingRefunds, canRefund }: StepInfoProps) {
         </Alert>
       )}
 
-      {/* Actions Required Alert */}
+      {/* Informazione diritto di recesso */}
       <Alert variant="default">
+        <Calendar className="h-4 w-4" />
         <AlertTitle>
-          <Info className="h-4 w-4" />
-          Azioni richieste
-        </AlertTitle>
-        <AlertDescription className="space-y-3">
-          {order.orderSource === "ONLINE" ? (
-            <div className="flex items-start gap-3">
-              <CreditCard className="h-5 w-5 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Ordine Online (Stripe)</p>
-                <p className="text-sm">
-                  Dopo aver confermato questo rimborso, dovrai emettere il rimborso anche su{" "}
-                  <strong>Stripe Dashboard</strong>. Inserisci l&apos;ID rimborso Stripe nel prossimo step.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-3">
-              <Store className="h-5 w-5 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Ordine Manuale (POS/Contanti)</p>
-                <p className="text-sm">
-                  Dopo aver confermato questo rimborso, procedi con il rimborso in sede al cliente.
-                  Annota il numero scontrino di rimborso.
-                </p>
-              </div>
-            </div>
-          )}
-        </AlertDescription>
-      </Alert>
-
-      {/* 14 Days Policy Alert */}
-      <Alert variant="warning">
-        <AlertTitle>
-          <Calendar className="h-4 w-4" />
-          Termini per il diritto di recesso
+          Diritto di recesso
         </AlertTitle>
         <AlertDescription className="space-y-2">
           <ul className="space-y-1 text-sm">
             <li>
-              • <strong>Prodotti:</strong> 14 giorni dalla data di consegna
+              • <strong>Gift Card:</strong> 14 giorni dalla data di acquisto
             </li>
             <li>
-              • <strong>Gift Card:</strong> 14 giorni dalla data di emissione
+              • <strong>Prodotti:</strong> 14 giorni dalla data di consegna
             </li>
           </ul>
-          <p className="text-sm mt-2">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
-            <strong>Nota bene:</strong> Verificare i giorni festivi, sabati e domeniche che possono
-            estendere il termine (art. 55 Cod. Consumo). Consultare il commercialista per casi specifici.
+          <p className="text-sm mt-2 text-gray-600">
+            <Info className="h-3 w-3 inline mr-1" />
+            I giorni festivi potrebbero estendere il termine reale di reso, verifica la normativa vigente.
           </p>
         </AlertDescription>
       </Alert>
 
       {/* Gift Card Warning */}
-      <Alert variant="destructive">
+      <Alert variant="default">
         <AlertTitle>
           <AlertTriangle className="h-4 w-4" />
           Gift Card già utilizzate
@@ -237,11 +203,10 @@ export function StepInfo({ order, existingRefunds, canRefund }: StepInfoProps) {
             Nessun item rimborsabile
           </AlertTitle>
           <AlertDescription>
-            Non ci sono item rimborsabili per questo ordine. Possibili cause:
+            Non ci sono prodotti rimborsabili per questo ordine. Possibili cause:
             <ul className="mt-2 list-disc list-inside text-sm">
               <li>Tutti gli item sono già stati rimborsati</li>
-              <li>Sono passati più di 14 giorni</li>
-              <li>Le gift card hanno transazioni</li>
+              <li>Le gift card hanno transazioni e dunque non sono rimborsabili</li>
             </ul>
           </AlertDescription>
         </Alert>

@@ -65,15 +65,12 @@ export async function GET(
       where: { orderId: id },
     })
 
-    const refundedItemIds = new Set()
     const refundedGiftCardIds = new Set()
     
     for (const refund of existingRefunds) {
-      const items = refund.items as Array<{ type: string; productId?: string; giftCardId?: string }>
+      const items = refund.items as Array<{ type: string; giftCardId?: string }>
       for (const item of items) {
-        if (item.type === 'PRODUCT' && item.productId) {
-          refundedItemIds.add(item.productId)
-        } else if (item.type === 'GIFT_CARD' && item.giftCardId) {
+        if (item.type === 'GIFT_CARD' && item.giftCardId) {
           refundedGiftCardIds.add(item.giftCardId)
         }
       }
@@ -83,17 +80,17 @@ export async function GET(
     const now = new Date()
     const orderDate = new Date(order.paidAt || order.createdAt)
     
-    // 14 days in milliseconds
-    const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000
-
     // Check each product item
     const productItems = order.items.map((item) => {
-      const isAlreadyRefunded = refundedItemIds.has(item.productId)
+      // Calculate available quantity (total - already refunded)
+      const refundedQty = item.refundedQuantity || 0
+      const availableQuantity = item.quantity - refundedQty
+      const isPartiallyRefunded = refundedQty > 0 && refundedQty < item.quantity
+      const isFullyRefunded = refundedQty >= item.quantity
       
-      // For products: 14 days from order date (we don't have delivery date, use order date)
-      // TODO: Add delivery date to Order model if needed for more accurate calculation
+      // For products: calculate days from order date (delivery date not available yet)
+      // TODO: Use delivery date when available in Order model
       const daysSinceOrder = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24))
-      const isWithin14Days = daysSinceOrder <= 14
       
       return {
         type: "PRODUCT" as const,
@@ -104,15 +101,18 @@ export async function GET(
         size: item.size,
         price: item.unitPrice,
         quantity: item.quantity,
+        availableQuantity,
+        refundedQuantity: refundedQty,
         total: item.totalPrice,
-        isRefundable: !isAlreadyRefunded && isWithin14Days,
-        isAlreadyRefunded,
+        isRefundable: availableQuantity > 0,
+        isFullyRefunded,
+        isPartiallyRefunded,
         daysSinceOrder,
-        reason: isAlreadyRefunded 
-          ? "Già rimborsato" 
-          : !isWithin14Days 
-            ? `Scaduti i 14 giorni (${daysSinceOrder} giorni fa)` 
-            : null,
+        reason: isFullyRefunded 
+          ? "Già rimborsato completamente"
+          : isPartiallyRefunded
+            ? `Già rimborsati ${refundedQty} di ${item.quantity}`
+            : `Acquistato ${daysSinceOrder} giorni fa`,
       }
     })
 
@@ -123,16 +123,15 @@ export async function GET(
         const isAlreadyRefunded = refundedGiftCardIds.has(gc.id)
         const hasTransactions = gc.transactions.length > 0
         const daysSincePurchase = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24))
-        const isWithin14Days = daysSincePurchase <= 14
 
         return {
           type: "GIFT_CARD" as const,
           id: gc.id,
           giftCardId: gc.id,
           code: gc.code,
-          value: gc.initialValue,
+          price: gc.initialValue,
           remainingValue: gc.remainingValue,
-          isRefundable: !isAlreadyRefunded && !hasTransactions && isWithin14Days,
+          isRefundable: !isAlreadyRefunded && !hasTransactions,
           isAlreadyRefunded,
           hasTransactions,
           transactionCount: gc.transactions.length,
@@ -141,9 +140,7 @@ export async function GET(
             ? "Già rimborsata"
             : hasTransactions
               ? `Ha ${gc.transactions.length} transazione/i`
-              : !isWithin14Days
-                ? `Scaduti i 14 giorni (${daysSincePurchase} giorni fa)`
-                : null,
+              : `Acquistata ${daysSincePurchase} giorni fa`,
         }
       })
 

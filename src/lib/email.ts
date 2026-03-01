@@ -107,6 +107,8 @@ const emailTranslations: Record<string, Record<string, string>> = {
     'email.order.thanks': 'Thank you for your order!',
     'email.order.orderDetails': 'Order details',
     'email.order.summary': 'Order summary',
+    'email.order.size': 'Size',
+    'email.order.qty': 'Qty',
   }
 }
 

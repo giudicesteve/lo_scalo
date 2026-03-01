@@ -239,43 +239,25 @@ export function StepConfirm({
           <RadioGroup value={refundMethod} onChange={(v) => onRefundMethodChange(v as "STRIPE" | "CASH" | "POS")}>
             <div className="space-y-3">
               {isOnline ? (
-                <>
-                  <div className="flex items-center space-x-3 p-3 rounded-lg border bg-blue-50 border-blue-200">
-                    <RadioGroupItem 
-                      value="STRIPE" 
-                      id="stripe" 
-                      checked={refundMethod === "STRIPE"}
-                      onChange={() => onRefundMethodChange("STRIPE")}
-                    />
-                    <Label htmlFor="stripe" className="flex items-center gap-2 flex-1">
-                      <CreditCard className="h-4 w-4 text-blue-600" />
-                      <div>
-                        <span className="font-medium">Stripe</span>
-                        <p className="text-xs text-gray-500">
-                          Rimborso tramite Stripe Dashboard
-                        </p>
-                      </div>
-                      <Badge>Consigliato</Badge>
-                    </Label>
-                  </div>
-                  <div className={`flex items-center space-x-3 p-3 rounded-lg border ${refundMethod === "CASH" ? "bg-gray-50" : ""}`}>
-                    <RadioGroupItem 
-                      value="CASH" 
-                      id="cash" 
-                      checked={refundMethod === "CASH"}
-                      onChange={() => onRefundMethodChange("CASH")}
-                    />
-                    <Label htmlFor="cash" className="flex items-center gap-2">
-                      <Banknote className="h-4 w-4 text-green-600" />
-                      <div>
-                        <span className="font-medium">Contanti</span>
-                        <p className="text-xs text-gray-500">
-                          Rimborso in contanti in sede
-                        </p>
-                      </div>
-                    </Label>
-                  </div>
-                </>
+                // Ordine ONLINE (Stripe): solo rimborso tramite Stripe Dashboard
+                <div className="flex items-center space-x-3 p-3 rounded-lg border bg-blue-50 border-blue-200">
+                  <RadioGroupItem 
+                    value="STRIPE" 
+                    id="stripe" 
+                    checked={refundMethod === "STRIPE"}
+                    onChange={() => onRefundMethodChange("STRIPE")}
+                  />
+                  <Label htmlFor="stripe" className="flex items-center gap-2 flex-1">
+                    <CreditCard className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <span className="font-medium">Stripe</span>
+                      <p className="text-xs text-gray-500">
+                        Rimborso tramite Stripe Dashboard
+                      </p>
+                    </div>
+                    <Badge>Obbligatorio</Badge>
+                  </Label>
+                </div>
               ) : (
                 <>
                   <div className={`flex items-center space-x-3 p-3 rounded-lg border ${refundMethod === "CASH" ? "bg-gray-50" : ""}`}>
@@ -323,7 +305,7 @@ export function StepConfirm({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">
-            Riferimento {refundMethod === "STRIPE" ? "Stripe Refund ID" : "Scontrino Rimborso"}
+            Riferimento {refundMethod === "STRIPE" ? "Stripe Refund ID" : "Documento Rimborso"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -338,7 +320,7 @@ export function StepConfirm({
           />
           <p className="text-xs text-gray-500 mt-2">
             {refundMethod === "STRIPE"
-              ? "Inserisci l'ID del rimborso generato su Stripe Dashboard"
+              ? "Inserisci l'ID del rimborso generato su Stripe Dashboard se lo hai già effettuato, altrimenti l'ID verrà inserito automaticamente."
               : "Inserisci il numero dello scontrino di rimborso emesso"}
           </p>
         </CardContent>

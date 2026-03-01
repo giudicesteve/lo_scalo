@@ -27,6 +27,9 @@ export interface RefundableItem {
   size?: string
   price: number
   quantity?: number
+  availableQuantity?: number
+  refundedQuantity?: number
+  refundQuantity?: number
   code?: string
   remainingValue?: number
   isRefundable: boolean
@@ -157,6 +160,18 @@ export function RefundModal({
     }
   }, [isOpen, orderId])
 
+  // Auto-set refund method based on order source
+  useEffect(() => {
+    if (previewData) {
+      if (previewData.order.orderSource === "ONLINE") {
+        setRefundMethod("STRIPE")
+      } else {
+        // For MANUAL orders, default to CASH (can be changed to POS)
+        setRefundMethod("CASH")
+      }
+    }
+  }, [previewData?.order.orderSource])
+
   const loadPreview = async () => {
     setIsLoading(true)
     setError(null)
@@ -207,6 +222,7 @@ export function RefundModal({
       const items = selectedItems.map((item) => ({
         type: item.type,
         id: item.id,
+        refundQuantity: item.refundQuantity || item.quantity || 1,
       }))
 
       const response = await fetch("/api/admin/refunds", {
@@ -249,7 +265,7 @@ export function RefundModal({
     onClose()
   }
 
-  const totalSelected = selectedItems.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0)
+  const totalSelected = selectedItems.reduce((sum, item) => sum + item.price * (item.refundQuantity || item.quantity || 1), 0)
 
   return (
     <Dialog isOpen={isOpen} onClose={handleClose}>

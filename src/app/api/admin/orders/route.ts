@@ -43,6 +43,14 @@ export async function GET(req: Request) {
           },
         },
         giftCards: true,
+        refunds: {
+          select: {
+            id: true,
+            refundNumber: true,
+            totalRefunded: true,
+            refundedAt: true,
+          },
+        },
       },
     });
 
@@ -63,6 +71,9 @@ export async function GET(req: Request) {
           nameEn: item.productNameEn || "Prodotto eliminato",
         },
       })),
+      hasRefund: order.refunds.length > 0,
+      refundCount: order.refunds.length,
+      refundedTotal: order.refunds.reduce((sum, r) => sum + r.totalRefunded, 0),
     }));
 
     return NextResponse.json(transformedOrders);

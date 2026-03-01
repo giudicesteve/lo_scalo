@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const {
       orderId,
-      items, // Array of { type: 'PRODUCT'|'GIFT_CARD', id: string }
+      items, // Array of { type: 'PRODUCT'|'GIFT_CARD', id: string, refundQuantity?: number }
       refundMethod,
       externalRef,
       reason,
@@ -142,12 +142,13 @@ export async function POST(req: Request) {
 
     const refundItems: Array<{
       type: 'PRODUCT' | 'GIFT_CARD'
+      orderItemId?: string
       productId?: string
       giftCardId?: string
       name: string
       size?: string
       price: number
-      quantity?: number
+      quantity: number
     }> = []
 
     let totalRefunded = 0
@@ -163,29 +164,45 @@ export async function POST(req: Request) {
           )
         }
 
-        if (refundedItemIds.has(orderItem.productId)) {
+        // Calculate available quantity
+        const alreadyRefundedQty = orderItem.refundedQuantity || 0
+        const availableQty = orderItem.quantity - alreadyRefundedQty
+        
+        if (availableQty <= 0) {
           return NextResponse.json(
-            { error: `Product ${orderItem.Product?.name} already refunded` },
+            { error: `Product ${orderItem.Product?.name} already fully refunded` },
             { status: 400 }
           )
         }
 
-        if (daysSinceOrder > 14) {
+        // Get refund quantity (default to all available)
+        const refundQty = selectedItem.refundQuantity || availableQty
+        
+        if (refundQty > availableQty) {
           return NextResponse.json(
-            { error: `14-day refund period expired for products` },
+            { error: `Cannot refund ${refundQty} items, only ${availableQty} available` },
             { status: 400 }
           )
         }
 
+        if (refundQty <= 0) {
+          return NextResponse.json(
+            { error: `Invalid refund quantity: ${refundQty}` },
+            { status: 400 }
+          )
+        }
+
+        // Rimborso sempre possibile - imprenditore libero di decidere
         refundItems.push({
           type: 'PRODUCT',
+          orderItemId: orderItem.id,
           productId: orderItem.productId,
           name: orderItem.Product?.name || 'Prodotto',
           size: orderItem.size || undefined,
           price: orderItem.unitPrice,
-          quantity: orderItem.quantity,
+          quantity: refundQty,
         })
-        totalRefunded += orderItem.totalPrice
+        totalRefunded += orderItem.unitPrice * refundQty
 
       } else if (selectedItem.type === 'GIFT_CARD') {
         const giftCard = order.giftCards.find((g) => g.id === selectedItem.id)
@@ -210,18 +227,13 @@ export async function POST(req: Request) {
           )
         }
 
-        if (daysSinceOrder > 14) {
-          return NextResponse.json(
-            { error: `14-day refund period expired for gift cards` },
-            { status: 400 }
-          )
-        }
-
+        // Rimborso sempre possibile - imprenditore libero di decidere
         refundItems.push({
           type: 'GIFT_CARD',
           giftCardId: giftCard.id,
           name: `Gift Card ${giftCard.code}`,
           price: giftCard.initialValue,
+          quantity: 1,
         })
         totalRefunded += giftCard.initialValue
       }
@@ -247,28 +259,26 @@ export async function POST(req: Request) {
         },
       })
 
-      // 2. Restore product stock and soft delete gift cards
-      for (const item of items) {
+      // 2. Restore product stock, update refundedQuantity, and soft delete gift cards
+      for (const item of refundItems) {
         if (item.type === 'PRODUCT') {
-          const orderItem = order.items.find((i) => i.id === item.id)
+          const orderItem = order.items.find((i) => i.id === item.orderItemId)
           if (orderItem) {
+            // Update refundedQuantity
+            const newRefundedQty = (orderItem.refundedQuantity || 0) + item.quantity
+            await tx.orderItem.update({
+              where: { id: orderItem.id },
+              data: { refundedQuantity: newRefundedQty },
+            })
+            
+            // Restore stock
             if (orderItem.variantId && orderItem.ProductVariant) {
-              // Restore variant stock
               await tx.productVariant.update({
                 where: { id: orderItem.variantId },
                 data: {
                   quantity: {
-                    increment: orderItem.quantity,
+                    increment: item.quantity,
                   },
-                },
-              })
-            } else if (!orderItem.Product?.hasSizes) {
-              // Restore main product stock (if no sizes)
-              await tx.product.update({
-                where: { id: orderItem.productId },
-                data: {
-                  // Note: Product model doesn't have quantity field in schema
-                  // You may need to add it or use a different approach
                 },
               })
             }
@@ -276,7 +286,7 @@ export async function POST(req: Request) {
         } else if (item.type === 'GIFT_CARD') {
           // Soft delete gift card
           await tx.giftCard.update({
-            where: { id: item.id },
+            where: { id: item.giftCardId },
             data: {
               isSoftDeleted: true,
               isActive: false,
@@ -339,12 +349,24 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const orderId = searchParams.get("orderId")
+    const year = searchParams.get("year")
+    const month = searchParams.get("month")
     const limit = parseInt(searchParams.get("limit") || "50")
     const offset = parseInt(searchParams.get("offset") || "0")
 
-    const where = {
+    const where: any = {
       ...(orderId ? { orderId } : {}),
       isArchived: false,
+    }
+
+    // Filter by month/year if provided
+    if (year && month) {
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1)
+      const endDate = new Date(parseInt(year), parseInt(month), 1)
+      where.refundedAt = {
+        gte: startDate,
+        lt: endDate,
+      }
     }
 
     const [refunds, total] = await Promise.all([
@@ -356,6 +378,7 @@ export async function GET(req: Request) {
         include: {
           order: {
             select: {
+              id: true,
               orderNumber: true,
               email: true,
               orderSource: true,
@@ -366,8 +389,32 @@ export async function GET(req: Request) {
       prisma.refund.count({ where }),
     ])
 
+    // Calculate breakdown for each refund
+    const refundsWithBreakdown = refunds.map(refund => {
+      const items = refund.items as Array<{
+        type: 'PRODUCT' | 'GIFT_CARD'
+        price: number
+        quantity?: number
+        name?: string
+      }>
+      
+      const productTotal = items
+        .filter(item => item.type === 'PRODUCT')
+        .reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+      
+      const giftCardTotal = items
+        .filter(item => item.type === 'GIFT_CARD')
+        .reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+      
+      return {
+        ...refund,
+        productTotal,
+        giftCardTotal,
+      }
+    })
+
     return NextResponse.json({
-      refunds,
+      refunds: refundsWithBreakdown,
       total,
       limit,
       offset,

@@ -111,14 +111,18 @@ export async function POST(req: Request) {
     console.log(`📧 [VERIFY] Check invio: updateResult.count=${updateResult.count}`);
     if (updateResult.count > 0) {
       console.log(`📧 [VERIFY] 🚀 INVIO EMAIL per ordine ${order.id}`);
+      const orderLang = order.lang || "it";
+      console.log(`📧 [VERIFY] Lingua ordine: ${orderLang}`);
       const orderDetails = {
         orderNumber: order.orderNumber,
         email: order.email,
         phone: order.phone || undefined,
         total: order.total,
-        lang: "it",
+        lang: orderLang,
         items: order.items.map((item) => ({
-          name: item.Product?.name || "Unknown",
+          name: orderLang === "en"
+            ? (item.productNameEn || item.productName || item.Product?.name || "Product")
+            : (item.productName || item.Product?.name || "Prodotto"),
           quantity: item.quantity,
           size: item.size || undefined,
           totalPrice: item.totalPrice,

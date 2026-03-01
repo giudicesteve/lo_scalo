@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, RotateCcwIcon } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, RotateCcwIcon, ArrowDownLeftFromCircle, LucideArrowUpCircle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 import { RefundModal } from "@/components/admin/refunds"
@@ -43,6 +43,8 @@ interface Order {
   items: OrderItem[]
   giftCards: GiftCard[]
   hasRefund?: boolean
+  refundCount?: number
+  refundedTotal?: number
   refunds?: Array<{
     id: string
     refundNumber: string
@@ -90,9 +92,11 @@ export default function AdminOrdersPage() {
       // Chiamata senza filtri per ottenere tutti gli ordini (come Gift Cards)
       const res = await fetch("/api/admin/orders")
       const data = await res.json()
-      setOrders(data)
+      // Ensure data is an array
+      setOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error fetching orders:", error)
+      setOrders([])
     } finally {
       setLoading(false)
     }
@@ -131,6 +135,9 @@ export default function AdminOrdersPage() {
   // Filtra ordini per tab (active/archived) e ricerca
   useEffect(() => {
     let filtered = orders
+    
+    // Escludi ordini CANCELLED da entrambe le sezioni
+    filtered = filtered.filter(order => order.status !== "CANCELLED")
     
     // Filtro per tab
     filtered = filtered.filter(order => 
@@ -270,9 +277,9 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Conta ordini per tab
-  const activeCount = orders.filter(o => !o.isArchived).length
-  const archivedCount = orders.filter(o => o.isArchived).length
+  // Conta ordini per tab (escludi CANCELLED)
+  const activeCount = orders.filter(o => !o.isArchived && o.status !== "CANCELLED").length
+  const archivedCount = orders.filter(o => o.isArchived && o.status !== "CANCELLED").length
 
   if (loading) {
     return (
@@ -362,32 +369,59 @@ export default function AdminOrdersPage() {
         <div className="space-y-4">
           {filteredOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-2xl shadow-card p-4">
-              {/* Header: Numero Ordine + Status */}
+              {/* Header: Numero Ordine + Info */}
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-col gap-2">
                   <h3 className="font-mono text-title-md font-bold text-brand-dark">
                     #{order.orderNumber}
                   </h3>
-                  {/* Order Source Badge */}
-                  {order.orderSource === "MANUAL" ? (
-                    <span className="px-2 py-1 rounded-full text-label-sm bg-purple-100 text-purple-700 flex items-center gap-1">
-                      <Store className="w-3 h-3" />
-                      In negozio
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 rounded-full text-label-sm bg-blue-100 text-blue-700 flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      Online
-                    </span>
-                  )}
-                  <span
-                    className={`px-2 py-1 rounded-full text-label-sm flex items-center gap-1 ${
-                      statusColors[order.status]
-                    }`}
-                  >
-                    {statusIcons[order.status]}
-                    {statusLabels[order.status]}
-                  </span>
+                  {/* Badges con label */}
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
+                    {/* Tipo */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-label-sm text-brand-gray">Tipo:</span>
+                      {order.orderSource === "MANUAL" ? (
+                        <span className="px-2 py-1 rounded-full text-label-sm bg-purple-100 text-purple-700 flex items-center gap-1">
+                          <Store className="w-3 h-3" />
+                          In negozio
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-full text-label-sm bg-blue-100 text-blue-700 flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          Online
+                        </span>
+                      )}
+                    </div>
+                    {/* Stato */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-label-sm text-brand-gray">Stato:</span>
+                      <span
+                        className={`px-2 py-1 rounded-full text-label-sm flex items-center gap-1 ${
+                          statusColors[order.status]
+                        }`}
+                      >
+                        {statusIcons[order.status]}
+                        {statusLabels[order.status]}
+                      </span>
+                    </div>
+                    {/* Rimborso */}
+                    {order.hasRefund && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-label-sm text-brand-gray">Rimborso:</span>
+                        <span className={`px-2 py-1 rounded-full text-label-sm flex items-center gap-1 ${
+                          order.refundedTotal && order.refundedTotal >= order.total
+                            ? "bg-red-100 text-red-700"
+                            : "bg-orange-100 text-orange-700"
+                        }`}>
+                          <RotateCcw className="w-3 h-3" />
+                          {order.refundedTotal && order.refundedTotal >= order.total
+                            ? "Totale"
+                            : "Parziale"
+                          }
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span className="text-headline-sm font-bold text-brand-primary">
                   {order.total.toFixed(2)}€
@@ -494,53 +528,70 @@ export default function AdminOrdersPage() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2">
-                {filter === "active" ? (
-                  <>
-                    {/* PENDING_PAYMENT: nessuna azione */}
-                    {order.status === "PENDING_PAYMENT" && (
-                      <span className="text-label-sm text-brand-gray italic">
-                        In attesa del pagamento...
-                      </span>
-                    )}
-                    
-                    {/* PENDING o COMPLETED: Segna Consegnato */}
-                    {(order.status === "PENDING" || order.status === "COMPLETED") && (
-                      <button
-                        onClick={() => handleUpdateStatus(order.id, "DELIVERED")}
-                        className="btn-primary py-2 text-label-md flex items-center gap-1.5"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Segna Consegnato
-                      </button>
-                    )}
-                    
-                    {/* DELIVERED: Ripristina (solo se ha prodotti) e Archivia */}
-                    {order.status === "DELIVERED" && (
-                      <>
-                        {/* Mostra Ripristina solo se l'ordine ha prodotti (non solo gift card) */}
-                        {order.items.length > 0 && (
+              {/* Actions - Divise in sezioni */}
+              <div className="space-y-3">
+                {/* Sezione 1: Gestione Ordine */}
+                {(filter === "active" && order.status !== "PENDING_PAYMENT") || (filter === "archived" && order.status !== "CANCELLED" && order.items.length > 0) ? (
+                  <div>
+                    <p className="text-label-sm text-brand-gray mb-2">Gestione ordine:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {filter === "active" ? (
+                        <>
+                          {/* PENDING o COMPLETED: Segna Consegnato */}
+                          {(order.status === "PENDING" || order.status === "COMPLETED") && (
+                            <button
+                              onClick={() => handleUpdateStatus(order.id, "DELIVERED")}
+                              className="btn-primary py-2 text-label-md flex items-center gap-1.5"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Segna "Consegnato"
+                            </button>
+                          )}
+                          
+                          {/* DELIVERED: Ripristina (solo se ha prodotti) e Archivia */}
+                          {order.status === "DELIVERED" && (
+                            <>
+                              {order.items.length > 0 && (
+                                <button
+                                  onClick={() => openActionDialog(order.id, 'resetStatus')}
+                                  className="px-3 py-2 bg-orange-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-orange-600 transition-colors"
+                                >
+                                  <ArrowLeft className="w-4 h-4" />
+                                  Segna "Da ritirare"
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleArchive(order.id)}
+                                className="px-3 py-2 bg-gray-200 text-gray-700 rounded-full text-label-md flex items-center gap-1.5 hover:bg-gray-300 transition-colors"
+                              >
+                                <Archive className="w-4 h-4" />
+                                Archivia
+                              </button>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        /* Archiviati: Ripristina */
+                        order.status !== "CANCELLED" && order.items.length > 0 && (
                           <button
-                            onClick={() => openActionDialog(order.id, 'resetStatus')}
-                            className="px-3 py-2 bg-orange-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-orange-600 transition-colors"
+                            onClick={() => handleRestore(order.id)}
+                            className="btn-primary py-2 text-label-md flex items-center gap-1.5"
                           >
-                            <Clock className="w-4 h-4" />
+                            <RotateCcw className="w-4 h-4" />
                             Ripristina
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleArchive(order.id)}
-                          className={`px-3 py-2 bg-gray-200 text-gray-700 rounded-full text-label-md flex items-center gap-1.5 hover:bg-gray-300 transition-colors ${order.items.length === 0 ? '' : 'ml-auto'}`}
-                        >
-                          <Archive className="w-4 h-4" />
-                          Archivia
-                        </button>
-                      </>
-                    )}
-                    
-                    {/* Reinvia email di conferma ordine */}
-                    {order.status !== "PENDING_PAYMENT" && (
+                        )
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                
+                {/* Sezione 2: Azioni */}
+                {order.status !== "PENDING_PAYMENT" && (
+                  <div>
+                    <p className="text-label-sm text-brand-gray mb-2">Azioni:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {/* Reinvia email */}
                       <button
                         onClick={() => openResendDialog(order)}
                         disabled={sendingEmailOrderId === order.id}
@@ -558,52 +609,26 @@ export default function AdminOrdersPage() {
                           </>
                         )}
                       </button>
-                    )}
-                    
-                    {/* Rimborso - solo super admin */}
-                    {isSuperAdmin && order.status !== "PENDING_PAYMENT" && (
-                      <button
-                        onClick={() => handleOpenRefund(order)}
-                        className="px-3 py-2 bg-red-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-red-600 transition-colors"
-                      >
-                        <RotateCcwIcon className="w-4 h-4" />
-                        Rimborso
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  /* Archiviati: mostra azioni in base allo stato */
-                  <>
-                    {/* Ripristina solo se non CANCELLED e ha prodotti */}
-                    {order.status !== "CANCELLED" && order.items.length > 0 && (
-                      <button
-                        onClick={() => handleRestore(order.id)}
-                        className="btn-primary py-2 text-label-md flex items-center gap-1.5"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        Ripristina
-                      </button>
-                    )}
-                    
-                    {/* Reinvia email di conferma ordine */}
-                    <button
-                      onClick={() => openResendDialog(order)}
-                      disabled={sendingEmailOrderId === order.id}
-                      className="px-3 py-2 bg-blue-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {sendingEmailOrderId === order.id ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Invio...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="w-4 h-4" />
-                          Reinvia email
-                        </>
+                      
+                      {/* Rimborso - solo super admin */}
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => handleOpenRefund(order)}
+                          className="px-3 py-2 bg-red-500 text-white rounded-full text-label-md flex items-center gap-1.5 hover:bg-red-600 transition-colors"
+                        >
+                          <RotateCcwIcon className="w-4 h-4" />
+                          Rimborso
+                        </button>
                       )}
-                    </button>
-                  </>
+                    </div>
+                  </div>
+                )}
+                
+                {/* PENDING_PAYMENT: messaggio */}
+                {order.status === "PENDING_PAYMENT" && (
+                  <span className="text-label-sm text-brand-gray italic">
+                    In attesa del pagamento...
+                  </span>
                 )}
               </div>
             </div>

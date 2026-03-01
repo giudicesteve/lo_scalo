@@ -27,9 +27,10 @@
 - **Secure Login**: Google OAuth with role-based access control
 - **Order Management**: Track orders from payment to delivery with status workflow
 - **Gift Card Management**: Activate, redeem, and track gift card usage with receipt upload
+- **Refund System**: Process partial refunds for products and full refunds for gift cards
 - **Reports & Analytics**: 
   - Daily accounting reports with Excel/PDF export
-  - Monthly sales reports
+  - Monthly reports with orders AND refunds (net revenue calculation)
   - Top/bottom sellers metrics
   - Gift card transaction reports
   - Expired gift cards tracking
@@ -69,6 +70,7 @@
 │  • /api/products     │  • /api/admin/orders   │  • Stripe events  │
 │  • /api/menu         │  • /api/admin/shop     │  • Cron jobs      │
 │  • /api/orders       │  • /api/admin/reports  │                   │
+│                      │  • /api/admin/refunds  │                   │
 └──────────┬──────────────────────────────────────┬─────────────────┘
            │                                      │
            ▼                                      ▼

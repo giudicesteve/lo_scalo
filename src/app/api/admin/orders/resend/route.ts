@@ -52,14 +52,17 @@ export async function POST(req: Request) {
     }
 
     // Prepara i dettagli per l'email
+    const orderLang = order.lang || "it";
     const orderDetails = {
       orderNumber: order.orderNumber,
       email: order.email,
       phone: order.phone || undefined,
       total: order.total,
-      lang: "it", // Default to Italian
+      lang: orderLang,
       items: order.items.map((item) => ({
-        name: item.Product?.name || "Unknown",
+        name: orderLang === "en"
+          ? (item.productNameEn || item.productName || item.Product?.name || "Product")
+          : (item.productName || item.Product?.name || "Prodotto"),
         quantity: item.quantity,
         size: item.size || undefined,
         totalPrice: item.totalPrice,

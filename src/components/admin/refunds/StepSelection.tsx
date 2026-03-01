@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, Package, Gift } from "lucide-react"
+import { AlertTriangle, Package, Gift, Minus, Plus } from "lucide-react"
 import { RefundableItem } from "./RefundModal"
 
 interface StepSelectionProps {
@@ -82,8 +82,26 @@ export function StepSelection({
     if (isSelected) {
       onSelectionChange(selectedItems.filter((i) => i.id !== item.id))
     } else {
-      onSelectionChange([...selectedItems, item])
+      // Default to refunding all available quantity
+      onSelectionChange([
+        ...selectedItems, 
+        { ...item, refundQuantity: item.availableQuantity || item.quantity || 1 }
+      ])
     }
+  }
+
+  const updateQuantity = (itemId: string, delta: number) => {
+    onSelectionChange(
+      selectedItems.map((item) => {
+        if (item.id === itemId) {
+          const maxQty = item.availableQuantity || item.quantity || 1
+          const currentQty = item.refundQuantity || 1
+          const newQty = Math.max(1, Math.min(maxQty, currentQty + delta))
+          return { ...item, refundQuantity: newQty }
+        }
+        return item
+      })
+    )
   }
 
   const selectedIds = new Set(selectedItems.map((i) => i.id))
@@ -114,6 +132,9 @@ export function StepSelection({
             {products.map((product) => {
               const isSelected = selectedIds.has(product.id)
               const isDisabled = !product.isRefundable
+              const selectedItem = selectedItems.find((i) => i.id === product.id)
+              const refundQty = selectedItem?.refundQuantity || 1
+              const availableQty = product.availableQuantity || product.quantity || 1
 
               return (
                 <div
@@ -125,12 +146,12 @@ export function StepSelection({
                       ? "bg-blue-50 border-blue-200"
                       : "bg-white border-gray-200 hover:bg-gray-50 cursor-pointer"
                   }`}
-                  onClick={() => !isDisabled && toggleItem(product)}
+                  onClick={() => !isDisabled && !isSelected && toggleItem(product)}
                 >
-                  <div className="mt-0.5">
+                  <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={isSelected}
-                      onChange={() => toggleItem(product)}
+                      onChange={() => !isDisabled && toggleItem(product)}
                       disabled={isDisabled}
                     />
                   </div>
@@ -146,7 +167,9 @@ export function StepSelection({
                     <div className="flex items-center gap-4 mt-1 text-sm">
                       <span className="font-medium">€{product.price?.toFixed(2)}</span>
                       {product.quantity && product.quantity > 1 && (
-                        <span className="text-gray-500">x{product.quantity}</span>
+                        <span className="text-gray-500">
+                          x{product.quantity} {product.refundedQuantity ? `(già rimborsati: ${product.refundedQuantity})` : ""}
+                        </span>
                       )}
                     </div>
                     {product.reason && (
@@ -157,9 +180,28 @@ export function StepSelection({
                     )}
                   </div>
                   <div className="text-right">
-                    <span className="font-bold">
-                      €{((product.price || 0) * (product.quantity || 1)).toFixed(2)}
-                    </span>
+                    {isSelected && availableQty > 1 ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1) }}
+                          className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                          disabled={refundQty <= 1}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="font-medium w-6 text-center">{refundQty}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, 1) }}
+                          className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                          disabled={refundQty >= availableQty}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="font-bold mt-1">
+                      €{((product.price || 0) * (isSelected ? refundQty : (product.quantity || 1))).toFixed(2)}
+                    </div>
                   </div>
                 </div>
               )
