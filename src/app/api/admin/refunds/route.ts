@@ -149,6 +149,7 @@ export async function POST(req: Request) {
       size?: string
       price: number
       quantity: number
+      wasDeleted?: boolean
     }> = []
 
     let totalRefunded = 0
@@ -192,6 +193,9 @@ export async function POST(req: Request) {
           )
         }
 
+        // Check if product was deleted at time of refund
+        const wasDeleted = orderItem.Product?.isDeleted || false
+        
         // Rimborso sempre possibile - imprenditore libero di decidere
         refundItems.push({
           type: 'PRODUCT',
@@ -201,6 +205,7 @@ export async function POST(req: Request) {
           size: orderItem.size || undefined,
           price: orderItem.unitPrice,
           quantity: refundQty,
+          wasDeleted,
         })
         totalRefunded += orderItem.unitPrice * refundQty
 
@@ -242,6 +247,16 @@ export async function POST(req: Request) {
     // Generate refund number
     const refundNumber = await generateRefundNumber()
 
+    // Build enhanced notes with deleted products info
+    const deletedProducts = refundItems.filter(item => item.type === 'PRODUCT' && item.wasDeleted)
+    let enhancedNotes = notes || ''
+    if (deletedProducts.length > 0) {
+      const deletedNames = deletedProducts.map(p => `${p.name}${p.size ? ` (${p.size})` : ''}`).join(', ')
+      enhancedNotes = enhancedNotes 
+        ? `${enhancedNotes}\n\n[NOTE: I seguenti prodotti erano stati eliminati dal catalogo: ${deletedNames}. Lo stock non è stato ripristinato.]`
+        : `[NOTE: I seguenti prodotti erano stati eliminati dal catalogo: ${deletedNames}. Lo stock non è stato ripristinato.]`
+    }
+
     // Execute transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create refund record
@@ -252,7 +267,7 @@ export async function POST(req: Request) {
           items: refundItems as any,
           totalRefunded,
           reason,
-          notes,
+          notes: enhancedNotes,
           refundedBy: admin.id,
           refundMethod: refundMethod as RefundMethod,
           externalRef,
@@ -271,8 +286,9 @@ export async function POST(req: Request) {
               data: { refundedQuantity: newRefundedQty },
             })
             
-            // Restore stock
-            if (orderItem.variantId && orderItem.ProductVariant) {
+            // Restore stock only if product was NOT deleted
+            // (Deleted products remain in DB for order history but stock should not be updated)
+            if (orderItem.variantId && orderItem.ProductVariant && !orderItem.Product?.isDeleted) {
               await tx.productVariant.update({
                 where: { id: orderItem.variantId },
                 data: {
