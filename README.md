@@ -31,9 +31,11 @@
 - **Reports & Analytics**: 
   - Daily accounting reports with Excel/PDF export
   - Monthly reports with orders AND refunds (net revenue calculation)
+  - **Complete Report**: All reports combined in single Excel/PDF file
   - Top/bottom sellers metrics
   - Gift card transaction reports
   - Expired gift cards tracking
+  - Email delivery of complete reports with both Excel and PDF attachments
 - **Menu Management**: CRUD for cocktail categories and items
 - **Shop Management**: Product inventory with multi-size support
 - **Legal Policies**: Versioned Terms, Privacy, and Cookie policies (IT/EN)
