@@ -112,11 +112,13 @@ function Label({
 function Input({ 
   value, 
   onChange, 
-  placeholder 
+  placeholder,
+  required
 }: { 
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  required?: boolean
 }) {
   return (
     <input
@@ -124,6 +126,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+      required={required}
       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
   )
@@ -306,6 +309,7 @@ export function StepConfirm({
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">
             Riferimento {refundMethod === "STRIPE" ? "Stripe Refund ID" : "Documento Rimborso"}
+            <span className="text-red-500 ml-1">*</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -317,12 +321,18 @@ export function StepConfirm({
             }
             value={externalRef}
             onChange={onExternalRefChange}
+            required
           />
           <p className="text-xs text-gray-500 mt-2">
             {refundMethod === "STRIPE"
-              ? "Inserisci l'ID del rimborso generato su Stripe Dashboard se lo hai già effettuato, altrimenti l'ID verrà inserito automaticamente."
-              : "Inserisci il numero dello scontrino di rimborso emesso"}
+              ? "Inserisci l'ID del rimborso generato su Stripe Dashboard (obbligatorio)"
+              : "Inserisci il numero dello documento di rimborso emesso (obbligatorio)"}
           </p>
+          {!externalRef && (
+            <p className="text-xs text-red-500 mt-1">
+              Questo campo è obbligatorio
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -215,6 +215,14 @@ export function RefundModal({
   const handleSubmit = async () => {
     if (!previewData) return
 
+    // Validate externalRef is required
+    if (!externalRef.trim()) {
+      setError(refundMethod === "STRIPE" 
+        ? "Inserisci l'ID del rimborso Stripe" 
+        : "Inserisci il numero del documento di rimborso")
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -403,7 +411,7 @@ export function RefundModal({
                 {step === "confirm" ? (
                   <Button
                     onClick={handleSubmit}
-                    disabled={isLoading}
+                    disabled={isLoading || !externalRef.trim()}
                     variant="danger"
                   >
                     {isLoading ? (
