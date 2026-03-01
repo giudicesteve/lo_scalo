@@ -23,6 +23,7 @@ import type { Order, Refund, GiftCardTransaction, ExpiredGiftCard } from "@/lib/
 export default function CompleteReportPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date()
+    now.setMonth(now.getMonth() - 1)
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [email, setEmail] = useState("")
