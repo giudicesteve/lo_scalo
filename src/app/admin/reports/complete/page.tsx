@@ -535,62 +535,397 @@ export default function CompleteReportPage() {
               const order = row.data as Order
               const productTotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
               const giftCardTotal = order.giftCards.reduce((sum, gc) => sum + gc.initialValue, 0)
+              const dateStr = row.date.toLocaleDateString("it-IT")
               
-              page.drawText(row.date.toLocaleDateString("it-IT"), { x: margin, y, size: 7, font })
-              page.drawText("Ordine", { x: colPositions[0], y, size: 7, font, color: rgb(0.2, 0.6, 0.2) })
-              page.drawText(order.orderNumber, { x: colPositions[1], y, size: 7, font: fontBold })
-              page.drawText("-", { x: colPositions[2], y, size: 7, font })
-              page.drawText(order.orderSource === "MANUAL" ? "Fisico" : "Online", { x: colPositions[3], y, size: 7, font })
-              page.drawText("-", { x: colPositions[4], y, size: 7, font })
-              page.drawText(order.stripePaymentIntentId || "-", { x: colPositions[5], y, size: 6, font })
+              // Data
+              page.drawText(dateStr, {
+                x: margin,
+                y,
+                size: 8,
+                font,
+                color: rgb(0, 0, 0),
+              })
               
-              let detailText = ""
-              if (productTotal > 0) detailText += `Prod: ${productTotal.toFixed(2)}€ `
-              if (giftCardTotal > 0) detailText += `GC: ${giftCardTotal.toFixed(2)}€`
-              page.drawText(detailText, { x: colPositions[6], y, size: 6, font, color: rgb(0.2, 0.4, 0.8) })
+              // Tipo
+              page.drawText("Ordine", {
+                x: colPositions[0],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.2, 0.6, 0.2),
+              })
               
-              const marginExtra = 80
-              const pageWidth = 842
-              const rightAlignX = pageWidth - marginExtra
-              const textWidth = fontBold.widthOfTextAtSize(`+${order.total.toFixed(2)}€`, 8)
-              page.drawText(`+${order.total.toFixed(2)}€`, { x: rightAlignX - textWidth, y, size: 8, font: fontBold, color: rgb(0.2, 0.6, 0.2) })
+              // Codice Univoco
+              page.drawText(`#${order.orderNumber}`, {
+                x: colPositions[1],
+                y,
+                size: 8,
+                font: fontBold,
+                color: rgb(0, 0, 0),
+              })
+              
+              // Rif. Ordine
+              page.drawText("-", {
+                x: colPositions[2],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.5, 0.5, 0.5),
+              })
+              
+              // Fonte
+              page.drawText(order.orderSource === "MANUAL" ? "Fisico" : "Online", {
+                x: colPositions[3],
+                y,
+                size: 8,
+                font,
+                color: rgb(0, 0, 0),
+              })
+              
+              // Metodo Rimborso
+              page.drawText("-", {
+                x: colPositions[4],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.5, 0.5, 0.5),
+              })
+              
+              // Stripe ID
+              const stripeId = order.stripePaymentIntentId || "-"
+              page.drawText(stripeId, {
+                x: colPositions[5],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.4, 0.4, 0.4),
+              })
+
+              const marginExtra = 190;
+              const pageWidth = page.getWidth();
+              const rightAlignX = pageWidth - marginExtra; 
+              const textWidth = font.widthOfTextAtSize(`Prod: +${productTotal.toFixed(2)}€`, 7);
+              
+              // Dettaglio
+              let dettaglioY = y
+              if (productTotal > 0) {
+                page.drawText(`Prod: +${productTotal.toFixed(2)}€`, {
+                  x: rightAlignX - textWidth,
+                  y: dettaglioY,
+                  size: 7,
+                  font,
+                  color: rgb(0.2, 0.4, 0.8),
+                })
+                dettaglioY -= 10
+              }
+
+              const textWidth2 = font.widthOfTextAtSize(`GC: +${giftCardTotal.toFixed(2)}€`, 7);
+
+              if (giftCardTotal > 0) {
+                page.drawText(`GC: +${giftCardTotal.toFixed(2)}€`, {
+                  x: rightAlignX - textWidth2,
+                  y: dettaglioY,
+                  size: 7,
+                  font,
+                  color: rgb(0.6, 0.2, 0.6),
+                })
+              }
+
+              const marginExtra2 = 80;
+              const rightAlignX2 = pageWidth - marginExtra2; 
+              const textWidth3 = font.widthOfTextAtSize(`+${order.total.toFixed(2)}€`, 7);
+              
+              // Totale
+              page.drawText(`+${order.total.toFixed(2)}€`, {
+                x: rightAlignX2 - textWidth3,
+                y,
+                size: 9,
+                font: fontBold,
+                color: rgb(0.2, 0.6, 0.2),
+              })
+              
             } else {
               const refund = row.data as Refund
+              const dateStr = row.date.toLocaleDateString("it-IT")
               
-              page.drawText(row.date.toLocaleDateString("it-IT"), { x: margin, y, size: 7, font })
-              page.drawText("Rimborso", { x: colPositions[0], y, size: 7, font, color: rgb(0.8, 0.2, 0.2) })
-              page.drawText(refund.refundNumber, { x: colPositions[1], y, size: 7, font: fontBold })
-              page.drawText(refund.order.orderNumber, { x: colPositions[2], y, size: 7, font })
-              page.drawText("-", { x: colPositions[3], y, size: 7, font })
-              page.drawText(refund.refundMethod, { x: colPositions[4], y, size: 7, font })
-              page.drawText(refund.externalRef || "-", { x: colPositions[5], y, size: 6, font })
+              // Data
+              page.drawText(dateStr, {
+                x: margin,
+                y,
+                size: 8,
+                font,
+                color: rgb(0, 0, 0),
+              })
               
-              let detailText = ""
-              if (refund.productTotal > 0) detailText += `Prod: ${refund.productTotal.toFixed(2)}€ `
-              if (refund.giftCardTotal > 0) detailText += `GC: ${refund.giftCardTotal.toFixed(2)}€`
-              page.drawText(detailText, { x: colPositions[6], y, size: 6, font, color: rgb(0.2, 0.4, 0.8) })
+              // Tipo
+              page.drawText("Rimborso", {
+                x: colPositions[0],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.8, 0.2, 0.2),
+              })
               
-              const marginExtra = 80
-              const pageWidth = 842
-              const rightAlignX = pageWidth - marginExtra
-              const textWidth = fontBold.widthOfTextAtSize(`-${refund.totalRefunded.toFixed(2)}€`, 8)
-              page.drawText(`-${refund.totalRefunded.toFixed(2)}€`, { x: rightAlignX - textWidth, y, size: 8, font: fontBold, color: rgb(0.8, 0.2, 0.2) })
+              // Codice Univoco
+              page.drawText(refund.refundNumber, {
+                x: colPositions[1],
+                y,
+                size: 8,
+                font: fontBold,
+                color: rgb(0.8, 0.2, 0.2),
+              })
+              
+              // Rif. Ordine
+              page.drawText(`#${refund.order.orderNumber}`, {
+                x: colPositions[2],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.4, 0.4, 0.4),
+              })
+              
+              // Fonte
+              page.drawText("-", {
+                x: colPositions[3],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.5, 0.5, 0.5),
+              })
+              
+              // Metodo Rimborso
+              page.drawText(refund.refundMethod, {
+                x: colPositions[4],
+                y,
+                size: 8,
+                font,
+                color: rgb(0, 0, 0),
+              })
+              
+              // Stripe ID / Rif
+              const extRef = refund.externalRef || "-"
+              page.drawText(extRef.length > 18 ? extRef.substring(0, 18) + "..." : extRef, {
+                x: colPositions[5],
+                y,
+                size: 8,
+                font,
+                color: rgb(0.4, 0.4, 0.4),
+              })
+
+              const marginExtra = 190;
+              const pageWidth = page.getWidth();
+              const rightAlignX = pageWidth - marginExtra; 
+              const textWidth = font.widthOfTextAtSize(`Prod: +${refund.productTotal.toFixed(2)}€`, 7);
+              
+              // Dettaglio
+              let dettaglioY = y
+              if (refund.productTotal > 0) {
+                page.drawText(`Prod: +${refund.productTotal.toFixed(2)}€`, {
+                  x: rightAlignX - textWidth,
+                  y: dettaglioY,
+                  size: 7,
+                  font,
+                  color: rgb(0.2, 0.4, 0.8),
+                })
+                dettaglioY -= 10
+              }
+
+              const textWidth2 = font.widthOfTextAtSize(`GC: +${refund.giftCardTotal.toFixed(2)}€`, 7);
+
+              if (refund.giftCardTotal > 0) {
+                page.drawText(`GC: +${refund.giftCardTotal.toFixed(2)}€`, {
+                  x: rightAlignX - textWidth2,
+                  y: dettaglioY,
+                  size: 7,
+                  font,
+                  color: rgb(0.6, 0.2, 0.6),
+                })
+              }
+
+              const marginExtra2 = 80;
+              const rightAlignX2 = pageWidth - marginExtra2; 
+              const textWidth3 = font.widthOfTextAtSize(`+${refund.totalRefunded.toFixed(2)}€`, 7);
+              
+              // Totale
+              page.drawText(`+${refund.totalRefunded.toFixed(2)}€`, {
+                x: rightAlignX2 - textWidth3,
+                y,
+                size: 9,
+                font: fontBold,
+                color: rgb(0.2, 0.6, 0.2),
+              })
             }
             
-            y -= rowHeight
+            page.drawLine({
+              start: { x: 40, y: y+10 },
+              end: { x: 802, y: y+10 },
+              thickness: 0.5,
+              color: rgb(0.75, 0.75, 0.75),
+              opacity: 0.8,
+            });
+
+            y -= rowHeight + 10
             rowCount++
           }
 
-          // Totals
+          // Totals - Exact copy from /admin/reports/monthly
           const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
           const totalRefunds = refunds.reduce((sum, r) => sum + r.totalRefunded, 0)
+          const productRevenue = orders.reduce((sum, o) => sum + o.items.reduce((itemSum, item) => itemSum + item.totalPrice, 0), 0)
+          const giftCardRevenue = orders.reduce((sum, o) => sum + o.giftCards.reduce((gcSum, gc) => gcSum + gc.initialValue, 0), 0)
+          const productRefunds = refunds.reduce((sum, r) => sum + r.productTotal, 0)
+          const giftCardRefunds = refunds.reduce((sum, r) => sum + r.giftCardTotal, 0)
           
           y -= 10
-          page.drawText(`Totale Ordini: +${totalRevenue.toFixed(2)}€`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.2, 0.6, 0.2) })
+          page.drawLine({
+            start: { x: margin, y },
+            end: { x: 842 - margin, y },
+            thickness: 1,
+            color: rgb(0.7, 0.7, 0.7),
+          })
+          
+          y -= 20
+          page.drawText("RIEPILOGO", {
+            x: margin,
+            y,
+            size: 11,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+          })
+          
+          // ORDINI section
+          y -= 18
+          page.drawText("ORDINI", {
+            x: margin,
+            y,
+            size: 10,
+            font: fontBold,
+            color: rgb(0.2, 0.6, 0.2),
+          })
+          
+          y -= 16
+          page.drawText(`Prodotti:`, {
+            x: margin + 20,
+            y,
+            size: 9,
+            font,
+            color: rgb(0.2, 0.4, 0.8),
+          })
+          page.drawText(`${productRevenue.toFixed(2)}€`, {
+            x: margin + 200,
+            y,
+            size: 9,
+            font: fontBold,
+            color: rgb(0.2, 0.4, 0.8),
+          })
+          
           y -= 14
-          page.drawText(`Totale Rimborsi: -${totalRefunds.toFixed(2)}€`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.8, 0.2, 0.2) })
-          y -= 14
-          page.drawText(`Netto: ${(totalRevenue - totalRefunds).toFixed(2)}€`, { x: margin, y, size: 10, font: fontBold })
+          page.drawText(`Gift Card:`, {
+            x: margin + 20,
+            y,
+            size: 9,
+            font,
+            color: rgb(0.6, 0.2, 0.6),
+          })
+          page.drawText(`${giftCardRevenue.toFixed(2)}€`, {
+            x: margin + 200,
+            y,
+            size: 9,
+            font: fontBold,
+            color: rgb(0.6, 0.2, 0.6),
+          })
+          
+          y -= 16
+          page.drawLine({
+            start: { x: margin + 15, y },
+            end: { x: margin + 250, y },
+            thickness: 0.5,
+            color: rgb(0.8, 0.8, 0.8),
+          })
+          
+          y -= 16
+          page.drawText(`TOTALE ORDINI:`, {
+            x: margin,
+            y,
+            size: 10,
+            font: fontBold,
+            color: rgb(0.2, 0.6, 0.2),
+          })
+          page.drawText(`+${totalRevenue.toFixed(2)}€`, {
+            x: margin + 200,
+            y,
+            size: 10,
+            font: fontBold,
+            color: rgb(0.2, 0.6, 0.2),
+          })
+          
+          // RIMBORSI section
+          if (totalRefunds > 0) {
+            y -= 22
+            page.drawText("RIMBORSI", {
+              x: margin,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+            
+            y -= 16
+            page.drawText(`Prodotti:`, {
+              x: margin + 20,
+              y,
+              size: 9,
+              font,
+              color: rgb(0.2, 0.4, 0.8),
+            })
+            page.drawText(`${productRefunds.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 9,
+              font: fontBold,
+              color: rgb(0.2, 0.4, 0.8),
+            })
+            
+            y -= 14
+            page.drawText(`Gift Card:`, {
+              x: margin + 20,
+              y,
+              size: 9,
+              font,
+              color: rgb(0.6, 0.2, 0.6),
+            })
+            page.drawText(`${giftCardRefunds.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 9,
+              font: fontBold,
+              color: rgb(0.6, 0.2, 0.6),
+            })
+            
+            y -= 16
+            page.drawLine({
+              start: { x: margin + 15, y },
+              end: { x: margin + 250, y },
+              thickness: 0.5,
+              color: rgb(0.8, 0.8, 0.8),
+            })
+            
+            y -= 16
+            page.drawText(`TOTALE RIMBORSI:`, {
+              x: margin,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+            page.drawText(`-${totalRefunds.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+          }
 
           return y
         }
@@ -656,19 +991,75 @@ export default function CompleteReportPage() {
               })
               
               const marginExtra = 115
-              const pageWidth = 842
+              const pageWidth = page.getWidth()
               const rightAlignX = pageWidth - marginExtra
               const textWidth = fontBold.widthOfTextAtSize(`-${t.amount.toFixed(2)}€`, 9)
               page.drawText(`-${t.amount.toFixed(2)}€`, { x: rightAlignX - textWidth, y, size: 9, font: fontBold, color: rgb(0.8, 0.2, 0.2) })
               
-              y -= rowHeight
+              page.drawLine({
+                start: { x: 40, y: y+10 },
+                end: { x: 802, y: y+10 },
+                thickness: 0.5,
+                color: rgb(0.75, 0.75, 0.75),
+                opacity: 0.8,
+              })
+              
+              y -= rowHeight + 10
               rowCount++
             }
 
-            // Total
+            // Totals - Exact copy from /admin/reports/gift-cards
             const totalUsed = transactions.reduce((sum, t) => sum + t.amount, 0)
+            const uniqueCards = new Set(transactions.map(t => t.giftCard.id)).size
+            
             y -= 10
-            page.drawText(`Totale Utilizzato: ${totalUsed.toFixed(2)}€`, { x: margin, y, size: 10, font: fontBold, color: rgb(0.8, 0.2, 0.2) })
+            page.drawLine({
+              start: { x: margin, y },
+              end: { x: page.getSize().width - margin, y },
+              thickness: 1,
+              color: rgb(0.7, 0.7, 0.7),
+            })
+            
+            y -= 20
+            page.drawText("RIEPILOGO", {
+              x: margin,
+              y,
+              size: 11,
+              font: fontBold,
+              color: rgb(0, 0, 0),
+            })
+            
+            y -= 18
+            page.drawText(`Totale Utilizzato:`, {
+              x: margin,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+            page.drawText(`-${totalUsed.toFixed(2)}€`, {
+              x: margin + 170,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+            
+            y -= 16
+            page.drawText(`Gift Card Usate:`, {
+              x: margin,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.6, 0.2, 0.6),
+            })
+            page.drawText(`${uniqueCards}`, {
+              x: margin + 199,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.6, 0.2, 0.6),
+            })
 
             return y
           }
@@ -729,23 +1120,105 @@ export default function CompleteReportPage() {
               page.drawText(`${g.initialValue.toFixed(2)}€`, { x: colPositions[1], y, size: 8, font })
               page.drawText(`${usedAmount.toFixed(2)}€`, { x: colPositions[2], y, size: 8, font, color: rgb(0.2, 0.6, 0.2) })
               page.drawText(`${g.remainingValue.toFixed(2)}€`, { x: colPositions[3] + 10, y, size: 9, font: fontBold, color: rgb(0.2, 0.6, 0.2) })
-              page.drawText(expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-", { x: colPositions[4], y, size: 8, font })
+              page.drawText(expiryDate ? expiryDate.toLocaleDateString("it-IT") : "-", { x: colPositions[4], y, size: 8, font, color: rgb(0.5, 0.5, 0.5) })
               
-              y -= rowHeight
+              page.drawLine({
+                start: { x: 40, y: y+10 },
+                end: { x: 802, y: y+10 },
+                thickness: 0.5,
+                color: rgb(0.75, 0.75, 0.75),
+                opacity: 0.8,
+              })
+              
+              y -= rowHeight + 10
               rowCount++
             }
 
-            // Totals
+            // Totals - Exact copy from /admin/reports/expired-gift-cards
             const totalInitial = expiredCards.reduce((sum, g) => sum + g.initialValue, 0)
             const totalUnused = expiredCards.reduce((sum, g) => sum + g.remainingValue, 0)
-            const totalUsed = expiredCards.reduce((sum, g) => sum + (g.initialValue - g.remainingValue), 0)
+            const totalExpiredUsed = expiredCards.reduce((sum, g) => sum + (g.initialValue - g.remainingValue), 0)
             
             y -= 10
-            page.drawText(`Valore Iniziale: ${totalInitial.toFixed(2)}€`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.6, 0.2, 0.6) })
-            y -= 14
-            page.drawText(`Importo Utilizzato: ${totalUsed.toFixed(2)}€`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.2, 0.4, 0.8) })
-            y -= 14
-            page.drawText(`Residuo Scaduto: ${totalUnused.toFixed(2)}€`, { x: margin, y, size: 10, font: fontBold, color: rgb(0.2, 0.6, 0.2) })
+            page.drawLine({
+              start: { x: margin, y },
+              end: { x: page.getSize().width - margin, y },
+              thickness: 1,
+              color: rgb(0.7, 0.7, 0.7),
+            })
+            
+            y -= 20
+            page.drawText("RIEPILOGO", {
+              x: margin,
+              y,
+              size: 11,
+              font: fontBold,
+              color: rgb(0, 0, 0),
+            })
+            
+            y -= 18
+            page.drawText(`Valore Iniziale:`, {
+              x: margin + 20,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.6, 0.2, 0.6),
+            })
+            page.drawText(`${totalInitial.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.6, 0.2, 0.6),
+            })
+            
+            y -= 16
+            page.drawText(`Importo Utilizzato:`, {
+              x: margin + 20,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.2, 0.4, 0.8),
+            })
+            page.drawText(`${totalExpiredUsed.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.2, 0.4, 0.8),
+            })
+            
+            y -= 16
+            page.drawText(`Residuo Non Utilizzato:`, {
+              x: margin + 20,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.2, 0.6, 0.2),
+            })
+            page.drawText(`${totalUnused.toFixed(2)}€`, {
+              x: margin + 200,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.2, 0.6, 0.2),
+            })
+            
+            y -= 16
+            page.drawText(`Card Scadute:`, {
+              x: margin + 20,
+              y,
+              size: 10,
+              font,
+              color: rgb(0.8, 0.2, 0.2),
+            })
+            page.drawText(`${expiredCards.length}`, {
+              x: margin + 200,
+              y,
+              size: 10,
+              font: fontBold,
+              color: rgb(0.8, 0.2, 0.2),
+            })
 
             return y
           }
