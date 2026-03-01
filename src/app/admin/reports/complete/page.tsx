@@ -406,7 +406,7 @@ export default function CompleteReportPage() {
             if (rowCount >= 15) {
               // Add new page and continue
               page = pdfDoc.addPage([842, 595])
-              y = height - 50
+              y = page.getSize().height - 50
               rowCount = 0
             }
 
@@ -516,7 +516,7 @@ export default function CompleteReportPage() {
             for (const t of transactions) {
               if (rowCount >= 20) {
                 page = pdfDoc.addPage([842, 595])
-                y = height - 50
+                y = page.getSize().height - 50
                 rowCount = 0
               }
 
@@ -596,7 +596,7 @@ export default function CompleteReportPage() {
               const g = expiredCards[i]
               if (rowCount >= 20) {
                 page = pdfDoc.addPage([842, 595])
-                y = height - 50
+                y = page.getSize().height - 50
                 rowCount = 0
               }
 
