@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { euroToCents, centsToEuro } from "@/lib/utils/currency";
 
 // Helper to generate a unique ID for ProductVariant
 function generateVariantId(): string {
@@ -18,9 +19,10 @@ export async function GET(req: Request) {
       include: { ProductVariant: true },
     });
 
-    // Transform to match expected frontend format
+    // Transform to match expected frontend format and convert price from cents to euro
     const transformedProducts = products.map((product) => ({
       ...product,
+      price: centsToEuro(product.price),
       variants: product.ProductVariant,
     }));
 
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
         nameEn: body.nameEn || body.name,
         descriptionIt: body.descriptionIt || "",
         descriptionEn: body.descriptionEn || "",
-        price: body.price,
+        price: euroToCents(body.price), // Convert euro to cents
         image: body.image || "/resources/Maglietta lo scalo.jpg",
         hasSizes: body.hasSizes ?? true,
         ProductVariant: {
@@ -67,9 +69,10 @@ export async function POST(req: Request) {
       include: { ProductVariant: true },
     });
 
-    // Transform to match expected frontend format
+    // Transform to match expected frontend format and convert price back to euro
     const transformedProduct = {
       ...product,
+      price: centsToEuro(product.price),
       sizes: product.ProductVariant,
     };
 
@@ -94,7 +97,7 @@ export async function PUT(req: Request) {
       nameEn: body.nameEn || body.name,
       descriptionIt: body.descriptionIt || "",
       descriptionEn: body.descriptionEn || "",
-      price: body.price,
+      price: euroToCents(body.price), // Convert euro to cents
       image: body.image,
       isActive: body.isActive,
     };

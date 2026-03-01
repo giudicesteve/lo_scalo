@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { RefundMethod } from "@prisma/client"
+import { centsToEuro } from "@/lib/utils/currency"
 
 export const dynamic = "force-dynamic"
 
@@ -324,7 +325,7 @@ export async function POST(req: Request) {
       refund: {
         id: result.id,
         refundNumber: result.refundNumber,
-        totalRefunded: result.totalRefunded,
+        totalRefunded: centsToEuro(result.totalRefunded), // Convert cents to euro
         refundedAt: result.refundedAt,
       },
       message: "Rimborso registrato con successo",
@@ -405,7 +406,7 @@ export async function GET(req: Request) {
       prisma.refund.count({ where }),
     ])
 
-    // Calculate breakdown for each refund
+    // Calculate breakdown for each refund and convert cents to euro
     const refundsWithBreakdown = refunds.map(refund => {
       const items = refund.items as Array<{
         type: 'PRODUCT' | 'GIFT_CARD'
@@ -414,16 +415,18 @@ export async function GET(req: Request) {
         name?: string
       }>
       
+      // Convert item prices from cents to euro for calculation
       const productTotal = items
         .filter(item => item.type === 'PRODUCT')
-        .reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+        .reduce((sum, item) => sum + (centsToEuro(item.price) * (item.quantity || 1)), 0)
       
       const giftCardTotal = items
         .filter(item => item.type === 'GIFT_CARD')
-        .reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0)
+        .reduce((sum, item) => sum + (centsToEuro(item.price) * (item.quantity || 1)), 0)
       
       return {
         ...refund,
+        totalRefunded: centsToEuro(refund.totalRefunded), // Convert cents to euro
         productTotal,
         giftCardTotal,
       }

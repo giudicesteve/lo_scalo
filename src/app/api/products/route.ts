@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { centsToEuro } from "@/lib/utils/currency";
 
 export const revalidate = 0;
 
@@ -24,9 +25,10 @@ export async function GET() {
       },
     });
 
-    // Transform to match expected frontend format
+    // Transform to match expected frontend format and convert price from cents to euro
     const transformedProducts = products.map((product) => ({
       ...product,
+      price: centsToEuro(product.price),
       variants: product.ProductVariant,
     }));
 

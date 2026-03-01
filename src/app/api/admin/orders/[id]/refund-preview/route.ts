@@ -81,7 +81,7 @@ export async function GET(
     const orderDate = new Date(order.paidAt || order.createdAt)
     
     // Check each product item
-    const productItems = order.items.map((item) => {
+    const productItems = order.items.map((item: any) => {
       // Calculate available quantity (total - already refunded)
       const refundedQty = item.refundedQuantity || 0
       const availableQuantity = item.quantity - refundedQty
@@ -118,8 +118,8 @@ export async function GET(
 
     // Check each gift card
     const giftCardItems = order.giftCards
-      .filter((gc) => !gc.isSoftDeleted) // Don't show already deleted gift cards
-      .map((gc) => {
+      .filter((gc: any) => !gc.isSoftDeleted) // Don't show already deleted gift cards
+      .map((gc: any) => {
         const isAlreadyRefunded = refundedGiftCardIds.has(gc.id)
         const hasTransactions = gc.transactions.length > 0
         const daysSincePurchase = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24))

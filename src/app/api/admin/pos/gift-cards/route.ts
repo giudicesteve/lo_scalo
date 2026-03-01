@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateOrderNumber } from "@/lib/orders";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
+import { centsToEuro } from "@/lib/utils/currency";
 
 // POST /api/admin/pos/gift-cards
 // Crea una gift card manualmente (POS/Contanti)
@@ -159,14 +160,14 @@ export async function POST(req: NextRequest) {
       order: {
         id: result.order.id,
         orderNumber: result.order.orderNumber,
-        total: result.order.total,
+        total: centsToEuro(result.order.total), // Convert cents to euro
         status: result.order.status,
         orderSource: result.order.orderSource,
       },
       giftCard: {
         id: result.giftCard.id,
         code: result.giftCard.code,
-        value: result.giftCard.initialValue,
+        value: centsToEuro(result.giftCard.initialValue), // Convert cents to euro
         expiresAt: result.giftCard.expiresAt,
       },
       emailSent,
@@ -190,7 +191,14 @@ export async function GET() {
       orderBy: { value: "asc" },
     });
 
-    return NextResponse.json(templates);
+    // Convert value and price from cents to euro
+    const transformedTemplates = templates.map((template) => ({
+      ...template,
+      value: centsToEuro(template.value),
+      price: centsToEuro(template.price),
+    }));
+
+    return NextResponse.json(transformedTemplates);
   } catch (error) {
     console.error("Error fetching gift card templates:", error);
     return NextResponse.json(

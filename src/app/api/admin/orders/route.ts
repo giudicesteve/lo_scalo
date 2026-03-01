@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { centsToEuro } from "@/lib/utils/currency";
+
 // Order status type matching the database schema
 type OrderStatus = "PENDING_PAYMENT" | "COMPLETED" | "DELIVERED" | "CANCELLED";
 
@@ -56,10 +58,14 @@ export async function GET(req: Request) {
 
     // Transform to include product in items (lowercase for frontend compatibility)
     // Use productName (snapshot at purchase time) if available, fallback to current Product name
+    // Convert monetary fields from cents to euro
     const transformedOrders = orders.map((order) => ({
       ...order,
+      total: centsToEuro(order.total), // Convert cents to euro
       items: order.items.map((item) => ({
         ...item,
+        unitPrice: centsToEuro(item.unitPrice), // Convert cents to euro
+        totalPrice: centsToEuro(item.totalPrice), // Convert cents to euro
         product: item.Product ? {
           ...item.Product,
           // Override name with snapshot if available
@@ -71,9 +77,18 @@ export async function GET(req: Request) {
           nameEn: item.productNameEn || "Prodotto eliminato",
         },
       })),
+      giftCards: order.giftCards.map((gc) => ({
+        ...gc,
+        initialValue: centsToEuro(gc.initialValue), // Convert cents to euro
+        remainingValue: centsToEuro(gc.remainingValue), // Convert cents to euro
+      })),
+      refunds: order.refunds.map((refund) => ({
+        ...refund,
+        totalRefunded: centsToEuro(refund.totalRefunded), // Convert cents to euro
+      })),
       hasRefund: order.refunds.length > 0,
       refundCount: order.refunds.length,
-      refundedTotal: order.refunds.reduce((sum, r) => sum + r.totalRefunded, 0),
+      refundedTotal: centsToEuro(order.refunds.reduce((sum, r) => sum + r.totalRefunded, 0)),
     }));
 
     return NextResponse.json(transformedOrders);
@@ -98,7 +113,12 @@ export async function PUT(req: Request) {
       where: { id: body.id },
       data,
     });
-    return NextResponse.json(order);
+    
+    // Convert monetary fields from cents to euro for response
+    return NextResponse.json({
+      ...order,
+      total: centsToEuro(order.total),
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to update order" },

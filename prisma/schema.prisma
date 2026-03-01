@@ -47,7 +47,7 @@ model Cocktail {
   ingredientsEn String?
   descriptionIt String?
   descriptionEn String?
-  price         Float
+  price         Int      // Prezzo in cents (es: 1250 = €12.50)
   alcoholLevel  Int?
   isActive      Boolean  @default(true)
   order         Int      @default(0)
@@ -59,8 +59,8 @@ model Cocktail {
 
 model GiftCardTemplate {
   id        String   @id @default(cuid())
-  value     Float
-  price     Float
+  value     Int      // Valore in cents (es: 5000 = €50.00)
+  price     Int      // Prezzo in cents (es: 5000 = €50.00)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,8 +69,8 @@ model GiftCardTemplate {
 model GiftCard {
   id             String                @id @default(cuid())
   code           String                @unique
-  initialValue   Float
-  remainingValue Float
+  initialValue   Int                   // Valore iniziale in cents
+  remainingValue Int                   // Valore residuo in cents
   isActive       Boolean               @default(true)
   isArchived     Boolean               @default(false)
   purchasedAt    DateTime              @default(now())
@@ -92,7 +92,7 @@ model GiftCard {
 
 model GiftCardTransaction {
   id            String   @id @default(cuid())
-  amount        Float
+  amount        Int      // Importo in cents
   type          String
   note          String?
   createdAt     DateTime @default(now())
@@ -116,7 +116,7 @@ model Order {
   status                String      @default("PENDING_PAYMENT")
   email                 String
   phone                 String?
-  total                 Float
+  total                 Int         // Totale in cents
   customerName          String?
   stripePaymentId       String?
   stripePaymentIntentId String?
@@ -136,8 +136,8 @@ model Order {
 model OrderItem {
   id             String          @id @default(cuid())
   quantity       Int
-  unitPrice      Float
-  totalPrice     Float
+  unitPrice      Int             // Prezzo unitario in cents
+  totalPrice     Int             // Prezzo totale in cents
   size           String?
   orderId        String
   productId      String
@@ -156,7 +156,7 @@ model Product {
   nameEn         String?          // Nome in inglese (opzionale)
   descriptionIt  String
   descriptionEn  String
-  price          Float
+  price          Int              // Prezzo in cents
   image          String
   hasSizes       Boolean          @default(true)
   isActive       Boolean          @default(true)
@@ -250,7 +250,7 @@ model Refund {
   items         Json
   
   // Totale rimborsato
-  totalRefunded Float
+  totalRefunded Int  // In cents
   
   // Metadati
   reason        String?

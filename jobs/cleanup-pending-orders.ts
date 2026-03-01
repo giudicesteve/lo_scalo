@@ -39,7 +39,7 @@ async function restoreStock(orderId: string) {
 
       if (item.size && item.size !== "Unica") {
         // Trova la variante per taglia
-        const variant = product.ProductVariant.find((v) => v.size === item.size);
+        const variant = product.ProductVariant.find((v: { size: string; id: string }) => v.size === item.size);
         if (variant) {
           await prisma.productVariant.update({
             where: { id: variant.id },
@@ -49,7 +49,7 @@ async function restoreStock(orderId: string) {
         }
       } else {
         // Prodotto senza taglie specifiche - trova variant "Unica"
-        const variant = product.ProductVariant.find((v) => v.size === "Unica");
+        const variant = product.ProductVariant.find((v: { size: string; id: string }) => v.size === "Unica");
         if (variant) {
           await prisma.productVariant.update({
             where: { id: variant.id },

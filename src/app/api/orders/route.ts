@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { calculateGiftCardExpiry } from "@/lib/gift-card-expiry";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
+import { euroToCents } from "@/lib/utils/currency";
 
 // Helper per logging (solo console)
 function logToFile(message: string) {
@@ -251,6 +252,7 @@ export async function POST(req: Request) {
 
       logToFile("  📝 Creazione ordine...");
       // 3. Crea l'ordine
+      // Convert total from euro to cents for database
       const order = await tx.order.create({
         data: {
           orderNumber: orderNumber,
@@ -258,7 +260,7 @@ export async function POST(req: Request) {
           type: orderType || "MIXED",
           email: email,
           phone: phone,
-          total,
+          total: euroToCents(total), // Convert euro to cents for database
           lang: orderLang,
         },
       });
@@ -290,8 +292,8 @@ export async function POST(req: Request) {
             productId: item.id,
             variantId: variantId,
             quantity: item.quantity,
-            unitPrice: item.price,
-            totalPrice: item.price * item.quantity,
+            unitPrice: euroToCents(item.price), // Convert euro to cents for database
+            totalPrice: euroToCents(item.price * item.quantity), // Convert euro to cents for database
             size: item.size || "Unica",
             productName: product?.name || "Prodotto",
             productNameEn: product?.nameEn || product?.name || "Prodotto",
@@ -345,8 +347,8 @@ export async function POST(req: Request) {
           await tx.giftCard.create({
             data: {
               code: giftCardCode,
-              initialValue: item.price,
-              remainingValue: item.price,
+              initialValue: euroToCents(item.price), // Convert euro to cents for database
+              remainingValue: euroToCents(item.price), // Convert euro to cents for database
               orderId: order.id,
               isActive: false,
               expiresAt: expiresAt,
@@ -374,7 +376,7 @@ export async function POST(req: Request) {
           description:
             item.type === "gift-card" ? "Gift Card Lo Scalo" : undefined,
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round(item.price * 100), // Stripe expects cents
       },
       quantity: item.quantity,
     }));

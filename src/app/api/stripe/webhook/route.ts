@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
+import { centsToEuro } from "@/lib/utils/currency";
 import Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -140,11 +141,12 @@ export async function POST(req: Request) {
 
         // Invia email
         console.log(`📧 [WEBHOOK] Invio email per ordine ${orderId}`);
+        // Convert monetary values from cents to euro for email
         const orderDetails = {
           orderNumber: order.orderNumber,
           email: order.email,
           phone: order.phone || undefined,
-          total: order.total,
+          total: centsToEuro(order.total), // Convert cents to euro
           lang: order.lang || "it",
           items: order.items.map((item) => ({
             name: order.lang === "en" 
@@ -152,11 +154,11 @@ export async function POST(req: Request) {
               : (item.productName || item.Product?.name || "Prodotto"),
             quantity: item.quantity,
             size: item.size || undefined,
-            totalPrice: item.totalPrice,
+            totalPrice: centsToEuro(item.totalPrice), // Convert cents to euro
           })),
           giftCards: order.giftCards.map((gc) => ({
             code: gc.code,
-            initialValue: gc.initialValue,
+            initialValue: centsToEuro(gc.initialValue), // Convert cents to euro
             expiresAt: gc.expiresAt,
           })),
           createdAt: order.createdAt,

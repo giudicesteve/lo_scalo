@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { centsToEuro } from "@/lib/utils/currency";
 
 // Force dynamic rendering - uses req.url
 export const dynamic = "force-dynamic";
@@ -47,7 +48,18 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(expiredGiftCards);
+    // Convert monetary values from cents to euro
+    const transformedGiftCards = expiredGiftCards.map((gc) => ({
+      ...gc,
+      initialValue: centsToEuro(gc.initialValue),
+      remainingValue: centsToEuro(gc.remainingValue),
+      transactions: gc.transactions.map((t) => ({
+        ...t,
+        amount: centsToEuro(t.amount),
+      })),
+    }));
+
+    return NextResponse.json(transformedGiftCards);
   } catch (error) {
     console.error("Error fetching expired gift cards:", error);
     return NextResponse.json(

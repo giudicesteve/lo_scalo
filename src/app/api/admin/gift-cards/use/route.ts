@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { euroToCents, centsToEuro } from "@/lib/utils/currency";
 
 // POST - Usa una gift card
 export async function POST(req: Request) {
@@ -32,22 +33,26 @@ export async function POST(req: Request) {
       );
     }
 
-    if (giftCard.remainingValue < amount) {
+    // Convert amount from euro (frontend) to cents (database comparison)
+    const amountCents = euroToCents(amount);
+    const remainingValueEuro = centsToEuro(giftCard.remainingValue);
+
+    if (giftCard.remainingValue < amountCents) {
       return NextResponse.json(
-        { error: "Credito insufficiente", remainingValue: giftCard.remainingValue },
+        { error: "Credito insufficiente", remainingValue: remainingValueEuro },
         { status: 400 }
       );
     }
 
-    const newRemaining = giftCard.remainingValue - amount;
+    const newRemainingCents = giftCard.remainingValue - amountCents;
 
     // Aggiorna la gift card
     await prisma.giftCard.update({
       where: { id },
       data: {
-        remainingValue: newRemaining,
-        isActive: newRemaining > 0,
-        isArchived: newRemaining <= 0,
+        remainingValue: newRemainingCents,
+        isActive: newRemainingCents > 0,
+        isArchived: newRemainingCents <= 0,
       },
     });
 
@@ -55,7 +60,7 @@ export async function POST(req: Request) {
     const transaction = await prisma.giftCardTransaction.create({
       data: {
         giftCardId: id,
-        amount: amount,
+        amount: amountCents, // Save in cents
         type: "USE",
         note: note?.trim() || "Utilizzo al bar",
         receiptNumber: receiptNumber.trim(),
@@ -65,8 +70,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      remainingValue: newRemaining,
-      transaction,
+      remainingValue: centsToEuro(newRemainingCents), // Return in euro
+      transaction: {
+        ...transaction,
+        amount: centsToEuro(transaction.amount), // Return in euro
+      },
     });
   } catch (error) {
     console.error("Error using gift card:", error);

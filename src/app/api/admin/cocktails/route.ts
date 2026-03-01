@@ -1,5 +1,25 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { euroToCents, centsToEuro } from "@/lib/utils/currency";
+
+// GET - Lista cocktail
+export async function GET() {
+  try {
+    const cocktails = await prisma.cocktail.findMany({
+      orderBy: { order: "asc" },
+    });
+    
+    // Convert price from cents to euro for frontend
+    const transformedCocktails = cocktails.map((cocktail) => ({
+      ...cocktail,
+      price: centsToEuro(cocktail.price),
+    }));
+    
+    return NextResponse.json(transformedCocktails);
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch cocktails" }, { status: 500 })
+  }
+}
 
 // POST - Crea nuovo cocktail
 export async function POST(req: Request) {
@@ -37,13 +57,18 @@ export async function POST(req: Request) {
         ingredientsEn: body.ingredientsEn?.trim() || null,
         descriptionIt: body.descriptionIt?.trim() || null,
         descriptionEn: body.descriptionEn?.trim() || null,
-        price: body.price,
+        price: euroToCents(body.price), // Convert euro to cents for database
         alcoholLevel: body.alcoholLevel !== undefined && body.alcoholLevel !== null ? Math.floor(body.alcoholLevel) : null,
         categoryId: body.categoryId,
         order: body.order || 0,
       },
     })
-    return NextResponse.json(cocktail)
+    
+    // Convert price back to euro for response
+    return NextResponse.json({
+      ...cocktail,
+      price: centsToEuro(cocktail.price),
+    })
   } catch {
     return NextResponse.json({ error: "Failed to create cocktail" }, { status: 500 })
   }
@@ -73,23 +98,42 @@ export async function PUT(req: Request) {
       }
     }
     
+    const data: { 
+      nameIt?: string; 
+      nameEn?: string; 
+      ingredientsIt?: string | null; 
+      ingredientsEn?: string | null; 
+      descriptionIt?: string | null; 
+      descriptionEn?: string | null; 
+      price?: number; 
+      alcoholLevel?: number | null; 
+      categoryId?: string; 
+      order?: number; 
+      isActive?: boolean;
+    } = {};
+    
+    if (body.nameIt !== undefined) data.nameIt = body.nameIt.trim();
+    if (body.nameEn !== undefined) data.nameEn = body.nameEn.trim();
+    if (body.ingredientsIt !== undefined) data.ingredientsIt = body.ingredientsIt?.trim() || null;
+    if (body.ingredientsEn !== undefined) data.ingredientsEn = body.ingredientsEn?.trim() || null;
+    if (body.descriptionIt !== undefined) data.descriptionIt = body.descriptionIt?.trim() || null;
+    if (body.descriptionEn !== undefined) data.descriptionEn = body.descriptionEn?.trim() || null;
+    if (body.price !== undefined) data.price = euroToCents(body.price); // Convert euro to cents for database
+    if (body.alcoholLevel !== undefined) data.alcoholLevel = body.alcoholLevel !== null ? Math.floor(body.alcoholLevel) : null;
+    if (body.categoryId !== undefined) data.categoryId = body.categoryId;
+    if (body.order !== undefined) data.order = body.order;
+    if (body.isActive !== undefined) data.isActive = body.isActive;
+    
     const cocktail = await prisma.cocktail.update({
       where: { id: body.id },
-      data: {
-        nameIt: body.nameIt?.trim(),
-        nameEn: body.nameEn?.trim(),
-        ingredientsIt: body.ingredientsIt !== undefined ? (body.ingredientsIt?.trim() || null) : undefined,
-        ingredientsEn: body.ingredientsEn !== undefined ? (body.ingredientsEn?.trim() || null) : undefined,
-        descriptionIt: body.descriptionIt !== undefined ? (body.descriptionIt?.trim() || null) : undefined,
-        descriptionEn: body.descriptionEn !== undefined ? (body.descriptionEn?.trim() || null) : undefined,
-        price: body.price,
-        alcoholLevel: body.alcoholLevel !== undefined ? (body.alcoholLevel !== null ? Math.floor(body.alcoholLevel) : null) : undefined,
-        categoryId: body.categoryId,
-        order: body.order,
-        isActive: body.isActive,
-      },
+      data,
     })
-    return NextResponse.json(cocktail)
+    
+    // Convert price back to euro for response
+    return NextResponse.json({
+      ...cocktail,
+      price: centsToEuro(cocktail.price),
+    })
   } catch {
     return NextResponse.json({ error: "Failed to update cocktail" }, { status: 500 })
   }

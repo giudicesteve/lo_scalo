@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { centsToEuro } from "@/lib/utils/currency";
 
 // GET - Lista tutte le gift card con transazioni
 // Usa searchParams per forzare comportamento dinamico (no cache)
@@ -33,7 +34,19 @@ export async function GET(req: Request) {
         },
       },
     });
-    return NextResponse.json(giftCards);
+    
+    // Convert monetary values from cents to euro
+    const transformedGiftCards = giftCards.map((gc) => ({
+      ...gc,
+      initialValue: centsToEuro(gc.initialValue),
+      remainingValue: centsToEuro(gc.remainingValue),
+      transactions: gc.transactions.map((t) => ({
+        ...t,
+        amount: centsToEuro(t.amount),
+      })),
+    }));
+    
+    return NextResponse.json(transformedGiftCards);
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch gift cards" },
