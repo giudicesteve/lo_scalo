@@ -32,6 +32,7 @@
   - Daily accounting reports with Excel/PDF export
   - Monthly reports with orders AND refunds (net revenue calculation)
   - **Complete Report**: All reports combined in single Excel/PDF file
+  - Reports default to previous month (for finalized accounting periods)
   - Top/bottom sellers metrics
   - Gift card transaction reports
   - Expired gift cards tracking
