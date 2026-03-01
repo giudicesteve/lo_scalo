@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
           status: { in: ["COMPLETED", "DELIVERED"] },
         },
         include: {
-          items: { include: { product: true } },
+          items: { include: { Product: true } },
           giftCards: true,
         },
         orderBy: { paidAt: "asc" },
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
     // Send email
     await sendEmail({
       to: email,
-      subject: `Report Contabile Completo - ${monthName} ${year}`,
+      subject: `Lo Scalo - Report Contabile Completo - ${monthName} ${year}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Report Contabile Completo</h2>
