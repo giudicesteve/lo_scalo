@@ -1075,7 +1075,7 @@ export default function MonthlyReportPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-mono text-body-sm font-bold text-red-700">
+                          <div className="font-mono text-body-sm font-bold text-brand-dark">
                             {refund.refundNumber}
                           </div>
                         </td>

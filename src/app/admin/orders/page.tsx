@@ -74,14 +74,14 @@ const statusIcons: Record<string, React.ReactNode> = {
   PENDING: <Clock className="w-3 h-3" />,
   COMPLETED: <CheckCircle className="w-3 h-3" />,
   DELIVERED: <CheckCircle className="w-3 h-3" />,
-  CANCELLED: <Clock className="w-3 h-3" />,
+  CANCELLED: <X className="w-3 h-3" />,
 }
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"active" | "archived">("active")
+  const [filter, setFilter] = useState<"active" | "archived" | "cancelled">("active")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchQuery, setSearchQuery] = useState("")
   
@@ -132,17 +132,48 @@ export default function AdminOrdersPage() {
     return () => window.removeEventListener('focus', handleFocus)
   }, [fetchOrders])
 
-  // Filtra ordini per tab (active/archived) e ricerca
+  // Filtra ordini per tab (active/archived/cancelled) e ricerca
   useEffect(() => {
+    // Se c'è una ricerca, verifica se c'è un match esatto 1:1 in un'altra tab
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const matchingOrders = orders.filter(order => 
+        order.orderNumber?.toLowerCase().includes(query) ||
+        order.email?.toLowerCase().includes(query) ||
+        (order.phone && order.phone.toLowerCase().includes(query))
+      )
+      
+      // Se c'è esattamente 1 match, switcha alla tab corretta
+      if (matchingOrders.length === 1) {
+        const matchedOrder = matchingOrders[0]
+        if (matchedOrder.status === "CANCELLED" && filter !== "cancelled") {
+          setFilter("cancelled")
+          return
+        } else if (matchedOrder.status !== "CANCELLED") {
+          const targetFilter = matchedOrder.isArchived ? "archived" : "active"
+          if (filter !== targetFilter) {
+            setFilter(targetFilter)
+            return
+          }
+        }
+      }
+    }
+    
     let filtered = orders
     
-    // Escludi ordini CANCELLED da entrambe le sezioni
-    filtered = filtered.filter(order => order.status !== "CANCELLED")
-    
     // Filtro per tab
-    filtered = filtered.filter(order => 
-      filter === "active" ? !order.isArchived : order.isArchived
-    )
+    if (filter === "cancelled") {
+      // Tab Annullati: solo ordini con status CANCELLED
+      filtered = filtered.filter(order => order.status === "CANCELLED")
+    } else {
+      // Tab Attivi e Archiviati: escludi ordini CANCELLED
+      filtered = filtered.filter(order => order.status !== "CANCELLED")
+      
+      // Filtro per tab active/archived
+      filtered = filtered.filter(order => 
+        filter === "active" ? !order.isArchived : order.isArchived
+      )
+    }
     
     // Filtro per ricerca
     if (searchQuery.trim()) {
@@ -280,6 +311,7 @@ export default function AdminOrdersPage() {
   // Conta ordini per tab (escludi CANCELLED)
   const activeCount = orders.filter(o => !o.isArchived && o.status !== "CANCELLED").length
   const archivedCount = orders.filter(o => o.isArchived && o.status !== "CANCELLED").length
+  const cancelledCount = orders.filter(o => o.status === "CANCELLED").length
 
   if (loading) {
     return (
@@ -362,6 +394,16 @@ export default function AdminOrdersPage() {
             }`}
           >
             Archiviati ({archivedCount})
+          </button>
+          <button
+            onClick={() => setFilter("cancelled")}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+              filter === "cancelled"
+                ? "bg-red-600 text-white"
+                : "bg-white text-brand-gray border border-brand-light-gray"
+            }`}
+          >
+            Annullati ({cancelledCount})
           </button>
         </div>
 
@@ -586,8 +628,8 @@ export default function AdminOrdersPage() {
                   </div>
                 ) : null}
                 
-                {/* Sezione 2: Azioni */}
-                {order.status !== "PENDING_PAYMENT" && (
+                {/* Sezione 2: Azioni - Non mostrare per ordini CANCELLED */}
+                {order.status !== "PENDING_PAYMENT" && order.status !== "CANCELLED" && (
                   <div>
                     <p className="text-label-sm text-brand-gray mb-2">Azioni:</p>
                     <div className="flex flex-wrap gap-2">
@@ -640,7 +682,9 @@ export default function AdminOrdersPage() {
                 ? "Nessun ordine trovato" 
                 : filter === "active" 
                   ? "Nessun ordine attivo" 
-                  : "Nessun ordine archiviato"}
+                  : filter === "archived"
+                    ? "Nessun ordine archiviato"
+                    : "Nessun ordine annullato"}
             </p>
           )}
         </div>
