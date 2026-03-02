@@ -251,7 +251,7 @@ export function RefundModal({
         }
 
         // Stripe refund succeeded, use the refund ID
-        stripeRefundId = stripeResult.refundId
+        stripeRefundId = stripeResult.refund?.id
       } catch (err: any) {
         setStripeError(err.message || "Errore durante l'elaborazione del rimborso su Stripe")
         setIsProcessingStripe(false)
