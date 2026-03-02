@@ -82,8 +82,7 @@
 
 ## 💡 Idee Future
 
-- **Gift Card - Gestione Scadute in Scansione**: Messaggio specifico quando si tenta di usare GC scaduta
-- **Stripe - Riconciliazione Rimborsi via Webhook**: Catturare automaticamente rimborsi fatti su Stripe Dashboard
+*No ideas at the moment*
 
 ---
 
