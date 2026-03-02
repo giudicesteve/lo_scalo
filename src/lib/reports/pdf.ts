@@ -300,7 +300,7 @@ export async function generateCompletePDF(
           // Stripe ID / Rif
           const extRef = refund.externalRef || "-"
           page.drawText(
-            extRef.length > 18 ? extRef.substring(0, 18) + "..." : extRef,
+            extRef,
             {
               x: colPositions[5],
               y,
@@ -610,7 +610,7 @@ export async function generateCompletePDF(
           if (t.receiptImage) details.push("[Foto]")
           const detailText = details.join(" | ")
           page.drawText(
-            detailText.length > 40 ? detailText.substring(0, 40) + "..." : detailText,
+            detailText,
             {
               x: colPositions[1],
               y,

@@ -235,26 +235,6 @@ export function StepConfirm({
         </CardContent>
       </Card>
 
-      {/* Stripe Error Alert */}
-      {stripeError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-red-900">
-                Errore durante l'elaborazione su Stripe
-              </p>
-              <p className="text-sm text-red-700 mt-1">
-                {stripeError}
-              </p>
-              <p className="text-sm text-red-700 mt-1">
-                Puoi inserire manualmente l'ID del rimborso nel campo sottostante.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Refund Method */}
       <Card>
         <CardHeader className="pb-3">
@@ -400,6 +380,27 @@ export function StepConfirm({
           <li>Questa azione non può essere annullata</li>
         </ul>
       </div>
+
+      {/* Stripe Error Alert */}
+      {stripeError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-900">
+                Errore durante l'elaborazione su Stripe
+              </p>
+              <p className="text-sm text-red-700 mt-1">
+                {stripeError}
+              </p>
+              <p className="text-sm text-red-700 mt-1">
+                Puoi inserire manualmente l'ID del rimborso nel campo sottostante.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

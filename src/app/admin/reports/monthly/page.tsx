@@ -592,7 +592,7 @@ export default function MonthlyReportPage() {
         
         // Stripe ID / Rif
         const extRef = refund.externalRef || "-"
-        page.drawText(extRef.length > 18 ? extRef.substring(0, 18) + "..." : extRef, {
+        page.drawText(extRef, {
           x: colPositions[5],
           y,
           size: 8,
