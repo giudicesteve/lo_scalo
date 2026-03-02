@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer, AlertCircle } from "lucide-react"
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer, AlertCircle, RotateCcw } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
@@ -40,6 +40,33 @@ interface Order {
   giftCards: GiftCard[]
 }
 
+interface RefundItem {
+  type: 'PRODUCT' | 'GIFT_CARD'
+  name: string
+  price: number
+  quantity?: number
+  size?: string
+}
+
+interface Refund {
+  id: string
+  refundNumber: string
+  orderId: string
+  totalRefunded: number
+  refundedAt: string
+  refundMethod: "STRIPE" | "CASH" | "POS"
+  externalRef?: string
+  productTotal: number
+  giftCardTotal: number
+  items: RefundItem[]
+  order: {
+    id: string
+    orderNumber: string
+    email: string
+    orderSource?: string
+  }
+}
+
 // Helper to calculate order breakdown
 const getOrderBreakdown = (order: Order) => {
   const productTotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -50,6 +77,7 @@ const getOrderBreakdown = (order: Order) => {
 function DailyReportContent() {
   const searchParams = useSearchParams()
   const [orders, setOrders] = useState<Order[]>([])
+  const [refunds, setRefunds] = useState<Refund[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(() => {
     const dateParam = searchParams.get("date")
@@ -58,16 +86,23 @@ function DailyReportContent() {
   })
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    fetchData()
+  }, [selectedDate])
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
+    setLoading(true)
     try {
-      const res = await fetch("/api/admin/orders")
-      const data = await res.json()
-      setOrders(data)
+      // Fetch orders
+      const ordersRes = await fetch("/api/admin/orders")
+      const ordersData = await ordersRes.json()
+      setOrders(Array.isArray(ordersData) ? ordersData : [])
+      
+      // Fetch refunds for selected date
+      const refundsRes = await fetch(`/api/admin/refunds?date=${selectedDate}`)
+      const refundsData = await refundsRes.json()
+      setRefunds(refundsData.refunds || [])
     } catch (error) {
-      console.error("Error fetching orders:", error)
+      console.error("Error fetching data:", error)
     } finally {
       setLoading(false)
     }
@@ -158,8 +193,72 @@ function DailyReportContent() {
     const giftCardRevenue = filteredOrders
       .reduce((sum, o) => sum + o.giftCards.reduce((gcSum, gc) => gcSum + gc.initialValue, 0), 0)
     
-    return { totalRevenue, productRevenue, giftCardRevenue }
-  }, [filteredOrders])
+    // Refunds
+    const totalRefunds = refunds.reduce((sum, r) => sum + r.totalRefunded, 0)
+    const productRefunds = refunds.reduce((sum, r) => sum + r.productTotal, 0)
+    const giftCardRefunds = refunds.reduce((sum, r) => sum + r.giftCardTotal, 0)
+    
+    // Net totals
+    const netRevenue = totalRevenue - totalRefunds
+    const netProductRevenue = productRevenue - productRefunds
+    const netGiftCardRevenue = giftCardRevenue - giftCardRefunds
+    
+    return { 
+      totalRevenue, 
+      productRevenue, 
+      giftCardRevenue,
+      totalRefunds,
+      productRefunds,
+      giftCardRefunds,
+      netRevenue,
+      netProductRevenue,
+      netGiftCardRevenue
+    }
+  }, [filteredOrders, refunds])
+
+  // Combine orders and refunds into a single sorted list
+  const transactions = useMemo(() => {
+    const orderTransactions = filteredOrders.map(order => ({
+      type: 'ORDER' as const,
+      id: order.id,
+      number: order.orderNumber,
+      date: order.paidAt || order.createdAt,
+      email: order.email,
+      orderSource: order.orderSource,
+      stripeId: order.stripePaymentIntentId,
+      productTotal: order.items.reduce((sum, item) => sum + item.totalPrice, 0),
+      giftCardTotal: order.giftCards.reduce((sum, gc) => sum + gc.initialValue, 0),
+      total: order.total,
+      items: order.items,
+      giftCards: order.giftCards,
+      order: null as Refund['order'] | null,
+      refundMethod: null as Refund['refundMethod'] | null,
+      externalRef: null as string | null,
+    }))
+
+    const refundTransactions = refunds.map(refund => ({
+      type: 'REFUND' as const,
+      id: refund.id,
+      number: refund.refundNumber,
+      date: refund.refundedAt,
+      email: refund.order.email,
+      orderSource: refund.order.orderSource,
+      stripeId: null,
+      productTotal: refund.productTotal,
+      giftCardTotal: refund.giftCardTotal,
+      total: -refund.totalRefunded, // Negative for refunds
+      items: [] as OrderItem[],
+      giftCards: [] as GiftCard[],
+      order: refund.order,
+      refundMethod: refund.refundMethod,
+      externalRef: refund.externalRef,
+      refundItems: refund.items,
+    }))
+
+    return [...orderTransactions, ...refundTransactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+  }, [filteredOrders, refunds])
 
   const handleDateChange = (days: number) => {
     const current = new Date(selectedDate)
@@ -181,109 +280,133 @@ function DailyReportContent() {
 
   // Export to Excel
   const exportToExcel = () => {
-    if (filteredOrders.length === 0) return
+    if (transactions.length === 0) return
 
     const rows: Record<string, string | number>[] = []
     
-    filteredOrders.forEach(order => {
-      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+    // Header rows with column titles
+    rows.push({
+      "Data": "Data",
+      "Ora": "Ora",
+      "Tipo": "Tipo",
+      "Codice Univoco": "Codice Univoco",
+      "Rif. Ordine": "Rif. Ordine",
+      "Fonte": "Fonte",
+      "Metodo Rimborso": "Metodo",
+      "Cliente": "Cliente",
+      "Dettaglio": "Dettaglio",
+      "Prodotti": "Prodotti",
+      "Gift Card": "Gift Card",
+      "Totale": "Totale",
+      "Stripe ID / Rif.": "Stripe ID / Rif.",
+    })
+    
+    transactions.forEach(tx => {
+      const isOrder = tx.type === 'ORDER'
       
-      // Riga principale ordine
+      // Build detail string
+      let detail = ""
+      if (isOrder) {
+        const parts = []
+        if (tx.productTotal > 0) parts.push(`Prod: +${tx.productTotal.toFixed(2)}€`)
+        if (tx.giftCardTotal > 0) parts.push(`GC: +${tx.giftCardTotal.toFixed(2)}€`)
+        detail = parts.join(" | ")
+      } else {
+        const items = (tx as any).refundItems as RefundItem[] || []
+        detail = items.map((item: RefundItem) => 
+          `${item.type === 'PRODUCT' ? 'Prod' : 'GC'}: -${(item.price * (item.quantity || 1)).toFixed(2)}€`
+        ).join(" | ")
+      }
+      
       rows.push({
-        "Data": new Date(order.createdAt).toLocaleDateString("it-IT"),
-        "Ora": new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
-        "Ordine": order.orderNumber,
-        "Fonte": order.orderSource === "MANUAL" ? "MANUALE (POS/Contanti)" : "ONLINE",
-        "Email": order.email,
-        "Telefono": order.phone || "-",
-        "Tipo": order.items.length > 0 && order.giftCards.length > 0 ? "MIXED" : order.giftCards.length > 0 ? "GIFT CARD" : "PRODOTTI",
-        "Prodotto": "",
-        "Taglia": "",
-        "Qty": "",
-        "Prezzo": "",
-        "Totale Prodotti": productTotal > 0 ? productTotal : "",
-        "Totale Gift Card": giftCardTotal > 0 ? giftCardTotal : "",
-        "Totale Ordine": order.total,
-        "Stripe ID": order.stripePaymentIntentId || "-",
-      })
-      
-      // Righe prodotti
-      order.items.forEach(item => {
-        rows.push({
-          "Data": "",
-          "Ora": "",
-          "Ordine": "",
-          "Fonte": "",
-          "Email": "",
-          "Telefono": "",
-          "Tipo": "",
-          "Prodotto": item.product?.name || 'Prodotto eliminato',
-          "Taglia": item.size || "-",
-          "Qty": item.quantity,
-          "Prezzo": item.totalPrice,
-          "Totale Prodotti": "",
-          "Totale Gift Card": "",
-          "Totale Ordine": "",
-          "Stripe ID": "",
-        })
-      })
-      
-      // Righe gift card
-      order.giftCards.forEach(gc => {
-        rows.push({
-          "Data": "",
-          "Ora": "",
-          "Ordine": "",
-          "Fonte": "",
-          "Email": "",
-          "Telefono": "",
-          "Tipo": "",
-          "Prodotto": `Gift Card ${gc.code}`,
-          "Taglia": "",
-          "Qty": 1,
-          "Prezzo": gc.initialValue,
-          "Totale Prodotti": "",
-          "Totale Gift Card": "",
-          "Totale Ordine": "",
-          "Stripe ID": "",
-        })
-      })
-      
-      // Riga vuota per separare ordini
-      rows.push({
-        "Data": "",
-        "Ora": "",
-        "Ordine": "",
-        "Email": "",
-        "Telefono": "",
-        "Tipo": "",
-        "Prodotto": "",
-        "Taglia": "",
-        "Qty": "",
-        "Prezzo": "",
-        "Totale Prodotti": "",
-        "Totale Gift Card": "",
-        "Totale Ordine": "",
-        "Stripe ID": "",
+        "Data": new Date(tx.date).toLocaleDateString("it-IT"),
+        "Ora": new Date(tx.date).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
+        "Tipo": isOrder ? "ORDINE" : "RIMBORSO",
+        "Codice Univoco": tx.number,
+        "Rif. Ordine": isOrder ? "-" : (tx.order?.orderNumber || "-"),
+        "Fonte": tx.orderSource === "MANUAL" ? "MANUALE" : "ONLINE",
+        "Metodo Rimborso": isOrder ? "-" : tx.refundMethod,
+        "Cliente": tx.email,
+        "Dettaglio": detail,
+        "Prodotti": isOrder ? (tx.productTotal > 0 ? `+${tx.productTotal.toFixed(2)}€` : "-") : 
+                     ((tx as any).refundItems?.some((i: RefundItem) => i.type === 'PRODUCT') ? 
+                      `-${(tx as any).refundItems.filter((i: RefundItem) => i.type === 'PRODUCT')
+                        .reduce((sum: number, i: RefundItem) => sum + i.price * (i.quantity || 1), 0).toFixed(2)}€` : "-"),
+        "Gift Card": isOrder ? (tx.giftCardTotal > 0 ? `+${tx.giftCardTotal.toFixed(2)}€` : "-") :
+                     ((tx as any).refundItems?.some((i: RefundItem) => i.type === 'GIFT_CARD') ?
+                      `-${(tx as any).refundItems.filter((i: RefundItem) => i.type === 'GIFT_CARD')
+                        .reduce((sum: number, i: RefundItem) => sum + i.price, 0).toFixed(2)}€` : "-"),
+        "Totale": isOrder ? `+${tx.total.toFixed(2)}€` : `-${Math.abs(tx.total).toFixed(2)}€`,
+        "Stripe ID / Rif.": isOrder ? (tx.stripeId || "-") : (tx.externalRef || "-"),
       })
     })
     
-    // Riga totali
+    // Riga vuota
     rows.push({
-      "Data": "TOTALI GIORNO",
+      "Data": "",
       "Ora": "",
-      "Ordine": "",
-      "Email": "",
-      "Telefono": "",
       "Tipo": "",
-      "Prodotto": "",
-      "Taglia": "",
-      "Qty": "",
-      "Prezzo": "",
-      "Totale Prodotti": totals.productRevenue,
-      "Totale Gift Card": totals.giftCardRevenue,
-      "Totale Ordine": totals.totalRevenue,
-      "Stripe ID": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Cliente": "",
+      "Dettaglio": "",
+      "Prodotti": "",
+      "Gift Card": "",
+      "Totale": "",
+      "Stripe ID / Rif.": "",
+    })
+    
+    // Riga totali incasso
+    rows.push({
+      "Data": "TOTALI INGRESSO",
+      "Ora": "",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Cliente": "",
+      "Dettaglio": "",
+      "Prodotti": `+${totals.productRevenue.toFixed(2)}€`,
+      "Gift Card": `+${totals.giftCardRevenue.toFixed(2)}€`,
+      "Totale": `+${totals.totalRevenue.toFixed(2)}€`,
+      "Stripe ID / Rif.": "",
+    })
+    
+    // Riga totali rimborsi
+    rows.push({
+      "Data": "TOTALI RIMBORSI",
+      "Ora": "",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Cliente": "",
+      "Dettaglio": "",
+      "Prodotti": `-${totals.productRefunds.toFixed(2)}€`,
+      "Gift Card": `-${totals.giftCardRefunds.toFixed(2)}€`,
+      "Totale": `-${totals.totalRefunds.toFixed(2)}€`,
+      "Stripe ID / Rif.": "",
+    })
+    
+    // Riga netto
+    rows.push({
+      "Data": "NETTO GIORNO",
+      "Ora": "",
+      "Tipo": "",
+      "Codice Univoco": "",
+      "Rif. Ordine": "",
+      "Fonte": "",
+      "Metodo Rimborso": "",
+      "Cliente": "",
+      "Dettaglio": "",
+      "Prodotti": `${totals.netProductRevenue >= 0 ? '+' : ''}${totals.netProductRevenue.toFixed(2)}€`,
+      "Gift Card": `${totals.netGiftCardRevenue >= 0 ? '+' : ''}${totals.netGiftCardRevenue.toFixed(2)}€`,
+      "Totale": `${totals.netRevenue >= 0 ? '+' : ''}${totals.netRevenue.toFixed(2)}€`,
+      "Stripe ID / Rif.": "",
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -294,27 +417,26 @@ function DailyReportContent() {
     const colWidths = [
       { wch: 12 }, // Data
       { wch: 8 },  // Ora
-      { wch: 12 }, // Ordine
-      { wch: 25 }, // Email
-      { wch: 15 }, // Telefono
       { wch: 10 }, // Tipo
-      { wch: 30 }, // Prodotto
-      { wch: 8 },  // Taglia
-      { wch: 6 },  // Qty
-      { wch: 10 }, // Prezzo
-      { wch: 12 }, // Totale Prodotti
-      { wch: 12 }, // Totale Gift Card
-      { wch: 12 }, // Totale Ordine
-      { wch: 30 }, // Stripe ID
+      { wch: 18 }, // Codice Univoco
+      { wch: 18 }, // Rif. Ordine
+      { wch: 10 }, // Fonte
+      { wch: 10 }, // Metodo Rimborso
+      { wch: 25 }, // Cliente
+      { wch: 30 }, // Dettaglio
+      { wch: 12 }, // Prodotti
+      { wch: 12 }, // Gift Card
+      { wch: 12 }, // Totale
+      { wch: 30 }, // Stripe ID / Rif.
     ]
     ws['!cols'] = colWidths
     
-    XLSX.writeFile(wb, `LoScalo_Riepilogo_${selectedDate}.xlsx`)
+    XLSX.writeFile(wb, `LoScalo_Contabilita_${selectedDate}.xlsx`)
   }
 
   // Generate and download PDF with detail
   const generatePDF = async () => {
-    if (filteredOrders.length === 0) return
+    if (transactions.length === 0) return
 
     const pdfDoc = await PDFDocument.create()
     let page = pdfDoc.addPage([842, 595]) // A4 Landscape
@@ -327,7 +449,7 @@ function DailyReportContent() {
     const rowHeight = 12
     
     // Header
-    page.drawText("Lo Scalo - Riepilogo Contabile", {
+    page.drawText("Lo Scalo - Contabilità Giornaliera", {
       x: margin,
       y,
       size: 18,
@@ -356,153 +478,180 @@ function DailyReportContent() {
       return false
     }
     
-    // Process each order with detail
-    filteredOrders.forEach((order) => {
-      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
-      const time = new Date(order.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+    // Process each transaction with detail
+    transactions.forEach((tx) => {
+      const isOrder = tx.type === 'ORDER'
+      const isRefund = tx.type === 'REFUND'
+      const time = new Date(tx.date).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
       
-      checkNewPage(80) // Space for order header
+      checkNewPage(80) // Space for header
       
-      // Order header background
+      // Transaction header background
       page.drawRectangle({
         x: margin,
         y: y - 5,
         width: width - margin * 2,
         height: 20,
-        color: rgb(0.95, 0.95, 0.95),
+        color: isRefund ? rgb(1, 0.95, 0.95) : rgb(0.95, 0.95, 0.95),
       })
       
-      // Order header row
-      const orderNumberText = order.orderSource === "MANUAL" 
-        ? `#${order.orderNumber} (ORDINE MANUALE)` 
-        : `#${order.orderNumber}`
-      page.drawText(orderNumberText, {
+      // Transaction header row
+      const typeLabel = isOrder ? "ORDINE" : "RIMBORSO"
+      const numberText = tx.orderSource === "MANUAL" 
+        ? `#${tx.number} (MANUALE)` 
+        : `#${tx.number}`
+      
+      // Type label
+      page.drawText(`[${typeLabel}]`, {
         x: margin,
+        y,
+        size: 9,
+        font: fontBold,
+        color: isRefund ? rgb(0.8, 0.2, 0.2) : rgb(0.2, 0.6, 0.2),
+      })
+      
+      // Number
+      page.drawText(numberText, {
+        x: margin + 70,
         y,
         size: 10,
         font: fontBold,
-        color: order.orderSource === "MANUAL" ? rgb(0.8, 0.5, 0.1) : rgb(0, 0, 0),
+        color: rgb(0, 0, 0),
       })
       
+      // Time
       page.drawText(time, {
-        x: margin + 200,
+        x: margin + 250,
         y,
         size: 9,
         font,
         color: rgb(0.4, 0.4, 0.4),
       })
       
-      page.drawText(order.email?.length > 35 ? order.email?.substring(0, 35) + "..." : (order.email || "N/A"), {
-        x: margin + 250,
-        y,
-        size: 9,
-        font,
-        color: rgb(0, 0, 0),
-      })
-      
-      page.drawText(`${order.total.toFixed(2)}€`, {
-        x: width - margin - 60,
+      // Total
+      const totalText = isOrder ? `+${tx.total.toFixed(2)}€` : `-${Math.abs(tx.total).toFixed(2)}€`
+      page.drawText(totalText, {
+        x: width - margin - 80,
         y,
         size: 10,
         font: fontBold,
-        color: rgb(0.8, 0.3, 0.1),
+        color: isRefund ? rgb(0.8, 0.2, 0.2) : rgb(0.8, 0.3, 0.1),
       })
       
       y -= rowHeight + 5
       
+      // Ref order for refunds
+      if (isRefund && tx.order) {
+        checkNewPage(15)
+        page.drawText(`Rif. Ordine: #${tx.order.orderNumber}`, {
+          x: margin + 20,
+          y,
+          size: 8,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        })
+        y -= rowHeight
+      }
+      
       // Products detail
-      if (order.items.length > 0) {
-        checkNewPage(order.items.length * rowHeight + 20)
+      if (isOrder && tx.productTotal > 0) {
+        checkNewPage(30)
         
-        page.drawText("Prodotti:", {
+        page.drawText(`Prodotti: +${tx.productTotal.toFixed(2)}€`, {
           x: margin + 20,
           y,
           size: 9,
           font: fontBold,
           color: rgb(0.2, 0.4, 0.8),
         })
-        y -= rowHeight
-        
-        order.items.forEach(item => {
-          const sizeText = item.size ? ` (${item.size})` : ""
-          page.drawText(`• ${item.quantity}x ${item.product?.name || 'Prodotto eliminato'}${sizeText}`, {
-            x: margin + 30,
-            y,
-            size: 8,
-            font,
-            color: rgb(0, 0, 0),
-          })
+        y -= rowHeight + 2
+      } else if (isRefund) {
+        const refundItems = (tx as any).refundItems as RefundItem[] || []
+        const productItems = refundItems.filter((i: RefundItem) => i.type === 'PRODUCT')
+        if (productItems.length > 0) {
+          checkNewPage(productItems.length * rowHeight + 20)
           
-          page.drawText(`${item.totalPrice.toFixed(2)}€`, {
-            x: width - margin - 100,
+          page.drawText("Prodotti rimborsati:", {
+            x: margin + 20,
             y,
-            size: 8,
-            font,
-            color: rgb(0.4, 0.4, 0.4),
+            size: 9,
+            font: fontBold,
+            color: rgb(0.8, 0.2, 0.2),
           })
-          
           y -= rowHeight
-        })
-        
-        // Products total
-        page.drawText(`Totale Prodotti: ${productTotal.toFixed(2)}€`, {
-          x: width - margin - 150,
-          y,
-          size: 9,
-          font: fontBold,
-          color: rgb(0.2, 0.4, 0.8),
-        })
-        y -= rowHeight + 5
+          
+          productItems.forEach((item: RefundItem) => {
+            page.drawText(`• ${item.name}: -${(item.price * (item.quantity || 1)).toFixed(2)}€`, {
+              x: margin + 30,
+              y,
+              size: 8,
+              font,
+              color: rgb(0, 0, 0),
+            })
+            y -= rowHeight
+          })
+          y -= 2
+        }
       }
       
       // Gift Cards detail
-      if (order.giftCards.length > 0) {
-        checkNewPage(order.giftCards.length * rowHeight + 20)
+      if (isOrder && tx.giftCardTotal > 0) {
+        checkNewPage(30)
         
-        page.drawText("Gift Card:", {
+        page.drawText(`Gift Card: +${tx.giftCardTotal.toFixed(2)}€`, {
           x: margin + 20,
           y,
           size: 9,
           font: fontBold,
-          color: rgb(0.2, 0.6, 0.2),
+          color: rgb(0.6, 0.2, 0.6),
         })
-        y -= rowHeight
-        
-        order.giftCards.forEach(gc => {
-          page.drawText(`• ${gc.code}`, {
-            x: margin + 30,
-            y,
-            size: 8,
-            font,
-            color: rgb(0, 0, 0),
-          })
+        y -= rowHeight + 2
+      } else if (isRefund) {
+        const refundItems = (tx as any).refundItems as RefundItem[] || []
+        const gcItems = refundItems.filter((i: RefundItem) => i.type === 'GIFT_CARD')
+        if (gcItems.length > 0) {
+          checkNewPage(gcItems.length * rowHeight + 20)
           
-          page.drawText(`${gc.initialValue.toFixed(2)}€`, {
-            x: width - margin - 100,
+          page.drawText("Gift Card rimborsate:", {
+            x: margin + 20,
             y,
-            size: 8,
-            font,
-            color: rgb(0.4, 0.4, 0.4),
+            size: 9,
+            font: fontBold,
+            color: rgb(0.8, 0.2, 0.2),
           })
-          
           y -= rowHeight
-        })
-        
-        // Gift cards total
-        page.drawText(`Totale Gift Card: ${giftCardTotal.toFixed(2)}€`, {
-          x: width - margin - 150,
-          y,
-          size: 9,
-          font: fontBold,
-          color: rgb(0.2, 0.6, 0.2),
-        })
-        y -= rowHeight + 5
+          
+          gcItems.forEach((item: RefundItem) => {
+            page.drawText(`• ${item.name}: -${item.price.toFixed(2)}€`, {
+              x: margin + 30,
+              y,
+              size: 8,
+              font,
+              color: rgb(0, 0, 0),
+            })
+            y -= rowHeight
+          })
+          y -= 2
+        }
       }
       
-      // Stripe ID if present
-      if (order.stripePaymentIntentId) {
-        checkNewPage(20)
-        page.drawText(`Stripe: ${order.stripePaymentIntentId}`, {
+      // Refund method for refunds
+      if (isRefund && tx.refundMethod) {
+        checkNewPage(15)
+        page.drawText(`Metodo: ${tx.refundMethod}${tx.externalRef ? ` - ${tx.externalRef}` : ''}`, {
+          x: margin + 20,
+          y,
+          size: 8,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        })
+        y -= rowHeight
+      }
+      
+      // Stripe ID for orders
+      if (isOrder && tx.stripeId) {
+        checkNewPage(15)
+        page.drawText(`Stripe: ${tx.stripeId}`, {
           x: margin + 20,
           y,
           size: 7,
@@ -512,12 +661,12 @@ function DailyReportContent() {
         y -= rowHeight
       }
       
-      // Separator between orders
+      // Separator between transactions
       y -= 10
     })
     
     // Footer totals
-    checkNewPage(100)
+    checkNewPage(150)
     
     y -= 10
     page.drawLine({
@@ -528,7 +677,7 @@ function DailyReportContent() {
     })
     
     y -= 25
-    page.drawText("TOTALI GIORNO", {
+    page.drawText("RIEPILOGO GIORNO", {
       x: margin,
       y,
       size: 14,
@@ -537,37 +686,63 @@ function DailyReportContent() {
     })
     
     y -= 20
-    page.drawText(`Prodotti: ${totals.productRevenue.toFixed(2)}€`, {
+    page.drawText(`Prodotti: +${totals.productRevenue.toFixed(2)}€`, {
       x: margin + 20,
       y,
-      size: 12,
+      size: 11,
       font: fontBold,
       color: rgb(0.2, 0.4, 0.8),
     })
     
-    y -= 18
-    page.drawText(`Gift Card: ${totals.giftCardRevenue.toFixed(2)}€`, {
+    y -= 16
+    page.drawText(`Gift Card: +${totals.giftCardRevenue.toFixed(2)}€`, {
       x: margin + 20,
       y,
-      size: 12,
+      size: 11,
+      font: fontBold,
+      color: rgb(0.6, 0.2, 0.6),
+    })
+    
+    y -= 16
+    page.drawText(`Totale Incasso: +${totals.totalRevenue.toFixed(2)}€`, {
+      x: margin + 20,
+      y,
+      size: 11,
       font: fontBold,
       color: rgb(0.2, 0.6, 0.2),
     })
     
+    y -= 18
+    page.drawText(`Rimborsi: -${totals.totalRefunds.toFixed(2)}€`, {
+      x: margin + 20,
+      y,
+      size: 11,
+      font: fontBold,
+      color: rgb(0.8, 0.2, 0.2),
+    })
+    
     y -= 22
-    page.drawText(`TOTALE INCASSO: ${totals.totalRevenue.toFixed(2)}€`, {
+    page.drawLine({
+      start: { x: margin, y: y + 10 },
+      end: { x: margin + 250, y: y + 10 },
+      thickness: 1,
+      color: rgb(0, 0, 0),
+    })
+    
+    y -= 5
+    page.drawText(`NETTO GIORNO: ${totals.netRevenue >= 0 ? '+' : ''}${totals.netRevenue.toFixed(2)}€`, {
       x: margin,
       y,
       size: 16,
       font: fontBold,
-      color: rgb(0.8, 0.3, 0.1),
+      color: rgb(0, 0, 0),
     })
     
     const pdfBytes = await pdfDoc.save()
     const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
-    link.download = `LoScalo_Riepilogo_${selectedDate}.pdf`
+    link.download = `LoScalo_Contabilita_${selectedDate}.pdf`
     link.click()
   }
 
@@ -629,7 +804,8 @@ function DailyReportContent() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {/* Totale Incasso */}
           <div className="bg-white rounded-2xl shadow-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center">
@@ -637,11 +813,12 @@ function DailyReportContent() {
               </div>
               <span className="text-label-md text-brand-gray">Totale Incasso</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.totalRevenue.toFixed(2)}€
+            <p className="text-headline-md font-bold text-brand-dark">
+              +{totals.totalRevenue.toFixed(2)}€
             </p>
           </div>
 
+          {/* Prodotti */}
           <div className="bg-white rounded-2xl shadow-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
@@ -649,20 +826,49 @@ function DailyReportContent() {
               </div>
               <span className="text-label-md text-brand-gray">Prodotti</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.productRevenue.toFixed(2)}€
+            <p className="text-headline-md font-bold text-brand-dark">
+              +{totals.productRevenue.toFixed(2)}€
             </p>
           </div>
 
+          {/* Gift Card */}
           <div className="bg-white rounded-2xl shadow-card p-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
-                <Gift className="w-5 h-5 text-green-500" />
+              <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                <Gift className="w-5 h-5 text-purple-500" />
               </div>
               <span className="text-label-md text-brand-gray">Gift Card</span>
             </div>
-            <p className="text-headline-lg font-bold text-brand-dark">
-              {totals.giftCardRevenue.toFixed(2)}€
+            <p className="text-headline-md font-bold text-brand-dark">
+              +{totals.giftCardRevenue.toFixed(2)}€
+            </p>
+          </div>
+
+          {/* Rimborsi */}
+          <div className="bg-white rounded-2xl shadow-card p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
+                <RotateCcw className="w-5 h-5 text-red-500" />
+              </div>
+              <span className="text-label-md text-brand-gray">Rimborsi</span>
+            </div>
+            <p className="text-headline-md font-bold text-red-600">
+              -{totals.totalRefunds.toFixed(2)}€
+            </p>
+          </div>
+        </div>
+
+        {/* Net Revenue */}
+        <div className="bg-brand-primary rounded-2xl shadow-card p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-label-md text-white/80">NETTO GIORNO</span>
+            </div>
+            <p className="text-headline-lg font-bold text-white">
+              {totals.netRevenue.toFixed(2)}€
             </p>
           </div>
         </div>
@@ -686,12 +892,12 @@ function DailyReportContent() {
         {/* Orders Count & Export Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-title-md font-bold text-brand-dark">
-            {filteredOrders.length} {filteredOrders.length === 1 ? "ordine" : "ordini"}
+            {transactions.length} {transactions.length === 1 ? "transazione" : "transazioni"} ({filteredOrders.length} ordini, {refunds.length} rimborsi)
           </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={exportToExcel}
-              disabled={filteredOrders.length === 0}
+              disabled={transactions.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-body-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileSpreadsheet className="w-4 h-4" />
@@ -699,7 +905,7 @@ function DailyReportContent() {
             </button>
             <button
               onClick={generatePDF}
-              disabled={filteredOrders.length === 0}
+              disabled={transactions.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-full text-body-sm font-medium hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer className="w-4 h-4" />
@@ -717,47 +923,70 @@ function DailyReportContent() {
                 <table className="w-full">
                   <thead className="bg-brand-cream border-b border-brand-light-gray">
                     <tr>
-                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Ordine</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Data/Ora</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Tipo</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Codice Univoco</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Rif. Ordine</th>
                       <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Fonte</th>
-                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Cliente</th>
-                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Prodotti</th>
-                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Stripe ID</th>
-                      <th className="text-right py-3 px-4 text-label-md font-bold text-brand-gray">Dettaglio Totale</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Metodo Rimborso</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Stripe ID / Rif.</th>
+                      <th className="text-left py-3 px-4 text-label-md font-bold text-brand-gray">Dettaglio</th>
+                      <th className="text-right py-3 px-4 text-label-md font-bold text-brand-gray">Totale</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredOrders.map((order) => {
-                      const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+                    {transactions.map((tx) => {
+                      const isOrder = tx.type === 'ORDER'
+                      const isRefund = tx.type === 'REFUND'
                       return (
-                        <tr key={order.id} className="border-b border-brand-light-gray/50 last:border-b-0 hover:bg-brand-cream/50">
-                          {/* Order Number */}
+                        <tr 
+                          key={`${tx.type}-${tx.id}`} 
+                          className={`border-b border-brand-light-gray/50 last:border-b-0 hover:bg-brand-cream/50 ${isRefund ? 'bg-red-50/30' : ''}`}
+                        >
+                          {/* Data/Ora */}
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="font-mono text-body-sm font-bold text-brand-dark">
-                                #{order.orderNumber}
-                              </div>
-                              {/* Warning for missing Stripe ID */}
-                              {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
-                              {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
-                                <div className="group relative">
-                                  <AlertTriangle className="w-4 h-4 text-red-500 cursor-help" />
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-red-600 text-white text-label-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                    Stripe Payment ID mancante
-                                  </div>
-                                </div>
-                              )}
+                            <div className="text-body-sm text-brand-dark">
+                              {new Date(tx.date).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </div>
                             <div className="text-label-sm text-brand-gray">
-                              {new Date(order.createdAt).toLocaleTimeString("it-IT", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {new Date(tx.date).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                             </div>
+                          </td>
+
+                          {/* Tipo */}
+                          <td className="py-3 px-4">
+                            {isOrder ? (
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-label-sm font-small rounded">
+                                Ordine
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-label-sm font-small rounded">
+                                Rimborso
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Codice Univoco */}
+                          <td className="py-3 px-4">
+                            <div className="font-mono text-body-sm font-bold text-brand-dark">
+                              #{tx.number}
+                            </div>
+                          </td>
+
+                          {/* Rif. Ordine (solo per rimborsi) */}
+                          <td className="py-3 px-4">
+                            {isRefund && tx.order ? (
+                              <div className="font-mono text-body-sm text-brand-gray">
+                                #{tx.order.orderNumber}
+                              </div>
+                            ) : (
+                              <span className="text-label-sm text-brand-gray">-</span>
+                            )}
                           </td>
 
                           {/* Fonte */}
                           <td className="py-3 px-4">
-                            {order.orderSource === "MANUAL" ? (
+                            {tx.orderSource === "MANUAL" ? (
                               <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-sm font-small rounded">
                                 Manuale
                               </span>
@@ -766,66 +995,78 @@ function DailyReportContent() {
                             )}
                           </td>
 
-                          {/* Client Info */}
+                          {/* Metodo Rimborso */}
                           <td className="py-3 px-4">
-                            <div className="text-body-sm text-brand-dark">{order.email}</div>
-                            {order.phone && (
-                              <div className="text-label-sm text-brand-gray">{order.phone}</div>
-                            )}
-                          </td>
-
-                          {/* Products */}
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              {order.items.map((item, idx) => (
-                                <div key={idx} className="text-body-sm text-brand-dark">
-                                  {item.quantity}x {item.product?.name || 'Prodotto eliminato'} {item.size && `(${item.size})`}
-                                  <span className="text-brand-gray ml-1">- {item.totalPrice.toFixed(2)}€</span>
-                                </div>
-                              ))}
-                              {order.giftCards.map((gc, idx) => (
-                                <div key={`gc-${idx}`} className="text-body-sm text-brand-dark">
-                                  Gift Card {gc.code} ({gc.initialValue.toFixed(0)}€)
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-
-                          {/* Stripe Payment ID */}
-                          <td className="py-3 px-4">
-                            {order.stripePaymentIntentId ? (
-                              <a
-                                href={`${process.env.NEXT_PUBLIC_STRIPE_DASHBOARD_URL}${order.stripePaymentIntentId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-body-xs text-brand-primary hover:underline"
-                              >
-                                {order.stripePaymentIntentId}
-                              </a>
+                            {isRefund && tx.refundMethod ? (
+                              <span className={`px-2 py-0.5 text-label-sm font-small rounded ${
+                                tx.refundMethod === 'STRIPE' ? 'bg-blue-100 text-blue-700' :
+                                tx.refundMethod === 'POS' ? 'bg-purple-100 text-purple-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {tx.refundMethod}
+                              </span>
                             ) : (
                               <span className="text-label-sm text-brand-gray">-</span>
                             )}
                           </td>
 
-                          {/* Total - Split View */}
-                          <td className="py-3 px-4 text-right">
+                          {/* Stripe ID / Rif. Documento */}
+                          <td className="py-3 px-4">
+                            {isOrder && tx.stripeId ? (
+                              <a
+                                href={`${process.env.NEXT_PUBLIC_STRIPE_DASHBOARD_URL}${tx.stripeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-body-xs text-brand-primary hover:underline"
+                              >
+                                {tx.stripeId}
+                              </a>
+                            ) : isRefund && tx.externalRef ? (
+                              <span className="font-mono text-body-xs text-brand-gray">
+                                {tx.externalRef}
+                              </span>
+                            ) : (
+                              <span className="text-label-sm text-brand-gray">-</span>
+                            )}
+                          </td>
+
+                          {/* Dettaglio */}
+                          <td className="py-3 px-4">
                             <div className="space-y-1">
-                              {productTotal > 0 && (
-                                <div className="text-body-sm text-blue-600">
-                                  Prodotti: <span className="font-bold">{productTotal.toFixed(2)}€</span>
-                                </div>
+                              {isOrder ? (
+                                <>
+                                  {tx.productTotal > 0 && (
+                                    <div className="text-body-sm text-blue-600">
+                                      Prodotti: +{tx.productTotal.toFixed(2)}€
+                                    </div>
+                                  )}
+                                  {tx.giftCardTotal > 0 && (
+                                    <div className="text-body-sm text-purple-600">
+                                      Gift Card: +{tx.giftCardTotal.toFixed(2)}€
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {(tx as any).refundItems?.map((item: RefundItem, idx: number) => (
+                                    <div key={idx} className="text-body-sm text-brand-dark">
+                                      {item.type === 'PRODUCT' ? (
+                                        <span className="text-blue-600">Prodotti: -{(item.price * (item.quantity || 1)).toFixed(2)}€</span>
+                                      ) : (
+                                        <span className="text-purple-600">Gift Card: -{item.price.toFixed(2)}€</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </>
                               )}
-                              {giftCardTotal > 0 && (
-                                <div className="text-body-sm text-green-600">
-                                  Gift Card: <span className="font-bold">{giftCardTotal.toFixed(2)}€</span>
-                                </div>
-                              )}
-                              <div className="pt-1 border-t border-brand-light-gray">
-                                <span className="text-headline-sm font-bold text-brand-primary">
-                                  {order.total.toFixed(2)}€
-                                </span>
-                              </div>
                             </div>
+                          </td>
+
+                          {/* Totale */}
+                          <td className="py-3 px-4 text-right">
+                            <span className={`text-headline-sm font-bold ${isRefund ? 'text-red-600' : 'text-brand-primary'}`}>
+                              {isRefund ? '' : '+'}{tx.total.toFixed(2)}€
+                            </span>
                           </td>
                         </tr>
                       )
@@ -833,20 +1074,23 @@ function DailyReportContent() {
                   </tbody>
                   <tfoot className="bg-brand-cream border-t-2 border-brand-light-gray">
                     <tr>
-                      <td colSpan={4} className="py-4 px-4 text-right">
+                      <td colSpan={7} className="py-4 px-4 text-right">
                         <div className="space-y-1">
                           <div className="text-body-sm text-blue-600">
-                            Prodotti: <span className="font-bold">{totals.productRevenue.toFixed(2)}€</span>
+                            Prodotti: +{totals.productRevenue.toFixed(2)}€
                           </div>
-                          <div className="text-body-sm text-green-600">
-                            Gift Card: <span className="font-bold">{totals.giftCardRevenue.toFixed(2)}€</span>
+                          <div className="text-body-sm text-purple-600">
+                            Gift Card: +{totals.giftCardRevenue.toFixed(2)}€
+                          </div>
+                          <div className="text-body-sm text-red-600">
+                            Rimborsi: -{totals.totalRefunds.toFixed(2)}€
                           </div>
                         </div>
                       </td>
                       <td colSpan={2} className="py-4 px-4 text-right">
-                        <span className="text-title-md font-bold text-brand-dark">TOTALE GIORNO:</span>
+                        <span className="text-title-md font-bold text-brand-dark">NETTO GIORNO:</span>
                         <div className="text-headline-md font-bold text-brand-primary">
-                          {totals.totalRevenue.toFixed(2)}€
+                          {totals.netRevenue.toFixed(2)}€
                         </div>
                       </td>
                     </tr>
@@ -857,122 +1101,129 @@ function DailyReportContent() {
 
             {/* Mobile: Card View */}
             <div className="md:hidden space-y-4">
-              {filteredOrders.map((order) => {
-                const { productTotal, giftCardTotal } = getOrderBreakdown(order)
+              {transactions.map((tx) => {
+                const isOrder = tx.type === 'ORDER'
+                const isRefund = tx.type === 'REFUND'
                 return (
-                  <div key={order.id} className="bg-white rounded-2xl shadow-card p-4">
-                    {/* Header: Order Number + Total */}
+                  <div 
+                    key={`${tx.type}-${tx.id}`} 
+                    className={`bg-white rounded-2xl shadow-card p-4 ${isRefund ? 'border-l-4 border-red-500' : ''}`}
+                  >
+                    {/* Header: Type + Number + Total */}
                     <div className="flex items-start justify-between mb-3 pb-3 border-b border-brand-light-gray">
                       <div>
                         <div className="flex items-center gap-2">
-                          <div className="font-mono text-title-md font-bold text-brand-dark">
-                            #{order.orderNumber}
-                          </div>
-                          {order.orderSource === "MANUAL" && (
+                          <span className={`px-2 py-0.5 text-label-sm font-small rounded ${
+                            isOrder ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {isOrder ? 'Ordine' : 'Rimborso'}
+                          </span>
+                          {tx.orderSource === "MANUAL" && (
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-label-sm font-small rounded">
                               MANUALE
                             </span>
                           )}
                         </div>
+                        <div className="font-mono text-title-md font-bold text-brand-dark mt-1">
+                          #{tx.number}
+                        </div>
                         <div className="text-body-sm text-brand-gray">
-                          {new Date(order.createdAt).toLocaleTimeString("it-IT", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(tx.date).toLocaleDateString("it-IT")} {new Date(tx.date).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-headline-sm font-bold text-brand-primary">
-                          {order.total.toFixed(2)}€
+                        <div className={`text-headline-sm font-bold ${isRefund ? 'text-red-600' : 'text-brand-primary'}`}>
+                          {isRefund ? '-' : '+'}{Math.abs(tx.total).toFixed(2)}€
                         </div>
                       </div>
                     </div>
 
-                    {/* Warning: Missing Stripe Payment ID */}
-                    {/* Warning: Missing Stripe Payment ID (solo per ordini ONLINE) */}
-                    {order.orderSource !== "MANUAL" && ["PENDING", "COMPLETED", "DELIVERED"].includes(order.status) && !order.stripePaymentIntentId && (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-start gap-2">
-                        <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-body-sm font-bold text-red-700">
-                            Stripe Payment ID mancante
-                          </p>
-                          <p className="text-label-sm text-red-600">
-                            Verificare su Stripe se il pagamento è andato a buon fine
-                          </p>
-                        </div>
+                    {/* Ref Order (for refunds) */}
+                    {isRefund && tx.order && (
+                      <div className="mb-3 bg-red-50 rounded-lg p-2">
+                        <div className="text-label-sm text-brand-gray">Riferimento Ordine</div>
+                        <div className="font-mono text-body-sm text-brand-dark">#{tx.order.orderNumber}</div>
                       </div>
                     )}
 
                     {/* Customer Info */}
                     <div className="mb-3">
                       <div className="text-label-sm text-brand-gray mb-1">Cliente</div>
-                      <div className="text-body-sm text-brand-dark">{order.email}</div>
-                      {order.phone && (
-                        <div className="text-body-sm text-brand-gray">{order.phone}</div>
+                      <div className="text-body-sm text-brand-dark">{tx.email}</div>
+                    </div>
+
+                    {/* Detail Section */}
+                    <div className="mb-3">
+                      <div className="text-label-sm text-brand-gray mb-2">Dettaglio</div>
+                      
+                      {isOrder ? (
+                        <>
+                          {/* Products */}
+                          {tx.productTotal > 0 && (
+                            <div className="bg-blue-50 rounded-xl p-3 mb-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Package className="w-4 h-4 text-blue-500" />
+                                <span className="text-label-sm font-bold text-blue-700">Prodotti</span>
+                                <span className="ml-auto text-body-sm font-bold text-blue-700">
+                                  +{tx.productTotal.toFixed(2)}€
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Gift Cards */}
+                          {tx.giftCardTotal > 0 && (
+                            <div className="bg-purple-50 rounded-xl p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Gift className="w-4 h-4 text-purple-500" />
+                                <span className="text-label-sm font-bold text-purple-700">Gift Card</span>
+                                <span className="ml-auto text-body-sm font-bold text-purple-700">
+                                  +{tx.giftCardTotal.toFixed(2)}€
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        /* Refund Items */
+                        <div className="bg-red-50 rounded-xl p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <RotateCcw className="w-4 h-4 text-red-500" />
+                            <span className="text-label-sm font-bold text-red-700">
+                              Rimborso {tx.refundMethod}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {(tx as any).refundItems?.map((item: RefundItem, idx: number) => (
+                              <div key={idx} className="text-body-sm text-brand-dark">
+                                • {item.type === 'PRODUCT' ? 'Prodotto' : 'Gift Card'}: -{(item.price * (item.quantity || 1)).toFixed(2)}€
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    {/* Products Section */}
-                    {(order.items.length > 0 || order.giftCards.length > 0) && (
-                      <div className="mb-3">
-                        <div className="text-label-sm text-brand-gray mb-2">Dettaglio</div>
-                        
-                        {/* Products */}
-                        {order.items.length > 0 && (
-                          <div className="bg-blue-50 rounded-xl p-3 mb-2">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Package className="w-4 h-4 text-blue-500" />
-                              <span className="text-label-sm font-bold text-blue-700">Prodotti</span>
-                              <span className="ml-auto text-body-sm font-bold text-blue-700">
-                                {productTotal.toFixed(2)}€
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              {order.items.map((item, idx) => (
-                                <div key={idx} className="text-body-sm text-brand-dark">
-                                  • {item.quantity} x {item.product?.name || 'Prodotto eliminato'} {item.size && `(${item.size})`}
-                                  <span className="text-brand-gray ml-1">({item.totalPrice.toFixed(2)}€)</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Gift Cards */}
-                        {order.giftCards.length > 0 && (
-                          <div className="bg-green-50 rounded-xl p-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Gift className="w-4 h-4 text-green-500" />
-                              <span className="text-label-sm font-bold text-green-700">Gift Card</span>
-                              <span className="ml-auto text-body-sm font-bold text-green-700">
-                                {giftCardTotal.toFixed(2)}€
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              {order.giftCards.map((gc, idx) => (
-                                <div key={`gc-${idx}`} className="text-body-sm text-brand-dark">
-                                  • {gc.code} ({gc.initialValue.toFixed(0)}€)
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Stripe ID */}
-                    {order.stripePaymentIntentId && (
+                    {/* Stripe ID / External Ref */}
+                    {(tx.stripeId || tx.externalRef) && (
                       <div className="pt-3 border-t border-brand-light-gray">
-                        <div className="text-label-sm text-brand-gray mb-1">Stripe ID</div>
-                        <a
-                          href={`${process.env.NEXT_PUBLIC_STRIPE_DASHBOARD_URL}${order.stripePaymentIntentId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-body-xs text-brand-primary hover:underline break-all"
-                        >
-                          {order.stripePaymentIntentId}
-                        </a>
+                        <div className="text-label-sm text-brand-gray mb-1">
+                          {isOrder ? 'Stripe ID' : 'Riferimento Rimborso'}
+                        </div>
+                        {isOrder && tx.stripeId ? (
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_STRIPE_DASHBOARD_URL}${tx.stripeId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-body-xs text-brand-primary hover:underline break-all"
+                          >
+                            {tx.stripeId}
+                          </a>
+                        ) : (
+                          <span className="font-mono text-body-xs text-brand-gray">
+                            {tx.externalRef}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -984,18 +1235,22 @@ function DailyReportContent() {
                 <div className="space-y-2 mb-3">
                   <div className="flex items-center justify-between text-body-sm">
                     <span className="text-blue-600">Prodotti:</span>
-                    <span className="font-bold text-blue-600">{totals.productRevenue.toFixed(2)}€</span>
+                    <span className="font-bold text-blue-600">+{totals.productRevenue.toFixed(2)}€</span>
                   </div>
                   <div className="flex items-center justify-between text-body-sm">
-                    <span className="text-green-600">Gift Card:</span>
-                    <span className="font-bold text-green-600">{totals.giftCardRevenue.toFixed(2)}€</span>
+                    <span className="text-purple-600">Gift Card:</span>
+                    <span className="font-bold text-purple-600">+{totals.giftCardRevenue.toFixed(2)}€</span>
+                  </div>
+                  <div className="flex items-center justify-between text-body-sm">
+                    <span className="text-red-600">Rimborsi:</span>
+                    <span className="font-bold text-red-600">-{totals.totalRefunds.toFixed(2)}€</span>
                   </div>
                 </div>
                 <div className="pt-3 border-t-2 border-brand-primary">
                   <div className="flex items-center justify-between">
-                    <span className="text-title-md font-bold text-brand-dark">TOTALE:</span>
+                    <span className="text-title-md font-bold text-brand-dark">NETTO:</span>
                     <span className="text-headline-md font-bold text-brand-primary">
-                      {totals.totalRevenue.toFixed(2)}€
+                      {totals.netRevenue.toFixed(2)}€
                     </span>
                   </div>
                 </div>
@@ -1006,10 +1261,10 @@ function DailyReportContent() {
           <div className="bg-white rounded-2xl shadow-card p-12 text-center">
             <Calendar className="w-12 h-12 text-brand-gray mx-auto mb-4" />
             <p className="text-body-lg text-brand-gray">
-              Nessun ordine con pagamento completato per {formatDate(selectedDate)}
+              Nessuna transazione per {formatDate(selectedDate)}
             </p>
             <p className="text-body-sm text-brand-gray/60 mt-2">
-              Vengono mostrati solo gli ordini con data di pagamento (paidAt) registrata
+              Vengono mostrati ordini con pagamento completato e rimborsi effettuati
             </p>
           </div>
         )}

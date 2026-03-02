@@ -368,6 +368,7 @@ export async function GET(req: Request) {
     const orderId = searchParams.get("orderId")
     const year = searchParams.get("year")
     const month = searchParams.get("month")
+    const date = searchParams.get("date") // YYYY-MM-DD format for daily report
     const limit = parseInt(searchParams.get("limit") || "50")
     const offset = parseInt(searchParams.get("offset") || "0")
 
@@ -376,8 +377,18 @@ export async function GET(req: Request) {
       isArchived: false,
     }
 
-    // Filter by month/year if provided
-    if (year && month) {
+    // Filter by specific date (YYYY-MM-DD) - used for daily accounting
+    if (date) {
+      const [yearStr, monthStr, dayStr] = date.split('-').map(Number)
+      const startDate = new Date(Date.UTC(yearStr, monthStr - 1, dayStr, 0, 0, 0))
+      const endDate = new Date(Date.UTC(yearStr, monthStr - 1, dayStr, 23, 59, 59, 999))
+      where.refundedAt = {
+        gte: startDate,
+        lte: endDate,
+      }
+    }
+    // Filter by month/year if provided (used for monthly report)
+    else if (year && month) {
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1)
       const endDate = new Date(parseInt(year), parseInt(month), 1)
       where.refundedAt = {
