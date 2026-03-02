@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { centsToEuro } from "@/lib/utils/currency"
 
 export const dynamic = "force-dynamic"
 
@@ -99,11 +100,11 @@ export async function GET(
         name: item.productName || item.Product?.name || "Prodotto",
         nameEn: item.productNameEn || item.Product?.nameEn || item.Product?.name || "Product",
         size: item.size,
-        price: item.unitPrice,
+        price: centsToEuro(item.unitPrice),
         quantity: item.quantity,
         availableQuantity,
         refundedQuantity: refundedQty,
-        total: item.totalPrice,
+        total: centsToEuro(item.totalPrice),
         isRefundable: availableQuantity > 0,
         isFullyRefunded,
         isPartiallyRefunded,
@@ -129,8 +130,8 @@ export async function GET(
           id: gc.id,
           giftCardId: gc.id,
           code: gc.code,
-          price: gc.initialValue,
-          remainingValue: gc.remainingValue,
+          price: centsToEuro(gc.initialValue),
+          remainingValue: centsToEuro(gc.remainingValue),
           isRefundable: !isAlreadyRefunded && !hasTransactions,
           isAlreadyRefunded,
           hasTransactions,
@@ -151,7 +152,7 @@ export async function GET(
         orderSource: order.orderSource,
         paidAt: order.paidAt,
         createdAt: order.createdAt,
-        total: order.total,
+        total: centsToEuro(order.total),
         email: order.email,
         stripePaymentIntentId: order.stripePaymentIntentId,
       },
@@ -161,7 +162,7 @@ export async function GET(
       existingRefunds: existingRefunds.map((r) => ({
         id: r.id,
         refundNumber: r.refundNumber,
-        totalRefunded: r.totalRefunded,
+        totalRefunded: centsToEuro(r.totalRefunded),
         refundedAt: r.refundedAt,
       })),
     })
