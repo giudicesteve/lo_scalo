@@ -49,6 +49,8 @@ interface GiftCard {
   isActive: boolean
   isArchived: boolean
   isExpired: boolean
+  isSoftDeleted?: boolean
+  deletedAt?: string | null
   purchasedAt: string
   expiresAt: string | null
   order: {
@@ -63,7 +65,7 @@ export default function AdminGiftCardsPage() {
   const [giftCards, setGiftCards] = useState<GiftCard[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState<"active" | "archived">("active")
+  const [activeTab, setActiveTab] = useState<"active" | "archived" | "unavailable">("active")
   const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null)
   const [useAmount, setUseAmount] = useState("")
   const [useNote, setUseNote] = useState("")
@@ -606,17 +608,18 @@ export default function AdminGiftCardsPage() {
     window.URL.revokeObjectURL(url)
   }
 
-  // Conta gift card attive (isActive=true, isArchived=false) e archiviate
-  const activeCount = giftCards.filter((gc) => gc.isActive && !gc.isArchived).length
+  // Conta gift card attive, archiviate e non disponibili (scadute/cancellate)
+  const activeCount = giftCards.filter((gc) => gc.isActive && !gc.isArchived && !gc.isExpired && !gc.isSoftDeleted).length
   const archivedCount = giftCards.filter((gc) => gc.isArchived).length
+  const unavailableCount = giftCards.filter((gc) => (gc.isExpired || gc.isSoftDeleted) && !gc.isArchived).length
 
   // Funzione per cercare gift card che matchano la query (in tutti i tab)
   const searchAllGiftCards = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase().trim()
-    if (!lowerQuery) return { active: [], archived: [] }
+    if (!lowerQuery) return { active: [], archived: [], unavailable: [] }
     
     const active = giftCards.filter(
-      (gc) => gc.isActive && !gc.isArchived && (
+      (gc) => gc.isActive && !gc.isArchived && !gc.isExpired && !gc.isSoftDeleted && (
         gc.code.toLowerCase().includes(lowerQuery) ||
         gc.order?.email?.toLowerCase().includes(lowerQuery) ||
         gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
@@ -632,21 +635,35 @@ export default function AdminGiftCardsPage() {
         (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
       )
     )
+
+    const unavailable = giftCards.filter(
+      (gc) => (gc.isExpired || gc.isSoftDeleted) && !gc.isArchived && (
+        gc.code.toLowerCase().includes(lowerQuery) ||
+        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
+        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
+        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
+      )
+    )
     
-    return { active, archived }
+    return { active, archived, unavailable }
   }, [giftCards])
 
-  // Auto-switch tab quando la ricerca trova risultati solo nell'altro tab
+  // Auto-switch tab quando la ricerca trova risultati solo in un altro tab
   useEffect(() => {
     if (!searchQuery.trim()) return
     
-    const { active, archived } = searchAllGiftCards(searchQuery)
+    const { active, archived, unavailable } = searchAllGiftCards(searchQuery)
     
-    // Se non ci sono risultati nel tab attivo ma ci sono nell'altro, switcha
-    if (activeTab === "active" && active.length === 0 && archived.length > 0) {
-      setActiveTab("archived")
-    } else if (activeTab === "archived" && archived.length === 0 && active.length > 0) {
-      setActiveTab("active")
+    const currentTabResults = 
+      activeTab === "active" ? active : 
+      activeTab === "archived" ? archived : 
+      unavailable
+    
+    // Se non ci sono risultati nel tab attivo ma ci sono in un altro, switcha
+    if (currentTabResults.length === 0) {
+      if (active.length > 0) setActiveTab("active")
+      else if (archived.length > 0) setActiveTab("archived")
+      else if (unavailable.length > 0) setActiveTab("unavailable")
     }
   }, [searchQuery, activeTab, searchAllGiftCards])
 
@@ -654,9 +671,12 @@ export default function AdminGiftCardsPage() {
   const filteredGiftCards = giftCards
     .filter((gc) => {
       if (activeTab === "active") {
-        return gc.isActive && !gc.isArchived
-      } else {
+        return gc.isActive && !gc.isArchived && !gc.isExpired && !gc.isSoftDeleted
+      } else if (activeTab === "archived") {
         return gc.isArchived
+      } else {
+        // unavailable: scadute o cancellate (soft deleted) ma non archiviate
+        return (gc.isExpired || gc.isSoftDeleted) && !gc.isArchived
       }
     })
     .filter(
@@ -762,6 +782,16 @@ export default function AdminGiftCardsPage() {
           >
             Archiviate ({archivedCount})
           </button>
+          <button
+            onClick={() => setActiveTab("unavailable")}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+              activeTab === "unavailable"
+                ? "bg-red-500 text-white"
+                : "bg-white text-brand-gray border border-brand-light-gray"
+            }`}
+          >
+            Non Disp. ({unavailableCount})
+          </button>
         </div>
 
         {/* Gift Cards List */}
@@ -797,6 +827,16 @@ export default function AdminGiftCardsPage() {
                     {gc.isArchived && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 text-label-sm rounded-full">
                         Archiviata
+                      </span>
+                    )}
+                    {gc.isExpired && (
+                      <span className="px-2 py-1 bg-red-100 text-red-600 text-label-sm rounded-full">
+                        Scaduta
+                      </span>
+                    )}
+                    {gc.isSoftDeleted && (
+                      <span className="px-2 py-1 bg-orange-100 text-orange-600 text-label-sm rounded-full">
+                        Cancellata
                       </span>
                     )}
                   </div>
@@ -873,7 +913,8 @@ export default function AdminGiftCardsPage() {
 
           {filteredGiftCards.length === 0 && (
             <p className="text-center text-brand-gray py-12">
-              Nessuna gift card {activeTab === "active" ? "attiva" : "archiviata"} trovata
+              Nessuna gift card {" "}
+              {activeTab === "active" ? "attiva" : activeTab === "archived" ? "archiviata" : "non disponibile"} trovata
             </p>
           )}
         </div>
@@ -912,6 +953,14 @@ export default function AdminGiftCardsPage() {
                       <span className="px-3 py-1 bg-gray-100 text-gray-600 text-label-sm rounded-full">
                         Archiviata
                       </span>
+                    ) : selectedGiftCard.isExpired ? (
+                      <span className="px-3 py-1 bg-red-100 text-red-600 text-label-sm rounded-full">
+                        Scaduta
+                      </span>
+                    ) : selectedGiftCard.isSoftDeleted ? (
+                      <span className="px-3 py-1 bg-orange-100 text-orange-600 text-label-sm rounded-full">
+                        Cancellata
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-label-sm rounded-full">
                         <CreditCard className="w-3 h-3" />
@@ -934,8 +983,29 @@ export default function AdminGiftCardsPage() {
                 </div>
               </div>
 
+              {/* Warning per GC non disponibili */}
+              {(selectedGiftCard.isExpired || selectedGiftCard.isSoftDeleted) && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-body-sm font-bold text-red-700">
+                        {selectedGiftCard.isExpired 
+                          ? "Questa Gift Card è scaduta" 
+                          : "Questa Gift Card è stata cancellata"}
+                      </p>
+                      <p className="text-body-sm text-red-600 mt-1">
+                        {selectedGiftCard.isExpired
+                          ? `Scadenza: ${selectedGiftCard.expiresAt ? new Date(selectedGiftCard.expiresAt).toLocaleDateString("it-IT") : "N/A"}. Il credito residuo non è più utilizzabile.`
+                          : "Non è possibile utilizzare una gift card cancellata."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Form Usa Gift Card */}
-              {selectedGiftCard.remainingValue > 0 && !selectedGiftCard.isArchived && (
+              {selectedGiftCard.remainingValue > 0 && !selectedGiftCard.isArchived && !selectedGiftCard.isExpired && !selectedGiftCard.isSoftDeleted && (
                 <div className="space-y-3">
                   <h3 className="text-title-sm font-bold text-brand-dark">Utilizza Gift Card</h3>
                   
