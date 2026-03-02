@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { centsToEuro } from "@/lib/utils/currency"
 
 export const revalidate = 0
 
@@ -24,7 +25,16 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json(categories, {
+    // Convert cents to euro for cocktail prices
+    const categoriesWithEuroPrices = categories.map((category) => ({
+      ...category,
+      cocktails: category.cocktails.map((cocktail) => ({
+        ...cocktail,
+        price: centsToEuro(cocktail.price),
+      })),
+    }))
+
+    return NextResponse.json(categoriesWithEuroPrices, {
       headers: {
         'Cache-Control': 'no-store, max-age=0',
       },

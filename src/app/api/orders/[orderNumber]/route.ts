@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { centsToEuro } from "@/lib/utils/currency";
 
 export async function GET(
   request: Request,
@@ -28,25 +29,26 @@ export async function GET(
     }
 
     // Non esporre dati sensibili - filtra solo quelli necessari
+    // Convert cents to euro for monetary fields
     const sanitizedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
       email: order.email,
-      total: order.total,
+      total: centsToEuro(order.total),
       createdAt: order.createdAt,
       items: order.items.map((item) => ({
         id: item.id,
         name: item.Product?.name || "Unknown Product",
         quantity: item.quantity,
         size: item.size,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
+        unitPrice: centsToEuro(item.unitPrice),
+        totalPrice: centsToEuro(item.totalPrice),
       })),
       giftCards: order.giftCards.map((gc) => ({
         id: gc.id,
         code: gc.code,
-        initialValue: gc.initialValue,
+        initialValue: centsToEuro(gc.initialValue),
         isActive: gc.isActive,
         expiresAt: gc.expiresAt,
       })),
