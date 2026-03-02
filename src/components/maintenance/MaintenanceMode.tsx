@@ -18,10 +18,6 @@ export function MaintenanceMode() {
       {/* Logo centrato con messaggio manutenzione */}
       <main className="flex-1 bg-brand-cream flex flex-col items-center justify-center p-6">
         <Logo variant="vertical" className="w-64 h-auto mb-8" />
-        <p className="text-body-lg text-brand-gray text-center max-w-md">
-          Stiamo lavorando per migliorare la tua esperienza.<br />
-          Torneremo presto online!
-        </p>
       </main>
 
       {/* Footer standard */}

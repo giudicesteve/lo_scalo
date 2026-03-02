@@ -18,9 +18,9 @@ const FLAGS_TIMESTAMP_COOKIE = "flags_timestamp";
  * NOTA: Durante la build, assume frontend sempre abilitato (default true)
  */
 export async function MaintenanceCheck({ children }: MaintenanceCheckProps) {
-  // Ottieni pathname dai headers (disponibile in Next.js 15+)
+  // Ottieni pathname dai headers (set by middleware)
   const headersList = await import("next/headers").then(mod => mod.headers());
-  const pathname = headersList.get("x-invoke-path") || "";
+  const pathname = headersList.get("x-pathname") || "";
   
   // Admin routes sono sempre accessibili
   if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
