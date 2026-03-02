@@ -869,6 +869,8 @@ function DailyReportContent() {
             <button
               onClick={() => handleDateChange(-1)}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Giorno precedente"
+              aria-label="Giorno precedente"
             >
               <ChevronLeft className="w-6 h-6 text-brand-dark" />
             </button>
@@ -880,6 +882,8 @@ function DailyReportContent() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="text-title-md font-bold text-brand-dark bg-transparent border-none focus:outline-none cursor-pointer"
+                title="Seleziona data"
+                aria-label="Seleziona data"
               />
               {isToday && (
                 <span className="px-2 py-1 bg-brand-primary/10 text-brand-primary text-label-sm rounded-full">
@@ -891,6 +895,8 @@ function DailyReportContent() {
             <button
               onClick={() => handleDateChange(1)}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Giorno successivo"
+              aria-label="Giorno successivo"
             >
               <ChevronRight className="w-6 h-6 text-brand-dark" />
             </button>

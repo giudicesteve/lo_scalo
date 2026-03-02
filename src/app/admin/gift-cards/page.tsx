@@ -1037,6 +1037,8 @@ export default function AdminGiftCardsPage() {
               <button
                 onClick={() => setSelectedGiftCard(null)}
                 className="p-2 hover:bg-brand-light-gray rounded-full transition-colors"
+                title="Chiudi"
+                aria-label="Chiudi"
               >
                 <X className="w-6 h-6 text-brand-gray" />
               </button>
@@ -1234,6 +1236,8 @@ export default function AdminGiftCardsPage() {
                             capture="environment"
                             onChange={handleImageUpload}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            title="Scatta foto o seleziona dalla galleria"
+                            aria-label="Scatta foto o seleziona dalla galleria"
                           />
                           <div className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-brand-light-gray rounded-xl hover:bg-brand-light-gray/20 transition-colors">
                             <Camera className="w-8 h-8 text-brand-gray" />
@@ -1416,6 +1420,8 @@ export default function AdminGiftCardsPage() {
                 <button
                   onClick={() => setFullscreenImage(null)}
                   className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                  title="Chiudi"
+                  aria-label="Chiudi"
                 >
                   <X className="w-5 h-5" />
                 </button>

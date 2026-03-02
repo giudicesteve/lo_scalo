@@ -256,7 +256,7 @@ export default function FeatureFlagsPage() {
                         : "bg-brand-light-gray"
                     }`}
                     role="switch"
-                    aria-checked={flag.enabled}
+                    aria-checked={flag.enabled ? true : false}
                   >
                     {updating === flag.key ? (
                       <Loader2 className="w-4 h-4 text-brand-gray animate-spin mx-auto" />

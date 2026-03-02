@@ -554,6 +554,8 @@ export default function MetricsReportPage() {
             <button
               onClick={() => viewMode === "month" ? handleMonthChange('prev') : handleYearChange('prev')}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Precedente"
+              aria-label="Precedente"
             >
               <ChevronLeft className="w-6 h-6 text-brand-dark" />
             </button>
@@ -566,12 +568,16 @@ export default function MetricsReportPage() {
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   className="text-title-md font-bold text-brand-dark bg-transparent border-none focus:outline-none cursor-pointer"
+                  title="Seleziona mese"
+                  aria-label="Seleziona mese"
                 />
               ) : (
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="text-title-md font-bold text-brand-dark bg-transparent border-none focus:outline-none cursor-pointer"
+                  title="Seleziona anno"
+                  aria-label="Seleziona anno"
                 >
                   {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -588,6 +594,8 @@ export default function MetricsReportPage() {
             <button
               onClick={() => viewMode === "month" ? handleMonthChange('next') : handleYearChange('next')}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Successivo"
+              aria-label="Successivo"
             >
               <ChevronRight className="w-6 h-6 text-brand-dark" />
             </button>

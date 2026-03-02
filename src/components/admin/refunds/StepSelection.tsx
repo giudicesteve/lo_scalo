@@ -66,6 +66,7 @@ function Checkbox({
       className={`w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       }`}
+      aria-label="Seleziona item"
     />
   )
 }
@@ -186,6 +187,8 @@ export function StepSelection({
                           onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1) }}
                           className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
                           disabled={refundQty <= 1}
+                          title="Diminuisci quantità"
+                          aria-label="Diminuisci quantità"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -194,6 +197,8 @@ export function StepSelection({
                           onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, 1) }}
                           className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
                           disabled={refundQty >= availableQty}
+                          title="Aumenta quantità"
+                          aria-label="Aumenta quantità"
                         >
                           <Plus className="h-3 w-3" />
                         </button>

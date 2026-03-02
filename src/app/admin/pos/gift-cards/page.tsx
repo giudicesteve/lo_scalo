@@ -376,6 +376,8 @@ export default function PosGiftCardPage() {
               <button
                 onClick={handleCancelCreate}
                 className="p-2 rounded-full hover:bg-brand-light-gray/50 transition-colors"
+                title="Annulla"
+                aria-label="Annulla"
               >
                 <X className="w-5 h-5 text-brand-gray" />
               </button>

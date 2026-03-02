@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Logo } from "@/components/Logo"
 
 /**
  * Maintenance Mode - Visualizzato quando FRONTEND_ENABLED = false
@@ -10,20 +10,8 @@ export function MaintenanceMode() {
   return (
     <div className="min-h-screen flex flex-col bg-brand-cream">
       {/* Logo centrato */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="relative w-48 h-48 md:w-64 md:h-64">
-          <Image
-            src="/images/logo.svg"
-            alt="Lo Scalo"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
-        <p className="mt-8 text-body-lg text-brand-gray text-center max-w-md">
-          Stiamo aggiornando il sito.<br />
-          Torniamo presto!
-        </p>
+      <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
+        <Logo variant="vertical" className="w-64 h-auto mb-12" />
       </main>
 
       {/* Footer semplificato */}

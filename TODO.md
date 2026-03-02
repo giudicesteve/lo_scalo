@@ -57,6 +57,23 @@
 
 ---
 
+## ✅ Completati - Accessibilità (A11y)
+
+| Data | Task | File modificati |
+|------|------|-----------------|
+| 2026-03-02 | **Fix A11y Warnings** | Aggiunti `title` e `aria-label` a bottoni e input senza testo/label |
+
+### Dettaglio modifiche:
+- `/admin/accounting` - Bottoni navigazione data, input date
+- `/admin/gift-cards` - Bottone chiudi modale, input file foto, bottone chiudi fullscreen
+- `/admin/pos/gift-cards` - Bottone annulla creazione
+- `/admin/reports/metrics` - Bottoni navigazione, input month, select anno
+- `/admin/reports/monthly` - Bottoni navigazione, input month
+- `/admin/settings/feature-flags` - Fix `aria-checked` valore booleano esplicito
+- `/components/admin/refunds/StepSelection` - Checkbox items, bottoni +/- quantità
+
+---
+
 ## 🐛 Bugs Noti
 
 *No known bugs at the moment*

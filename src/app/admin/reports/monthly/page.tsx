@@ -851,6 +851,8 @@ export default function MonthlyReportPage() {
             <button
               onClick={() => handleMonthChange('prev')}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Mese precedente"
+              aria-label="Mese precedente"
             >
               <ChevronLeft className="w-6 h-6 text-brand-dark" />
             </button>
@@ -862,6 +864,8 @@ export default function MonthlyReportPage() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="text-title-md font-bold text-brand-dark bg-transparent border-none focus:outline-none cursor-pointer"
+                title="Seleziona mese"
+                aria-label="Seleziona mese"
               />
               {isCurrentMonth && (
                 <span className="px-2 py-1 bg-brand-primary/10 text-brand-primary text-label-sm rounded-full">
@@ -873,6 +877,8 @@ export default function MonthlyReportPage() {
             <button
               onClick={() => handleMonthChange('next')}
               className="p-2 rounded-xl hover:bg-brand-light-gray/50 transition-colors"
+              title="Mese successivo"
+              aria-label="Mese successivo"
             >
               <ChevronRight className="w-6 h-6 text-brand-dark" />
             </button>
