@@ -106,7 +106,6 @@ export async function POST(req: Request) {
       },
       data: {
         isExpired: true,
-        isArchived: true,
         isActive: false,
       },
     })

@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     const expiredGiftCards = await prisma.giftCard.findMany({
       where: {
         isExpired: true,
+        remainingValue: { gt: 0 }, // Solo GC con credito residuo (entrata per il bar)
         expiresAt: {
           gte: startOfMonth,
           lte: endOfMonth,

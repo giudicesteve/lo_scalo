@@ -18,10 +18,10 @@ import {
 } from "lucide-react"
 
 const quickAccessItems = [
-  { href: "/admin/orders", label: "Ordini", icon: ShoppingBag, description: "Gestisci tutti gli ordini" },
-  { href: "/admin/gift-cards", label: "Gift Card", icon: Wallet, description: "Gestisci le gift card attivate" },
-  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede" },
-  { href: "/admin/accounting", label: "Contabilità", icon: Calculator, description: "Riepilogo giornaliero ordini" },
+  { href: "/admin/orders", label: "Gestione Ordini", icon: ShoppingBag, description: "Tracciare consegna dell'ordine, consultare ordini archiviati, emettere rimborsi, visualizzare rimborsi già emessi" },
+  { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet, description: "Scalare il credito, gestire le transazioni delle Gift Card, visualizzare gift card archiviate o cancellate" },
+  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede con pagamento contanti o POS" },
+  { href: "/admin/accounting", label: "Contabilità", icon: Calculator, description: "Riepilogo giornaliero ordini (Prodotti e GiftCard)" },
 ]
 
 const configItems = [
