@@ -1,21 +1,22 @@
 # Lo Scalo - Craft Drinks by the Lake
 
-[![Next.js](https://img.shields.io/badge/Next.js-14+-000000?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16+-000000?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-5.0+-2D3748?logo=prisma)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4+-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.4+-2D3748?logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-4169E1?logo=postgresql)](https://www.postgresql.org/)
-[![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe)](https://stripe.com/)
+[![Stripe](https://img.shields.io/badge/Stripe-20+-635BFF?logo=stripe)](https://stripe.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-ff69b4)](LICENSE)
 
-> A full-stack e-commerce platform for **Lo Scalo**, a cocktail bar on Lake Como, Italy. Built with Next.js, TypeScript, Stripe, and PostgreSQL.
+> A full-stack e-commerce platform for **Lo Scalo**, a cocktail bar on Lake Como, Italy. Built with Next.js 16, React 19, TypeScript, Stripe, and PostgreSQL.
 
 ---
 
 ## Features
 
 ### Customer Experience
-- **Bilingual Support**: Full Italian and English language support with persistence
+- **Bilingual Support**: Full Italian and English language support with `next-intl` 4.8
 - **Digital Menu**: Browse cocktails organized by categories with detailed descriptions
 - **Online Shop**: Purchase merchandise with size selection and stock checking
 - **Gift Cards**: Buy digital gift cards (€50, €100, €200) with QR codes and PDF delivery
@@ -43,11 +44,13 @@
 - **Settings**: Gift card expiry configuration, user management
 
 ### Technical Highlights
+- **Next.js 16 + React 19**: Latest framework versions with Server Components
+- **Prisma 7 + Neon**: Serverless PostgreSQL with Neon adapter
 - **Real-time Stock**: Atomic stock reservation during checkout
 - **Idempotent Webhooks**: Safe Stripe webhook handling with duplicate prevention
 - **Gift Card Expiry**: Automated daily cron job for expiration handling
 - **Policy Versioning**: Database-driven legal documents with acceptance tracking
-- **Responsive Design**: Tailwind CSS with custom Euclid Circular B font
+- **Currency Precision**: All monetary values stored as integers (cents) to prevent floating-point errors
 
 ---
 
@@ -67,7 +70,7 @@
            │                                      │
            ▼                                      ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│                      NEXT.JS API LAYER                            │
+│                      NEXT.JS 16 API LAYER                         │
 ├───────────────────────────────────────────────────────────────────┤
 │  Public API          │  Admin API             │  Webhooks         │
 │  • /api/products     │  • /api/admin/orders   │  • Stripe events  │
@@ -80,12 +83,31 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                    SERVICE LAYER                                 │
 ├──────────────────────────────────────────────────────────────────┤
-│  Stripe             │  Resend              │  Prisma ORM         │
-│  • Checkout         │  • Order emails      │  • PostgreSQL       │
-│  • Webhooks         │  • Gift card PDFs    │  • Migrations       │
+│  Stripe             │  Resend              │  Prisma 7 ORM       │
+│  • Checkout         │  • Order emails      │  • Neon Adapter     │
+│  • Webhooks         │  • Gift card PDFs    │  • PostgreSQL       │
 │  • Refunds          │  • Admin alerts      │  • Transactions     │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Tech Stack
+
+| Category | Technology | Version |
+|----------|------------|---------|
+| **Framework** | Next.js | 16.1.6 |
+| **UI Library** | React | 19.2.4 |
+| **Language** | TypeScript | 5.x |
+| **Styling** | Tailwind CSS | 3.4.1 |
+| **UI Components** | shadcn/ui | Latest |
+| **Authentication** | NextAuth.js | 5.0.0-beta.30 |
+| **i18n** | next-intl | 4.8.3 |
+| **State** | Zustand | 5.0.11 |
+| **ORM** | Prisma | 7.4.1 |
+| **Database** | Neon PostgreSQL | Serverless |
+| **Payments** | Stripe | 20.3.1 |
+| **Email** | Resend | 6.9.2 |
 
 ---
 
@@ -167,7 +189,8 @@ Create a `.env` file with the following variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host/db?sslmode=require` |
+| `DATABASE_URL` | PostgreSQL pooled connection string | `postgresql://user:pass@host-pooler/db?sslmode=require` |
+| `DATABASE_URL_UNPOOLED` | PostgreSQL direct connection (for migrations) | `postgresql://user:pass@host/db?sslmode=require` |
 | `NEXTAUTH_URL` | Your app URL | `http://localhost:3000` |
 | `NEXTAUTH_SECRET` | Random secret for JWT | `your-secret-min-32-chars` |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | `123-abc.apps.googleusercontent.com` |
@@ -195,13 +218,13 @@ Use these cards for testing payments:
 
 | Card Number           | Scenario                               |
 |-----------------------|----------------------------------------|
-| `4242 4242 4242 4242` |  Payment succeeds                      |
-| `4000 0000 0000 0002` |  Card declined                         |
-| `4000 0000 0000 3220` |  3D Secure required                    |
-| `4000 0000 0000 6975` |  Card declined (insufficient funds)    |
+| `4242 4242 4242 4242` | Payment succeeds                       |
+| `4000 0000 0000 0002` | Card declined                          |
+| `4000 0000 0000 3220` | 3D Secure required                     |
+| `4000 0000 0000 6975` | Card declined (insufficient funds)     |
 
-CVC: any number
-Issue date: every Month and Year in the future
+CVC: any number  
+Issue date: any future Month/Year
 
 ### Database Management
 
@@ -243,6 +266,7 @@ git push origin main
 
 3. **Configure Environment Variables**
    - Add all variables from `.env` in Project Settings
+   - Ensure both `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` are set
 
 4. **Configure Database**
    - Use [Neon](https://neon.tech) or [Vercel Postgres](https://vercel.com/storage/postgres)
@@ -284,6 +308,7 @@ vercel --prod
 - [ ] Verify legal policies are active
 - [ ] Test complete purchase flow
 - [ ] Check cron job logs after 24 hours
+- [ ] Verify both `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are configured
 
 ---
 
@@ -312,6 +337,22 @@ For detailed technical documentation, see [AGENTS.md](./AGENTS.md) which include
 - Email template specifications
 - Database schema with relationships
 - API endpoint documentation
+- Prisma 7 + Neon configuration
+- Context7 documentation references
+
+---
+
+## Context7 - Documentazione Aggiornata
+
+Questo progetto utilizza **Context7** per accedere alla documentazione ufficiale aggiornata delle librerie:
+
+| Libreria | Context7 ID | Documentazione |
+|----------|-------------|----------------|
+| Next.js / next-intl | `/amannn/next-intl` | [Context7](https://context7.com/amannn/next-intl) |
+| Prisma 7 | `/llmstxt/prisma_io_llms_txt` | [Context7](https://context7.com/llmstxt/prisma_io_llms_txt) |
+| Stripe | `/websites/stripe` | [Context7](https://context7.com/websites/stripe) |
+| React 19 | `/websites/react_dev` | [Context7](https://context7.com/websites/react_dev) |
+| Tailwind CSS | `/websites/tailwindcss` | [Context7](https://context7.com/websites/tailwindcss) |
 
 ---
 
