@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { centsToEuro } from "@/lib/utils/currency"
 
 // GET - Lista tutte le categorie
 export async function GET() {
@@ -12,7 +13,17 @@ export async function GET() {
         },
       },
     })
-    return NextResponse.json(categories)
+    
+    // Convert cents to euro for cocktail prices
+    const categoriesWithEuroPrices = categories.map((category) => ({
+      ...category,
+      cocktails: category.cocktails.map((cocktail) => ({
+        ...cocktail,
+        price: centsToEuro(cocktail.price),
+      })),
+    }))
+    
+    return NextResponse.json(categoriesWithEuroPrices)
   } catch {
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 })
   }
