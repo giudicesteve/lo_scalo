@@ -49,6 +49,7 @@ export interface RefundPreviewData {
     createdAt: string
     total: number
     email: string
+    stripePaymentIntentId?: string | null
   }
   products: RefundableItem[]
   giftCards: RefundableItem[]
@@ -146,6 +147,8 @@ export function RefundModal({
   const [externalRef, setExternalRef] = useState("")
   const [notes, setNotes] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessingStripe, setIsProcessingStripe] = useState(false)
+  const [stripeError, setStripeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refundResult, setRefundResult] = useState<{
     refundNumber: string
@@ -215,8 +218,53 @@ export function RefundModal({
   const handleSubmit = async () => {
     if (!previewData) return
 
-    // Validate externalRef is required
-    if (!externalRef.trim()) {
+    const isOnlineOrder = previewData.order.orderSource === "ONLINE"
+    const paymentIntentId = previewData.order.stripePaymentIntentId
+
+    // For ONLINE orders, we try to process Stripe refund automatically first
+    let stripeRefundId = externalRef
+
+    if (isOnlineOrder && !stripeError) {
+      // Check if payment intent is available
+      if (!paymentIntentId) {
+        setStripeError("Payment Intent ID non disponibile per questo ordine. Inserisci manualmente l'ID del rimborso Stripe.")
+        return
+      }
+
+      setIsProcessingStripe(true)
+      setError(null)
+
+      try {
+        const stripeResponse = await fetch("/api/admin/refunds/stripe-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentIntentId: paymentIntentId,
+            amount: Math.round(totalSelected * 100), // convert to cents
+          }),
+        })
+
+        const stripeResult = await stripeResponse.json()
+
+        if (!stripeResponse.ok) {
+          throw new Error(stripeResult.error || "Errore durante il rimborso su Stripe")
+        }
+
+        // Stripe refund succeeded, use the refund ID
+        stripeRefundId = stripeResult.refundId
+      } catch (err: any) {
+        setStripeError(err.message || "Errore durante l'elaborazione del rimborso su Stripe")
+        setIsProcessingStripe(false)
+        return
+      } finally {
+        setIsProcessingStripe(false)
+      }
+    }
+
+    // Validate externalRef for MANUAL orders or when Stripe auto-processing is not available
+    // For ONLINE orders, if we don't have a stripeRefundId (missing PI or failed), require manual input
+    const needsManualRef = !isOnlineOrder || (isOnlineOrder && stripeError)
+    if (needsManualRef && !stripeRefundId.trim()) {
       setError(refundMethod === "STRIPE" 
         ? "Inserisci l'ID del rimborso Stripe" 
         : "Inserisci il numero del documento di rimborso")
@@ -240,7 +288,7 @@ export function RefundModal({
           orderId,
           items,
           refundMethod,
-          externalRef: externalRef || undefined,
+          externalRef: stripeRefundId || undefined,
           notes: notes || undefined,
         }),
       })
@@ -269,6 +317,8 @@ export function RefundModal({
     setExternalRef("")
     setNotes("")
     setError(null)
+    setStripeError(null)
+    setIsProcessingStripe(false)
     setRefundResult(null)
     onClose()
   }
@@ -373,6 +423,7 @@ export function RefundModal({
                 onExternalRefChange={setExternalRef}
                 notes={notes}
                 onNotesChange={setNotes}
+                stripeError={stripeError}
               />
             )}
 
@@ -411,10 +462,15 @@ export function RefundModal({
                 {step === "confirm" ? (
                   <Button
                     onClick={handleSubmit}
-                    disabled={isLoading || !externalRef.trim()}
+                    disabled={isLoading || isProcessingStripe || (!externalRef.trim() && !!stripeError)}
                     variant="danger"
                   >
-                    {isLoading ? (
+                    {isProcessingStripe ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Elaborazione su Stripe...
+                      </>
+                    ) : isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Elaborazione...

@@ -153,6 +153,7 @@ export async function GET(
         createdAt: order.createdAt,
         total: order.total,
         email: order.email,
+        stripePaymentIntentId: order.stripePaymentIntentId,
       },
       products: productItems,
       giftCards: giftCardItems,

@@ -1,6 +1,6 @@
 "use client"
 
-import { CreditCard, Banknote, Receipt, Package, Gift } from "lucide-react"
+import { CreditCard, Banknote, Receipt, Package, Gift, Info } from "lucide-react"
 import { RefundableItem } from "./RefundModal"
 
 interface StepConfirmProps {
@@ -304,37 +304,55 @@ export function StepConfirm({
         </CardContent>
       </Card>
 
-      {/* External Reference */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">
-            Riferimento {refundMethod === "STRIPE" ? "Stripe Refund ID" : "Documento Rimborso"}
-            <span className="text-red-500 ml-1">*</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input
-            placeholder={
-              refundMethod === "STRIPE"
-                ? "es: re_1234567890abcdef"
-                : "es: 1234-56789"
-            }
-            value={externalRef}
-            onChange={onExternalRefChange}
-            required
-          />
-          <p className="text-xs text-gray-500 mt-2">
-            {refundMethod === "STRIPE"
-              ? "Inserisci l'ID del rimborso generato su Stripe Dashboard (obbligatorio)"
-              : "Inserisci il numero dello documento di rimborso emesso (obbligatorio)"}
-          </p>
-          {!externalRef && (
-            <p className="text-xs text-red-500 mt-1">
-              Questo campo è obbligatorio
+      {/* External Reference - Hidden for ONLINE + STRIPE, visible for all others */}
+      {isOnline && refundMethod === "STRIPE" ? (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">
+                  Rimborso automatico su Stripe
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  Il rimborso verrà elaborato automaticamente su Stripe. L'ID del rimborso verrà salvato automaticamente dopo l'elaborazione.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">
+              Riferimento {refundMethod === "STRIPE" ? "Stripe Refund ID" : "Documento Rimborso"}
+              <span className="text-red-500 ml-1">*</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Input
+              placeholder={
+                refundMethod === "STRIPE"
+                  ? "es: re_1234567890abcdef"
+                  : "es: 1234-56789"
+              }
+              value={externalRef}
+              onChange={onExternalRefChange}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {refundMethod === "STRIPE"
+                ? "Inserisci l'ID del rimborso generato su Stripe Dashboard (obbligatorio)"
+                : "Inserisci il numero dello documento di rimborso emesso (obbligatorio)"}
             </p>
-          )}
-        </CardContent>
-      </Card>
+            {!externalRef && (
+              <p className="text-xs text-red-500 mt-1">
+                Questo campo è obbligatorio
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notes */}
       <Card>
