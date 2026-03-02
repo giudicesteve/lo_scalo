@@ -1,6 +1,6 @@
 "use client"
 
-import { CreditCard, Banknote, Receipt, Package, Gift, Info } from "lucide-react"
+import { CreditCard, Banknote, Receipt, Package, Gift, Info, AlertTriangle } from "lucide-react"
 import { RefundableItem } from "./RefundModal"
 
 interface StepConfirmProps {
@@ -13,6 +13,7 @@ interface StepConfirmProps {
   onExternalRefChange: (value: string) => void
   notes: string
   onNotesChange: (value: string) => void
+  stripeError?: string | null
 }
 
 // Simple Card Component
@@ -165,6 +166,7 @@ export function StepConfirm({
   onExternalRefChange,
   notes,
   onNotesChange,
+  stripeError,
 }: StepConfirmProps) {
   const products = selectedItems.filter((i) => i.type === "PRODUCT")
   const giftCards = selectedItems.filter((i) => i.type === "GIFT_CARD")
@@ -232,6 +234,26 @@ export function StepConfirm({
           </div>
         </CardContent>
       </Card>
+
+      {/* Stripe Error Alert */}
+      {stripeError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-900">
+                Errore durante l'elaborazione su Stripe
+              </p>
+              <p className="text-sm text-red-700 mt-1">
+                {stripeError}
+              </p>
+              <p className="text-sm text-red-700 mt-1">
+                Puoi inserire manualmente l'ID del rimborso nel campo sottostante.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refund Method */}
       <Card>
