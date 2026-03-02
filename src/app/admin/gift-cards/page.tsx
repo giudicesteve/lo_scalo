@@ -996,7 +996,7 @@ export default function AdminGiftCardsPage() {
                       </p>
                       <p className="text-body-sm text-red-600 mt-1">
                         {selectedGiftCard.isExpired
-                          ? `Scadenza: ${selectedGiftCard.expiresAt ? new Date(selectedGiftCard.expiresAt).toLocaleDateString("it-IT") : "N/A"}. Il credito residuo non è più utilizzabile.`
+                          ? `Scadenza: ${selectedGiftCard.expiresAt ? new Date(selectedGiftCard.expiresAt).toLocaleDateString("it-IT") : "N/A"}. Il credito residuo di ${selectedGiftCard.remainingValue.toFixed(2)}€ rimane registrato per contabilità ma non è più utilizzabile.`
                           : "Non è possibile utilizzare una gift card cancellata."}
                       </p>
                     </div>
