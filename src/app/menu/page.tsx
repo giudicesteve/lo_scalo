@@ -266,7 +266,7 @@ export default function MenuPage() {
       </header>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 max-w-7xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
