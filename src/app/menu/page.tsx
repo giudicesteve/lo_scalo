@@ -227,10 +227,10 @@ export default function MenuPage() {
 
         {/* Category Tabs */}
         {categories.length > 0 && (
-          <div 
-            className="flex overflow-x-auto px-4 menu-tabs-scroll bg-brand-cream relative z-10"
-            style={{ width: '100vw', maxWidth: '100%' }}
-          >
+          <div className="bg-brand-cream">
+            <div 
+              className="flex overflow-x-auto px-4 menu-tabs-scroll max-w-7xl mx-auto relative z-10"
+            >
             {categories.map((cat, index) => {
               const handleClick = () => {
                 setActiveCategory(cat.id)
@@ -261,6 +261,7 @@ export default function MenuPage() {
                 </button>
               )
             })}
+            </div>
           </div>
         )}
       </header>
