@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { FooterWrapper } from "@/components/FooterWrapper";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { FeatureFlagProvider } from "@/components/feature-flags";
+import { MaintenanceCheck } from "@/components/maintenance/MaintenanceCheck";
 
 const euclid = localFont({
   src: [
@@ -29,10 +31,14 @@ export default function RootLayout({
     <html lang="it" suppressHydrationWarning>
       <body className={`${euclid.variable} font-sans antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
         <SessionProvider>
-          <main className="flex-1">
-            {children}
-          </main>
-          <FooterWrapper />
+          <FeatureFlagProvider>
+            <MaintenanceCheck>
+              <main className="flex-1">
+                {children}
+              </main>
+              <FooterWrapper />
+            </MaintenanceCheck>
+          </FeatureFlagProvider>
         </SessionProvider>
       </body>
     </html>

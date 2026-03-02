@@ -14,32 +14,66 @@ import {
   Shield,
   Calculator,
   FileText,
-  Settings
+  Settings,
+  Gift
 } from "lucide-react"
 
-const quickAccessItems = [
-  { href: "/admin/orders", label: "Gestione Ordini", icon: ShoppingBag, description: "Tracciare consegna dell'ordine, consultare ordini archiviati, emettere rimborsi, visualizzare rimborsi già emessi" },
-  { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet, description: "Scalare il credito, gestire le transazioni delle Gift Card, visualizzare gift card archiviate o cancellate" },
-  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede con pagamento contanti o POS" },
-  { href: "/admin/accounting", label: "Contabilità Giornaliera", icon: Calculator, description: "Riepilogo giornaliero ordini e rimborsi (Prodotti e GiftCard)" },
-]
+// Feature flag keys
+const FEATURE_FLAGS = {
+  SHOP_ENABLED: "SHOP_ENABLED",
+  GIFT_CARDS_ENABLED: "GIFT_CARDS_ENABLED",
+  GIFT_CARDS_POS_ENABLED: "GIFT_CARDS_POS_ENABLED",
+  MENU_ENABLED: "MENU_ENABLED",
+}
 
-const configItems = [
-  { href: "/admin/menu", label: "Menu", icon: Wine, description: "Configura categorie e cocktail" },
-  { href: "/admin/shop", label: "Negozio", icon: Store, description: "Configura Prodotti, Gift Card e magazzino" },
-]
+interface FeatureFlags {
+  [key: string]: boolean;
+}
 
 export default function AdminDashboard() {
   const [canManageAdmins, setCanManageAdmins] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({})
 
   useEffect(() => {
     // Verifica se l'admin può gestire altri admin (stesso check del layout)
     fetch("/api/admin/admins")
       .then(res => res.ok ? setCanManageAdmins(true) : setCanManageAdmins(false))
       .catch(() => setCanManageAdmins(false))
+    
+    // Carica feature flags
+    fetch("/api/feature-flags")
+      .then(res => res.json())
+      .then(data => {
+        if (data.flags) {
+          const flagsMap = data.flags.reduce((acc: FeatureFlags, flag: { key: string; enabled: boolean }) => {
+            acc[flag.key] = flag.enabled;
+            return acc;
+          }, {});
+          setFeatureFlags(flagsMap);
+        }
+      })
+      .catch(err => console.error("Error fetching feature flags:", err))
       .finally(() => setLoading(false))
   }, [])
+
+  // Mostra "Gestione Gift Card" solo se almeno uno dei due flag è abilitato
+  const showGiftCardManagement = featureFlags[FEATURE_FLAGS.GIFT_CARDS_ENABLED] !== false || 
+                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false;
+
+  // Menu items dinamici basati sui feature flags
+  const quickAccessItems = [
+    { href: "/admin/orders", label: "Gestione Ordini", icon: ShoppingBag, description: "Tracciare consegna dell'ordine, consultare ordini archiviati, emettere rimborsi, visualizzare rimborsi già emessi" },
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet, description: "Scalare il credito, gestire le transazioni delle Gift Card, visualizzare gift card archiviate o cancellate" }] : []),
+    ...(featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ? [{ href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede con pagamento contanti o POS" }] : []),
+    { href: "/admin/accounting", label: "Contabilità Giornaliera", icon: Calculator, description: "Riepilogo giornaliero ordini e rimborsi (Prodotti e GiftCard)" },
+  ];
+
+  const configItems = [
+    ...(featureFlags[FEATURE_FLAGS.MENU_ENABLED] !== false ? [{ href: "/admin/menu", label: "Menu", icon: Wine, description: "Configura categorie e cocktail" }] : []),
+    ...(featureFlags[FEATURE_FLAGS.SHOP_ENABLED] !== false ? [{ href: "/admin/shop", label: "Negozio", icon: Store, description: "Configura Prodotti e magazzino" }] : []),
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Tagli Gift Card", icon: Gift, description: "Configura i tagli delle Gift Card disponibili" }] : []),
+  ];
 
   return (
     <main className="min-h-screen bg-brand-cream">

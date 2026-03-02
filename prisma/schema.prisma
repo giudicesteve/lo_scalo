@@ -18,6 +18,17 @@ model Admin {
   updatedAt            DateTime @updatedAt
 }
 
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}
+
 model SiteConfig {
   id        String   @id @default(cuid())
   key       String   @unique

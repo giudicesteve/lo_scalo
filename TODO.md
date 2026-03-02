@@ -8,6 +8,8 @@
 
 | Data | Task | Descrizione |
 |------|------|-------------|
+| 2026-03-02 | **Paginazione** | 50 item/pagina per Ordini e Gift Cards, separata per tab |
+| 2026-03-02 | **Feature Flag System** | 8 flag configurabili, maintenance mode, menu admin dinamico |
 | 2026-03-02 | Tab Annullati Ordini | 3 tab in /admin/orders con auto-switch su ricerca |
 | 2026-03-02 | Gift Card Non Disponibili | Tab dedicato per GC scadute/cancellate |
 | 2026-03-01 | Contabilità con Rimborsi | Pagina rinnovata con ordini + rimborsi unificati |
@@ -31,15 +33,10 @@
 
 ### 🔶 Priorità Media
 
-#### Feature Flags System
-- Tabella `FeatureFlag` nel database
-- API endpoint per leggere stato flags
-- UI Admin per gestire toggle on/off
-- Controllo funzionalità senza deploy
-
-#### Paginazione Ordini
-- Implementare paginazione o infinite scroll in /admin/orders
-- Caricamento attuale: tutti gli ordini in memoria
+~~#### Paginazione Ordini~~ ✅ **COMPLETATO**
+- 50 ordini per pagina
+- Paginazione separata per ogni tab (Attivi, Archiviati, Annullati)
+- Paginazione anche per Gift Cards (Attive, Credito esaurito, Non Disponibili)
 
 ### 🔷 Priorità Bassa
 

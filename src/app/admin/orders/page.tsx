@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, RotateCcwIcon, ArrowDownLeftFromCircle, LucideArrowUpCircle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 import { RefundModal } from "@/components/admin/refunds"
+import { Pagination } from "@/components/pagination/Pagination"
 
 interface OrderItem {
   id: string
@@ -77,35 +78,142 @@ const statusIcons: Record<string, React.ReactNode> = {
   CANCELLED: <X className="w-3 h-3" />,
 }
 
+const ITEMS_PER_PAGE = 50
+const MIN_SEARCH_LENGTH = 4
+const SEARCH_DEBOUNCE_MS = 300
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"active" | "archived" | "cancelled">("active")
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
+  
+  // Pagination state per tab
+  const [pagination, setPagination] = useState({
+    active: { page: 1, total: 0 },
+    archived: { page: 1, total: 0 },
+    cancelled: { page: 1, total: 0 },
+  })
   
   const { toast, showToast, hideToast } = useToast()
+  
+  // Cache per le pagine già caricate: chiave = "filter-page-search"
+  const [ordersCache, setOrdersCache] = useState<Record<string, { orders: Order[]; total: number; timestamp: number }>>({})
+  const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minuti di validità cache
 
-  const fetchOrders = useCallback(async () => {
+  // Debounce per la ricerca: attende 1 secondo dopo l'ultimo carattere digitato
+  useEffect(() => {
+    // Se la query è vuota o ha meno di 4 caratteri, resetta subito
+    if (searchQuery.length > 0 && searchQuery.length < MIN_SEARCH_LENGTH) {
+      setDebouncedSearchQuery("")
+      return
+    }
+    
+    // Se ha almeno 4 caratteri, attendi 1 secondo
+    if (searchQuery.length >= MIN_SEARCH_LENGTH) {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery)
+      }, SEARCH_DEBOUNCE_MS)
+      
+      return () => clearTimeout(timer)
+    } else {
+      setDebouncedSearchQuery("")
+    }
+  }, [searchQuery])
+
+  // Fetch ordini con paginazione server-side e caching
+  // Usa ref per evitare dipendenze circolari
+  const paginationRef = useRef(pagination)
+  paginationRef.current = pagination
+  const ordersCacheRef = useRef(ordersCache)
+  ordersCacheRef.current = ordersCache
+  
+  const fetchOrders = useCallback(async (
+    targetFilter?: "active" | "archived" | "cancelled", 
+    targetPage?: number,
+    forceRefresh = false
+  ) => {
+    const tab = targetFilter || filter
+    const page = targetPage || paginationRef.current[tab].page
+    const search = debouncedSearchQuery.trim()
+    
+    // Genera chiave cache
+    const cacheKey = `${tab}-${page}-${search}`
+    const cached = ordersCacheRef.current[cacheKey]
+    const now = Date.now()
+    
+    // Se in cache e non scaduto e non forzato, usa cache
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+      setOrders(cached.orders)
+      setPagination(prev => ({
+        ...prev,
+        [tab]: { page, total: cached.total }
+      }))
+      setLoading(false)
+      return
+    }
+    
     try {
-      // Chiamata senza filtri per ottenere tutti gli ordini (come Gift Cards)
-      const res = await fetch("/api/admin/orders")
+      // Costruisci i parametri per l'API
+      const params = new URLSearchParams()
+      params.set("page", page.toString())
+      params.set("limit", ITEMS_PER_PAGE.toString())
+      
+      // Filtro per tab
+      if (tab === "cancelled") {
+        params.set("status", "CANCELLED")
+      } else if (tab === "archived") {
+        params.set("archived", "true")
+      } else {
+        params.set("archived", "false")
+      }
+      
+      // Ricerca
+      if (search) {
+        params.set("search", search)
+      }
+      
+      const res = await fetch(`/api/admin/orders?${params.toString()}`)
       const data = await res.json()
-      // Ensure data is an array
-      setOrders(Array.isArray(data) ? data : [])
+      
+      if (data.orders) {
+        setOrders(data.orders)
+        if (data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            [tab]: {
+              page: data.pagination.page,
+              total: data.pagination.totalCount,
+            }
+          }))
+          
+          // Salva in cache
+          setOrdersCache(prev => ({
+            ...prev,
+            [cacheKey]: {
+              orders: data.orders,
+              total: data.pagination.totalCount,
+              timestamp: Date.now(),
+            }
+          }))
+        }
+      }
     } catch (error) {
       console.error("Error fetching orders:", error)
       setOrders([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filter, debouncedSearchQuery])
 
+  // Carica ordini quando cambia tab o ricerca (debounced) - la pagina è gestita separatamente
   useEffect(() => {
     fetchOrders()
-    
-    // Check if user is super admin
+  }, [filter, debouncedSearchQuery, fetchOrders])
+  
+  // Check super admin - solo al mount
+  useEffect(() => {
     const checkAdmin = async () => {
       try {
         const res = await fetch("/api/admin/admins")
@@ -121,9 +229,9 @@ export default function AdminOrdersPage() {
       }
     }
     checkAdmin()
-  }, [fetchOrders])
+  }, [])
 
-  // Ricarica quando la pagina prende focus (utente torna sulla tab)
+  // Ricarica quando la pagina prende focus (utente torna sulla tab) - usa cache
   useEffect(() => {
     const handleFocus = () => {
       fetchOrders()
@@ -131,62 +239,50 @@ export default function AdminOrdersPage() {
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [fetchOrders])
+  
+  // Invalida cache quando si fanno azioni che modificano i dati
+  const clearOrdersCache = useCallback((targetFilter?: "active" | "archived" | "cancelled") => {
+    if (targetFilter) {
+      setOrdersCache(prev => {
+        const newCache = { ...prev }
+        Object.keys(newCache).forEach(key => {
+          if (key.startsWith(`${targetFilter}-`)) delete newCache[key]
+        })
+        return newCache
+      })
+    } else {
+      setOrdersCache({})
+    }
+  }, [])
 
-  // Filtra ordini per tab (active/archived/cancelled) e ricerca
+  // Reset pagina a 1 quando cambia il filtro (tab)
   useEffect(() => {
-    // Se c'è una ricerca, verifica se c'è un match esatto 1:1 in un'altra tab
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      const matchingOrders = orders.filter(order => 
-        order.orderNumber?.toLowerCase().includes(query) ||
-        order.email?.toLowerCase().includes(query) ||
-        (order.phone && order.phone.toLowerCase().includes(query))
-      )
-      
-      // Se c'è esattamente 1 match, switcha alla tab corretta
-      if (matchingOrders.length === 1) {
-        const matchedOrder = matchingOrders[0]
-        if (matchedOrder.status === "CANCELLED" && filter !== "cancelled") {
-          setFilter("cancelled")
-          return
-        } else if (matchedOrder.status !== "CANCELLED") {
-          const targetFilter = matchedOrder.isArchived ? "archived" : "active"
-          if (filter !== targetFilter) {
-            setFilter(targetFilter)
-            return
-          }
+    setPagination(prev => ({
+      ...prev,
+      [filter]: { ...prev[filter], page: 1 }
+    }))
+  }, [filter])
+
+  // Fetch totali per tutti i tab (per i badge) - solo al mount, una sola chiamata
+  useEffect(() => {
+    const fetchTotals = async () => {
+      try {
+        const res = await fetch("/api/admin/orders/counts")
+        if (res.ok) {
+          const data = await res.json()
+          setPagination(prev => ({
+            active: { ...prev.active, total: data.active || 0 },
+            archived: { ...prev.archived, total: data.archived || 0 },
+            cancelled: { ...prev.cancelled, total: data.cancelled || 0 },
+          }))
         }
+      } catch (error) {
+        console.error("Error fetching totals:", error)
       }
     }
     
-    let filtered = orders
-    
-    // Filtro per tab
-    if (filter === "cancelled") {
-      // Tab Annullati: solo ordini con status CANCELLED
-      filtered = filtered.filter(order => order.status === "CANCELLED")
-    } else {
-      // Tab Attivi e Archiviati: escludi ordini CANCELLED
-      filtered = filtered.filter(order => order.status !== "CANCELLED")
-      
-      // Filtro per tab active/archived
-      filtered = filtered.filter(order => 
-        filter === "active" ? !order.isArchived : order.isArchived
-      )
-    }
-    
-    // Filtro per ricerca
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(order => 
-        order.orderNumber?.toLowerCase().includes(query) ||
-        order.email?.toLowerCase().includes(query) ||
-        (order.phone && order.phone.toLowerCase().includes(query))
-      )
-    }
-    
-    setFilteredOrders(filtered)
-  }, [searchQuery, orders, filter])
+    fetchTotals()
+  }, [])
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     const res = await fetch("/api/admin/orders", {
@@ -196,7 +292,8 @@ export default function AdminOrdersPage() {
     })
 
     if (res.ok) {
-      fetchOrders()
+      clearOrdersCache() // Invalida tutta la cache dopo modifica stato
+      fetchOrders(undefined, undefined, true)
     }
   }
 
@@ -225,7 +322,8 @@ export default function AdminOrdersPage() {
     })
 
     if (res.ok) {
-      fetchOrders()
+      clearOrdersCache() // Invalida cache dopo archiviazione/ripristino
+      fetchOrders(undefined, undefined, true)
     }
     closeActionDialog()
   }
@@ -269,7 +367,8 @@ export default function AdminOrdersPage() {
   }
   
   const handleRefundComplete = () => {
-    fetchOrders()
+    clearOrdersCache() // Invalida cache dopo rimborso
+    fetchOrders(undefined, undefined, true)
     setRefundModalOpen(false)
     setSelectedOrderForRefund(null)
     showToast("Rimborso completato con successo!", "success")
@@ -309,9 +408,22 @@ export default function AdminOrdersPage() {
   }
 
   // Conta ordini per tab (escludi CANCELLED)
-  const activeCount = orders.filter(o => !o.isArchived && o.status !== "CANCELLED").length
-  const archivedCount = orders.filter(o => o.isArchived && o.status !== "CANCELLED").length
-  const cancelledCount = orders.filter(o => o.status === "CANCELLED").length
+  // Use pagination totals for badge counts
+  const activeCount = pagination.active.total
+  const archivedCount = pagination.archived.total
+  const cancelledCount = pagination.cancelled.total
+  
+  const currentPage = pagination[filter].page
+  const totalPages = Math.ceil(pagination[filter].total / ITEMS_PER_PAGE)
+  
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({
+      ...prev,
+      [filter]: { ...prev[filter], page: newPage }
+    }))
+    // Chiama fetchOrders direttamente con la nuova pagina
+    fetchOrders(undefined, newPage)
+  }
 
   if (loading) {
     return (
@@ -359,7 +471,7 @@ export default function AdminOrdersPage() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => fetchOrders()}
+                onClick={() => fetchOrders(undefined, undefined, true)}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
                 title="Aggiorna"
               >
@@ -407,9 +519,18 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
+        {/* Pagination Top */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination[filter].total}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+
         {/* Orders List */}
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {orders.map((order) => (
             <div key={order.id} className="bg-white rounded-2xl shadow-card p-4">
               {/* Header: Numero Ordine + Info */}
               <div className="flex items-center justify-between mb-3">
@@ -676,7 +797,7 @@ export default function AdminOrdersPage() {
             </div>
           ))}
 
-          {filteredOrders.length === 0 && (
+          {orders.length === 0 && (
             <p className="text-center text-brand-gray py-12">
               {searchQuery 
                 ? "Nessun ordine trovato" 
@@ -688,6 +809,15 @@ export default function AdminOrdersPage() {
             </p>
           )}
         </div>
+
+        {/* Pagination Bottom */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination[filter].total}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       </div>
 
       {/* Dialog conferma reinvio email */}

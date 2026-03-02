@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, Scale, Users, Clock, Shield } from "lucide-react"
+import { ArrowLeft, ChevronRight, Scale, Users, Clock, Shield, ToggleLeft } from "lucide-react"
 
 const settingsItems = [
   { 
@@ -15,6 +15,12 @@ const settingsItems = [
     label: "Impostazioni Scadenza Gift Card", 
     icon: Clock, 
     description: "Configura durata e tipo di scadenza delle Gift Card"
+  },
+  { 
+    href: "/admin/settings/feature-flags", 
+    label: "Feature Flags", 
+    icon: ToggleLeft, 
+    description: "Abilita/disabilita funzionalità del sito"
   },
   { 
     href: "/admin/settings/policies", 

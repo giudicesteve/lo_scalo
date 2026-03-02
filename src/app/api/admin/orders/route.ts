@@ -5,16 +5,24 @@ import { centsToEuro } from "@/lib/utils/currency";
 // Order status type matching the database schema
 type OrderStatus = "PENDING_PAYMENT" | "COMPLETED" | "DELIVERED" | "CANCELLED";
 
-// GET - Lista ordini (se archived non specificato, restituisce tutti)
+// GET - Lista ordini con paginazione
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const archivedParam = searchParams.get("archived");
     const statusParam = searchParams.get("status");
+    const searchParam = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
 
     const where: {
       isArchived?: boolean;
       status?: OrderStatus;
+      OR?: Array<{
+        orderNumber?: { contains: string; mode: "insensitive" };
+        email?: { contains: string; mode: "insensitive" };
+        phone?: { contains: string; mode: "insensitive" };
+      }>;
     } = {};
 
     // Se archived è specificato, filtra, altrimenti restituisci tutti
@@ -35,9 +43,23 @@ export async function GET(req: Request) {
       }
     }
 
+    // Ricerca testuale
+    if (searchParam) {
+      where.OR = [
+        { orderNumber: { contains: searchParam, mode: "insensitive" } },
+        { email: { contains: searchParam, mode: "insensitive" } },
+        { phone: { contains: searchParam, mode: "insensitive" } },
+      ];
+    }
+
+    // Get total count for pagination
+    const totalCount = await prisma.order.count({ where });
+
     const orders = await prisma.order.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         items: {
           include: {
@@ -91,7 +113,15 @@ export async function GET(req: Request) {
       refundedTotal: centsToEuro(order.refunds.reduce((sum, r) => sum + r.totalRefunded, 0)),
     }));
 
-    return NextResponse.json(transformedOrders);
+    return NextResponse.json({
+      orders: transformedOrders,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch orders" },

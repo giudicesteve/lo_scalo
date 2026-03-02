@@ -19,19 +19,20 @@ import {
   Menu,
   X,
   Settings,
+  Gift,
 } from "lucide-react"
 
-const menuItems = [
-  { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
-  { href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet },
-  { href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard },
-  { href: "/admin/accounting", label: "Contabilità", icon: Calculator },
-]
+// Feature flag keys
+const FEATURE_FLAGS = {
+  SHOP_ENABLED: "SHOP_ENABLED",
+  GIFT_CARDS_ENABLED: "GIFT_CARDS_ENABLED",
+  GIFT_CARDS_POS_ENABLED: "GIFT_CARDS_POS_ENABLED",
+  MENU_ENABLED: "MENU_ENABLED",
+}
 
-const menuItems2 = [
-  { href: "/admin/menu", label: "Menu", icon: Wine },
-  { href: "/admin/shop", label: "Negozio", icon: Store },
-]
+interface FeatureFlags {
+  [key: string]: boolean;
+}
 
 
 export default function AdminLayout({
@@ -43,12 +44,27 @@ export default function AdminLayout({
   const pathname = usePathname()
   const [canManageAdmins, setCanManageAdmins] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({})
 
   useEffect(() => {
     // Verifica se l'admin può gestire altri admin
     fetch("/api/admin/admins")
       .then(res => res.ok ? setCanManageAdmins(true) : setCanManageAdmins(false))
       .catch(() => setCanManageAdmins(false))
+    
+    // Carica feature flags
+    fetch("/api/feature-flags")
+      .then(res => res.json())
+      .then(data => {
+        if (data.flags) {
+          const flagsMap = data.flags.reduce((acc: FeatureFlags, flag: { key: string; enabled: boolean }) => {
+            acc[flag.key] = flag.enabled;
+            return acc;
+          }, {});
+          setFeatureFlags(flagsMap);
+        }
+      })
+      .catch(err => console.error("Error fetching feature flags:", err));
   }, [])
 
   const handleSignOut = () => {
@@ -61,6 +77,24 @@ export default function AdminLayout({
     // Close mobile menu on navigation
     setIsMobileMenuOpen(false)
   }, [pathname])
+
+  // Menu items dinamici basati sui feature flags
+  // Mostra "Gestione Gift Card" solo se almeno uno dei due flag è abilitato
+  const showGiftCardManagement = featureFlags[FEATURE_FLAGS.GIFT_CARDS_ENABLED] !== false || 
+                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false;
+
+  const menuItems = [
+    { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet }] : []),
+    ...(featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ? [{ href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard }] : []),
+    { href: "/admin/accounting", label: "Contabilità", icon: Calculator },
+  ];
+
+  const menuItems2 = [
+    ...(featureFlags[FEATURE_FLAGS.MENU_ENABLED] !== false ? [{ href: "/admin/menu", label: "Menu", icon: Wine }] : []),
+    ...(featureFlags[FEATURE_FLAGS.SHOP_ENABLED] !== false ? [{ href: "/admin/shop", label: "Negozio", icon: Store }] : []),
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Tagli Gift Card", icon: Gift }] : []),
+  ];
 
   return (
     <div className="min-h-screen bg-brand-cream">

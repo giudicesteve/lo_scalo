@@ -2,29 +2,74 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
 
-// GET - Lista tutte le gift card con transazioni
-// Usa searchParams per forzare comportamento dinamico (no cache)
+// GET - Lista gift card con paginazione e filtri per tab
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const archivedParam = searchParams.get("archived");
-    const activeParam = searchParams.get("active");
+    const tab = searchParams.get("tab"); // "active" | "exhausted" | "unavailable"
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
 
-    const where: { isArchived?: boolean; isActive?: boolean } = {};
+    // Build where clause
+    const where: {
+      remainingValue?: { gt?: number; equals?: number };
+      isExpired?: boolean;
+      isSoftDeleted?: boolean;
+      OR?: Array<{
+        isExpired?: boolean;
+        isSoftDeleted?: boolean;
+      }>;
+      AND?: Array<{
+        OR?: Array<{
+          code?: { contains: string; mode: "insensitive" };
+          order?: {
+            email?: { contains: string; mode: "insensitive" };
+            orderNumber?: { contains: string; mode: "insensitive" };
+            phone?: { contains: string; mode: "insensitive" };
+          };
+        }>;
+      }>;
+    } = {};
 
-    // Se archived è specificato, filtra
-    if (archivedParam !== null) {
-      where.isArchived = archivedParam === "true";
+    // Filtro per tab
+    if (tab === "active") {
+      // Attive: ha credito residuo (> 0), non scadute, non cancellate
+      where.remainingValue = { gt: 0 };
+      where.isExpired = false;
+      where.isSoftDeleted = false;
+    } else if (tab === "exhausted") {
+      // Credito esaurito: credito 0, non scadute, non cancellate
+      where.remainingValue = { equals: 0 };
+      where.isExpired = false;
+      where.isSoftDeleted = false;
+    } else if (tab === "unavailable") {
+      // Non Disponibili: scadute OPPURE cancellate (soft deleted)
+      where.OR = [{ isExpired: true }, { isSoftDeleted: true }];
     }
 
-    // Se active è specificato, filtra
-    if (activeParam !== null) {
-      where.isActive = activeParam === "true";
+    // Ricerca testuale
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            { code: { contains: search, mode: "insensitive" } },
+            { order: { email: { contains: search, mode: "insensitive" } } },
+            { order: { orderNumber: { contains: search, mode: "insensitive" } } },
+            { order: { phone: { contains: search, mode: "insensitive" } } },
+          ],
+        },
+      ];
     }
+
+    // Get total count
+    const totalCount = await prisma.giftCard.count({ where });
 
     const giftCards = await prisma.giftCard.findMany({
-      where: Object.keys(where).length > 0 ? where : undefined,
+      where,
       orderBy: { purchasedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         order: {
           select: { email: true, orderNumber: true, phone: true },
@@ -46,7 +91,15 @@ export async function GET(req: Request) {
       })),
     }));
     
-    return NextResponse.json(transformedGiftCards);
+    return NextResponse.json({
+      giftCards: transformedGiftCards,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch gift cards" },

@@ -1,9 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import NextImage from "next/image"
 import { QRScanner } from "@/components/QRScanner"
+import { Pagination } from "@/components/pagination/Pagination"
 import {
   ArrowLeft,
   Search,
@@ -22,6 +23,10 @@ import {
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
+
+const ITEMS_PER_PAGE = 50
+const MIN_SEARCH_LENGTH = 4
+const SEARCH_DEBOUNCE_MS = 300
 
 // Helper to parse number with both comma and dot as decimal separator
 const parseNumber = (value: string): number => {
@@ -65,7 +70,40 @@ export default function AdminGiftCardsPage() {
   const [giftCards, setGiftCards] = useState<GiftCard[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"active" | "exhausted" | "unavailable">("active")
+  
+  // Pagination state per tab
+  const [pagination, setPagination] = useState({
+    active: { page: 1, total: 0 },
+    exhausted: { page: 1, total: 0 },
+    unavailable: { page: 1, total: 0 },
+  })
+  
+  // Cache per le pagine già caricate: chiave = "tab-page-search"
+  const [giftCardsCache, setGiftCardsCache] = useState<Record<string, { giftCards: GiftCard[]; total: number; timestamp: number }>>({})
+  const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minuti di validità cache
+
+  // Debounce per la ricerca: attende 1 secondo dopo l'ultimo carattere digitato
+  useEffect(() => {
+    // Se la query è vuota o ha meno di 4 caratteri, resetta subito
+    if (searchQuery.length > 0 && searchQuery.length < MIN_SEARCH_LENGTH) {
+      setDebouncedSearchQuery("")
+      return
+    }
+    
+    // Se ha almeno 4 caratteri, attendi 1 secondo
+    if (searchQuery.length >= MIN_SEARCH_LENGTH) {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery)
+      }, SEARCH_DEBOUNCE_MS)
+      
+      return () => clearTimeout(timer)
+    } else {
+      setDebouncedSearchQuery("")
+    }
+  }, [searchQuery])
+  
   const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null)
   const [useAmount, setUseAmount] = useState("")
   const [useNote, setUseNote] = useState("")
@@ -77,6 +115,97 @@ export default function AdminGiftCardsPage() {
   const [showScanner, setShowScanner] = useState(false)
   const [fullscreenImage, setFullscreenImage] = useState<{url: string, receiptNumber: string | null} | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{transactionId: string, giftCardId: string} | null>(null)
+
+  // Fetch gift cards con paginazione server-side e caching
+  // Usa ref per evitare dipendenze circolari
+  const paginationRef = useRef(pagination)
+  paginationRef.current = pagination
+  const giftCardsCacheRef = useRef(giftCardsCache)
+  giftCardsCacheRef.current = giftCardsCache
+  
+  const fetchGiftCards = useCallback(async (
+    targetTab?: "active" | "exhausted" | "unavailable", 
+    targetPage?: number,
+    forceRefresh = false
+  ) => {
+    const tab = targetTab || activeTab
+    const page = targetPage || paginationRef.current[tab].page
+    const search = debouncedSearchQuery.trim()
+    
+    // Genera chiave cache
+    const cacheKey = `${tab}-${page}-${search}`
+    const cached = giftCardsCacheRef.current[cacheKey]
+    const now = Date.now()
+    
+    // Se in cache e non scaduto e non forzato, usa cache
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+      setGiftCards(cached.giftCards)
+      setPagination(prev => ({
+        ...prev,
+        [tab]: { page, total: cached.total }
+      }))
+      setLoading(false)
+      return
+    }
+    
+    try {
+      const params = new URLSearchParams()
+      params.set("tab", tab)
+      params.set("page", page.toString())
+      params.set("limit", ITEMS_PER_PAGE.toString())
+      
+      // Ricerca
+      if (search) {
+        params.set("search", search)
+      }
+      
+      const res = await fetch(`/api/admin/gift-cards?${params.toString()}`)
+      const data = await res.json()
+      
+      if (data.giftCards) {
+        setGiftCards(data.giftCards)
+        if (data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            [tab]: {
+              page: data.pagination.page,
+              total: data.pagination.totalCount,
+            }
+          }))
+          
+          // Salva in cache
+          setGiftCardsCache(prev => ({
+            ...prev,
+            [cacheKey]: {
+              giftCards: data.giftCards,
+              total: data.pagination.totalCount,
+              timestamp: Date.now(),
+            }
+          }))
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching gift cards:", error)
+      setGiftCards([])
+    } finally {
+      setLoading(false)
+    }
+  }, [activeTab, debouncedSearchQuery])
+  
+  // Invalida cache quando si fanno azioni che modificano i dati
+  const clearGiftCardsCache = useCallback((targetTab?: "active" | "exhausted" | "unavailable") => {
+    if (targetTab) {
+      setGiftCardsCache(prev => {
+        const newCache = { ...prev }
+        Object.keys(newCache).forEach(key => {
+          if (key.startsWith(`${targetTab}-`)) delete newCache[key]
+        })
+        return newCache
+      })
+    } else {
+      setGiftCardsCache({})
+    }
+  }, [])
 
   // Funzione per comprimere immagine e convertire in base64
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> => {
@@ -138,30 +267,19 @@ export default function AdminGiftCardsPage() {
     }
   }
 
+  // Carica gift cards quando cambia tab o ricerca (debounced) - la pagina è gestita separatamente
   useEffect(() => {
     fetchGiftCards()
-  }, [])
+  }, [activeTab, debouncedSearchQuery, fetchGiftCards])
 
-  // Ricarica quando la pagina prende focus (utente torna sulla tab)
+  // Ricarica quando la pagina prende focus (utente torna sulla tab) - usa cache
   useEffect(() => {
     const handleFocus = () => {
       fetchGiftCards()
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [])
-
-  const fetchGiftCards = async () => {
-    try {
-      const res = await fetch("/api/admin/gift-cards")
-      const data = await res.json()
-      setGiftCards(data)
-      setLoading(false)
-    } catch (error) {
-      console.error("Error fetching gift cards:", error)
-      setLoading(false)
-    }
-  }
+  }, [fetchGiftCards])
 
   const handleUseGiftCard = async () => {
     if (!selectedGiftCard || !useAmount || parseNumber(useAmount) <= 0) {
@@ -213,13 +331,22 @@ export default function AdminGiftCardsPage() {
         setReceiptNumber("")
         setReceiptImage(null)
         setUseSuccess(`Utilizzo registrato! Nuovo residuo: ${data.remainingValue.toFixed(2)}€`)
-        // Aggiorna la gift card selezionata
-        const updatedCard = await fetch("/api/admin/gift-cards").then((r) => r.json())
-        const card = updatedCard.find((c: GiftCard) => c.id === selectedGiftCard.id)
-        if (card) {
-          setSelectedGiftCard(card)
-        }
-        fetchGiftCards()
+        // Aggiorna la gift card selezionata localmente
+        setSelectedGiftCard(prev => prev ? {
+          ...prev,
+          remainingValue: data.remainingValue,
+          transactions: [{
+            id: data.transactionId || 'temp',
+            amount: amount,
+            type: 'USAGE',
+            note: useNote.trim() || null,
+            receiptNumber: receiptNumber.trim(),
+            receiptImage: receiptImage,
+            createdAt: new Date().toISOString()
+          }, ...prev.transactions]
+        } : null)
+        clearGiftCardsCache() // Invalida cache dopo utilizzo
+        fetchGiftCards(undefined, undefined, true)
       } else {
         setUseError(data.error || "Errore durante l'utilizzo")
       }
@@ -250,18 +377,12 @@ export default function AdminGiftCardsPage() {
       )
 
       if (res.ok) {
+        // Chiudi la gift card selezionata per forzare il refresh dei dati alla riapertura
         if (selectedGiftCard?.id === giftCardId) {
-          const updatedCard = await fetch("/api/admin/gift-cards").then((r) =>
-            r.json()
-          )
-          const card = updatedCard.find((c: GiftCard) => c.id === giftCardId)
-          if (card) {
-            setSelectedGiftCard(card)
-          } else {
-            setSelectedGiftCard(null)
-          }
+          setSelectedGiftCard(null)
         }
-        fetchGiftCards()
+        clearGiftCardsCache() // Invalida cache dopo eliminazione
+        fetchGiftCards(undefined, undefined, true)
       } else {
         alert("Errore durante l'eliminazione")
       }
@@ -608,89 +729,52 @@ export default function AdminGiftCardsPage() {
     window.URL.revokeObjectURL(url)
   }
 
-  // Conta gift card attive, credito esaurito e non disponibili (scadute/cancellate)
-  const activeCount = giftCards.filter((gc) => gc.remainingValue > 0).length
-  const exhaustedCount = giftCards.filter((gc) => gc.remainingValue === 0 && !gc.isExpired && !gc.isSoftDeleted).length
-  const unavailableCount = giftCards.filter((gc) => gc.isExpired || gc.isSoftDeleted).length
-
-  // Funzione per cercare gift card che matchano la query (in tutti i tab)
-  const searchAllGiftCards = useCallback((query: string) => {
-    const lowerQuery = query.toLowerCase().trim()
-    if (!lowerQuery) return { active: [], exhausted: [], unavailable: [] }
-    
-    const active = giftCards.filter(
-      (gc) => gc.remainingValue > 0 && (
-        gc.code.toLowerCase().includes(lowerQuery) ||
-        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
-        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
-        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
-      )
-    )
-    
-    const exhausted = giftCards.filter(
-      (gc) => gc.remainingValue === 0 && !gc.isExpired && !gc.isSoftDeleted && (
-        gc.code.toLowerCase().includes(lowerQuery) ||
-        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
-        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
-        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
-      )
-    )
-
-    const unavailable = giftCards.filter(
-      (gc) => (gc.isExpired || gc.isSoftDeleted) && (
-        gc.code.toLowerCase().includes(lowerQuery) ||
-        gc.order?.email?.toLowerCase().includes(lowerQuery) ||
-        gc.order?.orderNumber?.toLowerCase().includes(lowerQuery) ||
-        (gc.order?.phone && gc.order.phone?.toLowerCase().includes(lowerQuery))
-      )
-    )
-    
-    return { active, exhausted, unavailable }
-  }, [giftCards])
-
-  // Auto-switch tab quando la ricerca trova risultati solo in un altro tab
+  // Reset pagina a 1 quando cambia il tab
   useEffect(() => {
-    if (!searchQuery.trim()) return
-    
-    const { active, exhausted, unavailable } = searchAllGiftCards(searchQuery)
-    
-    const currentTabResults = 
-      activeTab === "active" ? active : 
-      activeTab === "exhausted" ? exhausted : 
-      unavailable
-    
-    // Se non ci sono risultati nel tab attivo ma ci sono in un altro, switcha
-    if (currentTabResults.length === 0) {
-      if (active.length > 0) setActiveTab("active")
-      else if (exhausted.length > 0) setActiveTab("exhausted")
-      else if (unavailable.length > 0) setActiveTab("unavailable")
-    }
-  }, [searchQuery, activeTab, searchAllGiftCards])
+    setPagination(prev => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], page: 1 }
+    }))
+  }, [activeTab])
 
-  // Gift card filtrate per il tab attivo
-  const filteredGiftCards = giftCards
-    .filter((gc) => {
-      if (activeTab === "active") {
-        // Attive: ha credito residuo
-        return gc.remainingValue > 0
-      } else if (activeTab === "exhausted") {
-        // Credito esaurito: credito 0, non scaduta, non cancellata
-        return gc.remainingValue === 0 && !gc.isExpired && !gc.isSoftDeleted
-      } else {
-        // unavailable: scadute o cancellate (soft deleted)
-        return gc.isExpired || gc.isSoftDeleted
+  // Fetch totali per tutti i tab (per i badge) - solo al mount, una sola chiamata
+  useEffect(() => {
+    const fetchTotals = async () => {
+      try {
+        const res = await fetch("/api/admin/gift-cards/counts")
+        if (res.ok) {
+          const data = await res.json()
+          setPagination(prev => ({
+            active: { ...prev.active, total: data.active || 0 },
+            exhausted: { ...prev.exhausted, total: data.exhausted || 0 },
+            unavailable: { ...prev.unavailable, total: data.unavailable || 0 },
+          }))
+        }
+      } catch (error) {
+        console.error("Error fetching totals:", error)
       }
-    })
-    .filter(
-      (gc) =>
-        gc.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gc.order?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gc.order?.orderNumber
-          ?.toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        (gc.order?.phone &&
-          gc.order?.phone?.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    }
+    
+    fetchTotals()
+  }, [])
+
+  // Conta gift card per ogni tab (dai totali)
+  const activeCount = pagination.active.total
+  const exhaustedCount = pagination.exhausted.total
+  const unavailableCount = pagination.unavailable.total
+  
+  // Current page e total pages
+  const currentPage = pagination[activeTab].page
+  const totalPages = Math.ceil(pagination[activeTab].total / ITEMS_PER_PAGE)
+  
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], page: newPage }
+    }))
+    // Chiama fetchGiftCards direttamente con la nuova pagina
+    fetchGiftCards(undefined, newPage)
+  }
 
   if (loading) {
     return (
@@ -740,7 +824,7 @@ export default function AdminGiftCardsPage() {
             {/* Bottoni azione */}
             <div className="flex gap-2">
               <button
-                onClick={() => fetchGiftCards()}
+                onClick={() => fetchGiftCards(undefined, undefined, true)}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-light-gray rounded-xl text-brand-primary hover:bg-brand-primary/5 transition-colors"
                 title="Aggiorna"
               >
@@ -796,9 +880,18 @@ export default function AdminGiftCardsPage() {
           </button>
         </div>
 
+        {/* Pagination Top */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination[activeTab].total}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+
         {/* Gift Cards List */}
         <div className="space-y-4">
-          {filteredGiftCards.map((gc) => {
+          {giftCards.map((gc) => {
             const usedValue = gc.initialValue - gc.remainingValue
             return (
               <button
@@ -913,13 +1006,22 @@ export default function AdminGiftCardsPage() {
             )
           })}
 
-          {filteredGiftCards.length === 0 && (
+          {giftCards.length === 0 && (
             <p className="text-center text-brand-gray py-12">
               Nessuna gift card {" "}
               {activeTab === "active" ? "attiva" : activeTab === "exhausted" ? "con credito esaurito" : "non disponibile"} trovata
             </p>
           )}
         </div>
+
+        {/* Pagination Bottom */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={pagination[activeTab].total}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       </div>
 
       {/* Modal Completa Gift Card */}
