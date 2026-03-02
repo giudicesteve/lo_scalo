@@ -1233,13 +1233,15 @@ export default function AdminGiftCardsPage() {
                               </p>
                             )}
                           </div>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction.id, selectedGiftCard.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors flex-shrink-0 ml-2"
-                            title="Elimina transazione e ripristina credito"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {!selectedGiftCard.isExpired && !selectedGiftCard.isSoftDeleted && (
+                            <button
+                              onClick={() => handleDeleteTransaction(transaction.id, selectedGiftCard.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors flex-shrink-0 ml-2"
+                              title="Elimina transazione e ripristina credito"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                         
                         {/* Foto Scontrino */}
@@ -1268,7 +1270,11 @@ export default function AdminGiftCardsPage() {
               {/* Info Automatica */}
               <div className="pt-4 border-t border-brand-light-gray">
                 <p className="text-label-sm text-brand-gray text-center">
-                  {selectedGiftCard.isArchived 
+                  {selectedGiftCard.isExpired 
+                    ? "Gift card scaduta. Le transazioni non possono essere modificate."
+                    : selectedGiftCard.isSoftDeleted
+                    ? "Gift card cancellata. Le transazioni non possono essere modificate."
+                    : selectedGiftCard.isArchived 
                     ? "Gift card archiviata automaticamente per credito esaurito. Elimina una transazione per ripristinare il credito."
                     : "La gift card verrà archiviata automaticamente quando il credito sarà esaurito."
                   }
