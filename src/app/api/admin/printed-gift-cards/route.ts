@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
     if (groupByBatch) {
       // Recupera tutti i codici non usati con batchId
       const cards = await prisma.printedGiftCard.findMany({
-        where: { ...where, used: false, batchId: { not: null } },
+        where: { 
+          used: false, 
+          batchId: { not: null } 
+        },
         orderBy: { createdAt: "desc" },
       });
 
