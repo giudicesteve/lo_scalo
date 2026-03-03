@@ -236,6 +236,7 @@ enum GiftCardExpiryTime {
 enum OrderSource {
   ONLINE
   MANUAL
+  CARTACEA
 }
 
 enum PolicyType {
@@ -292,4 +293,24 @@ enum RefundMethod {
   STRIPE
   CASH
   POS
+}
+
+// Modello per Gift Card cartacee (da stampare)
+model PrintedGiftCard {
+  id          String   @id @default(cuid())
+  code        String   @unique  // PG + 12 chars (es: PGA39BWM7PH2K)
+  value       Int               // Valore in cents
+  used        Boolean  @default(false)
+  usedAt      DateTime?
+  usedBy      String?           // Admin che l'ha attivata
+  
+  // Riferimenti quando attivata
+  orderId     String?
+  giftCardId  String?
+  
+  createdAt   DateTime @default(now())
+  createdBy   String
+  
+  @@index([code])
+  @@index([used])
 }

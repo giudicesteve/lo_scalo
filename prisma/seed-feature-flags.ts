@@ -64,6 +64,12 @@ const defaultFlags = [
     description: "Abilita sezione/link dove siamo",
     enabled: true,
   },
+  {
+    key: "PRINTED_GIFT_CARDS",
+    name: "Gift Card Cartacee",
+    description: "Abilita generazione e gestione gift card da stampare",
+    enabled: false, // Default disabilitato
+  },
 ];
 
 async function seedFeatureFlags() {

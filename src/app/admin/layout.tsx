@@ -20,6 +20,7 @@ import {
   X,
   Settings,
   Gift,
+  Printer,
 } from "lucide-react"
 
 // Feature flag keys
@@ -28,6 +29,7 @@ const FEATURE_FLAGS = {
   GIFT_CARDS_ENABLED: "GIFT_CARDS_ENABLED",
   GIFT_CARDS_POS_ENABLED: "GIFT_CARDS_POS_ENABLED",
   MENU_ENABLED: "MENU_ENABLED",
+  PRINTED_GIFT_CARDS: "PRINTED_GIFT_CARDS",
 }
 
 interface FeatureFlags {
@@ -87,6 +89,7 @@ export default function AdminLayout({
     { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },
     ...(showGiftCardManagement ? [{ href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet }] : []),
     ...(featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ? [{ href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard }] : []),
+    ...(featureFlags[FEATURE_FLAGS.PRINTED_GIFT_CARDS] === true ? [{ href: "/admin/printed-gift-cards", label: "Gift Card Cartacee", icon: Printer }] : []),
     { href: "/admin/accounting", label: "Contabilità", icon: Calculator },
   ];
 
