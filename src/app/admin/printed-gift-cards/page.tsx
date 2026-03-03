@@ -39,6 +39,14 @@ interface Stats {
   valueBreakdown: ValueBreakdown[];
 }
 
+interface Batch {
+  batchId: string;
+  value: number;
+  count: number;
+  createdAt: string;
+  codes: string[];
+}
+
 const QUANTITIES = [10, 25, 50, 100, 200, 500, 1000];
 const VALUES = [10, 20, 25, 50, 100, 150, 200];
 
@@ -49,6 +57,7 @@ export default function PrintedGiftCardsPage() {
   
   const [cards, setCards] = useState<PrintedCard[]>([]);
   const [stats, setStats] = useState<Stats>({ totalUnused: 0, valueBreakdown: [] });
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
@@ -111,11 +120,20 @@ export default function PrintedGiftCardsPage() {
 
   const fetchCards = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/printed-gift-cards?used=false");
-      if (!response.ok) throw new Error("Failed to fetch");
-      const data = await response.json();
-      setCards(data.cards);
-      setStats(data.stats);
+      const [cardsRes, batchesRes] = await Promise.all([
+        fetch("/api/admin/printed-gift-cards?used=false"),
+        fetch("/api/admin/printed-gift-cards?groupByBatch=true"),
+      ]);
+      
+      if (!cardsRes.ok) throw new Error("Failed to fetch cards");
+      if (!batchesRes.ok) throw new Error("Failed to fetch batches");
+      
+      const cardsData = await cardsRes.json();
+      const batchesData = await batchesRes.json();
+      
+      setCards(cardsData.cards);
+      setStats(cardsData.stats);
+      setBatches(batchesData.batches || []);
     } catch (error) {
       console.error("Error fetching cards:", error);
       showToast("Errore nel caricamento", "error");
@@ -301,15 +319,13 @@ export default function PrintedGiftCardsPage() {
         {/* Statistiche - Disponibili per Taglia */}
         <section className="bg-white rounded-2xl p-6 shadow-card">
           <h2 className="text-headline-sm font-bold text-brand-dark mb-4">
-            Codici Disponibili per Taglia
+            Riepilogo per Taglia
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
             {stats.valueBreakdown.map((item) => (
-              <button
+              <div
                 key={item.value}
-                onClick={() => handleDownloadByValue(item.value / 100)}
-                className="bg-brand-cream rounded-xl p-3 text-center hover:bg-brand-primary/10 transition-colors group relative"
-                title={`Scarica CSV codici da €${(item.value / 100).toFixed(0)}`}
+                className="bg-brand-cream rounded-xl p-3 text-center"
               >
                 <p className="text-headline-sm font-bold text-brand-dark">
                   {item.count}
@@ -317,8 +333,7 @@ export default function PrintedGiftCardsPage() {
                 <p className="text-label-sm text-brand-gray">
                   €{(item.value / 100).toFixed(0)}
                 </p>
-                <Download className="w-4 h-4 text-brand-primary opacity-0 group-hover:opacity-100 absolute top-2 right-2 transition-opacity" />
-              </button>
+              </div>
             ))}
             {stats.valueBreakdown.length === 0 && (
               <p className="text-body-sm text-brand-gray col-span-full text-center py-4">
@@ -326,8 +341,60 @@ export default function PrintedGiftCardsPage() {
               </p>
             )}
           </div>
-          <p className="text-label-sm text-brand-gray mt-4 text-center">
+          <p className="text-label-sm text-brand-gray text-center border-t border-brand-light-gray pt-3">
             Totale: <strong>{stats.totalUnused}</strong> codici disponibili
+          </p>
+        </section>
+
+        {/* Batch di Produzione - Lista Scrollabile */}
+        <section className="bg-white rounded-2xl p-6 shadow-card">
+          <h2 className="text-headline-sm font-bold text-brand-dark mb-4">
+            Batch di Produzione
+          </h2>
+          <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
+            {batches.length === 0 ? (
+              <p className="text-body-sm text-brand-gray text-center py-8">
+                Nessun batch disponibile
+              </p>
+            ) : (
+              batches.map((batch) => (
+                <div
+                  key={batch.batchId}
+                  className="bg-brand-cream rounded-xl p-4 flex items-center justify-between"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-headline-sm font-bold text-brand-dark">
+                        €{(batch.value / 100).toFixed(0)}
+                      </span>
+                      <span className="text-label-sm text-brand-gray">
+                        {batch.count} codici
+                      </span>
+                    </div>
+                    <p className="text-label-xs text-brand-gray">
+                      {new Date(batch.createdAt).toLocaleDateString("it-IT", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.open(`/api/admin/printed-gift-cards/csv?batchId=${batch.batchId}`, "_blank")}
+                    className="ml-3 px-4 py-2 rounded-lg bg-white border border-brand-light-gray text-brand-primary hover:bg-brand-primary hover:text-white transition-all flex items-center gap-2 flex-shrink-0"
+                    title="Scarica CSV batch"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-label-sm hidden sm:inline">CSV</span>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+          <p className="text-label-xs text-brand-gray mt-3 text-center">
+            {batches.length} batch disponibili
           </p>
         </section>
 

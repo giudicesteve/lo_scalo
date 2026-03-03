@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const used = searchParams.get("used");
     const value = searchParams.get("value");
+    const groupByBatch = searchParams.get("groupByBatch") === "true";
 
     const where: any = {};
     if (used !== null) {
@@ -32,6 +33,48 @@ export async function GET(request: NextRequest) {
     }
     if (value) {
       where.value = parseInt(value) * 100; // Converti euro in cents
+    }
+
+    // Se richiesto, raggruppa per batch
+    if (groupByBatch) {
+      // Recupera tutti i codici non usati con batchId
+      const cards = await prisma.printedGiftCard.findMany({
+        where: { ...where, used: false, batchId: { not: null } },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Raggruppa per batchId
+      const batchMap = new Map<string, {
+        batchId: string;
+        value: number;
+        count: number;
+        createdAt: Date;
+        codes: string[];
+      }>();
+
+      for (const card of cards) {
+        if (!card.batchId) continue;
+        
+        if (!batchMap.has(card.batchId)) {
+          batchMap.set(card.batchId, {
+            batchId: card.batchId,
+            value: card.value,
+            count: 0,
+            createdAt: card.createdAt,
+            codes: [],
+          });
+        }
+        
+        const batch = batchMap.get(card.batchId)!;
+        batch.count++;
+        batch.codes.push(card.code);
+      }
+
+      const batches = Array.from(batchMap.values()).sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
+
+      return NextResponse.json({ batches });
     }
 
     const cards = await prisma.printedGiftCard.findMany({
@@ -111,6 +154,9 @@ export async function POST(request: NextRequest) {
 
     const valueInCents = Math.round(value * 100);
 
+    // Genera un batch ID univoco per questo gruppo di codici
+    const batchId = `BATCH-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
     // Genera i codici
     const generatedCards = [];
     for (let i = 0; i < quantity; i++) {
@@ -120,6 +166,7 @@ export async function POST(request: NextRequest) {
         data: {
           code,
           value: valueInCents,
+          batchId,
           createdBy: admin.email,
         },
       });

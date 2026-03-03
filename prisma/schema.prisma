@@ -308,9 +308,13 @@ model PrintedGiftCard {
   orderId     String?
   giftCardId  String?
   
+  // Batch di produzione
+  batchId     String?           // ID univoco del batch di generazione
+  
   createdAt   DateTime @default(now())
   createdBy   String
   
   @@index([code])
   @@index([used])
+  @@index([batchId])
 }

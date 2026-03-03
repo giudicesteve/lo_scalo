@@ -8,6 +8,7 @@ import { auth } from "@/auth";
  * Query params:
  * - value: filtra per valore (in euro, es: 50)
  * - includeUsed: se "true", include anche le card usate
+ * - batchId: scarica solo i codici di un batch specifico
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,11 +28,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const value = searchParams.get("value");
     const includeUsed = searchParams.get("includeUsed") === "true";
+    const batchId = searchParams.get("batchId");
 
     // Build where clause
     const where: any = {};
     
-    if (!includeUsed) {
+    if (batchId) {
+      // Se specificato batchId, prendi solo quel batch
+      where.batchId = batchId;
+    } else if (!includeUsed) {
       // Default: solo non usati
       where.used = false;
     }
@@ -79,8 +84,19 @@ export async function GET(request: NextRequest) {
     const bom = "\uFEFF"; // UTF-8 BOM
     const csv = bom + csvContent;
 
-    // Nome file con timestamp e valore se filtrato
+    // Nome file
     const timestamp = new Date().toISOString().split("T")[0];
+    if (batchId) {
+      const batchValue = cards[0]?.value ? `EUR${cards[0].value / 100}` : "BATCH";
+      const filename = `lo-scalo-${batchValue}-${batchId.split("-")[1] || timestamp}.csv`;
+      return new NextResponse(csv, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
+    
     const valueSuffix = value ? `-EUR${value}` : "";
     const filename = `lo-scalo-gift-cards${valueSuffix}-${timestamp}.csv`;
 
