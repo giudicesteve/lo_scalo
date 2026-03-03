@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect } from "react"
-import { CheckCircle, XCircle, X, AlertCircle } from "lucide-react"
+import { CheckCircle, XCircle, X, AlertCircle, AlertTriangle } from "lucide-react"
 
-export type ToastType = "success" | "error" | "info"
+export type ToastType = "success" | "error" | "info" | "warning"
 
 interface ToastProps {
   isOpen: boolean
@@ -36,13 +36,15 @@ export function Toast({
   const icons = {
     success: <CheckCircle className="w-5 h-5 text-green-500" />,
     error: <XCircle className="w-5 h-5 text-red-500" />,
-    info: <AlertCircle className="w-5 h-5 text-blue-500" />
+    info: <AlertCircle className="w-5 h-5 text-blue-500" />,
+    warning: <AlertTriangle className="w-5 h-5 text-amber-500" />
   }
 
   const bgColors = {
     success: "bg-white border-green-200",
     error: "bg-white border-red-200",
-    info: "bg-white border-blue-200"
+    info: "bg-white border-blue-200",
+    warning: "bg-white border-amber-200"
   }
 
   return (

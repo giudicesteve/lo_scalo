@@ -157,6 +157,34 @@ export default function PrintedGiftCardsPage() {
     }
   };
 
+  // Download CSV per valore specifico con check su codici usati
+  const handleDownloadByValue = async (valueEuro: number) => {
+    try {
+      // Fetch tutte le card di questo valore (incluse usate)
+      const response = await fetch(`/api/admin/printed-gift-cards?value=${valueEuro}`);
+      if (!response.ok) throw new Error("Failed to fetch");
+      
+      const data = await response.json();
+      const allCards: PrintedCard[] = data.cards || [];
+      
+      // Controlla se ci sono card usate
+      const usedCards = allCards.filter((c: PrintedCard) => c.used);
+      
+      if (usedCards.length > 0) {
+        showToast(
+          `Attenzione: ${usedCards.length} codice/i da €${valueEuro} risulta/nano già utilizzato/i. Il CSV includerà tutti i codici con indicazione dello stato.`,
+          "warning"
+        );
+      }
+      
+      // Scarica CSV con tutte le card (incluse usate)
+      window.open(`/api/admin/printed-gift-cards/csv?value=${valueEuro}&includeUsed=true`, "_blank");
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      showToast("Errore nel download del CSV", "error");
+    }
+  };
+
   // Cerca codice da attivare
   const searchCode = async (codeToSearch?: string) => {
     const searchValue = codeToSearch || activateCode;
@@ -275,9 +303,11 @@ export default function PrintedGiftCardsPage() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {stats.valueBreakdown.map((item) => (
-              <div
+              <button
                 key={item.value}
-                className="bg-brand-cream rounded-xl p-3 text-center"
+                onClick={() => handleDownloadByValue(item.value / 100)}
+                className="bg-brand-cream rounded-xl p-3 text-center hover:bg-brand-primary/10 transition-colors group relative"
+                title={`Scarica CSV codici da €${(item.value / 100).toFixed(0)}`}
               >
                 <p className="text-headline-sm font-bold text-brand-dark">
                   {item.count}
@@ -285,7 +315,8 @@ export default function PrintedGiftCardsPage() {
                 <p className="text-label-sm text-brand-gray">
                   €{(item.value / 100).toFixed(0)}
                 </p>
-              </div>
+                <Download className="w-4 h-4 text-brand-primary opacity-0 group-hover:opacity-100 absolute top-2 right-2 transition-opacity" />
+              </button>
             ))}
             {stats.valueBreakdown.length === 0 && (
               <p className="text-body-sm text-brand-gray col-span-full text-center py-4">
@@ -417,6 +448,7 @@ export default function PrintedGiftCardsPage() {
                       type="date"
                       value={activateExpiresAt}
                       onChange={(e) => setActivateExpiresAt(e.target.value)}
+                      title="Data di scadenza della Gift Card"
                       className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
                     />
                   </div>
