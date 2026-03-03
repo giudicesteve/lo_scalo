@@ -15,6 +15,19 @@ interface FeatureFlag {
   updatedBy: string | null
 }
 
+// Ordine di visualizzazione dei flag
+const FLAG_ORDER = [
+  "FRONTEND_ENABLED",
+  "SHOP_ENABLED",
+  "GIFT_CARDS_ENABLED",
+  "GIFT_CARDS_POS_ENABLED",
+  "PRINTED_GIFT_CARDS",
+  "MENU_ENABLED",
+  "STORY_ENABLED",
+  "PLAYLIST_ENABLED",
+  "LOCATION_ENABLED",
+]
+
 const flagLabels: Record<string, { name: string; description: string }> = {
   FRONTEND_ENABLED: {
     name: "Sito Pubblico",
@@ -30,7 +43,7 @@ const flagLabels: Record<string, { name: string; description: string }> = {
   },
   GIFT_CARDS_POS_ENABLED: {
     name: "Gift Cards POS",
-    description: "Abilita creazione gift cards in negozio (POS)",
+    description: "Abilita creazione gift cards digitali in negozio (POS)",
   },
   PRINTED_GIFT_CARDS: {
     name: "Gift Cards Cartacee",
@@ -212,7 +225,9 @@ export default function FeatureFlagsPage() {
 
         {/* Feature Flags List */}
         <div className="space-y-4">
-          {flags.map((flag) => {
+          {[...flags]
+            .sort((a, b) => FLAG_ORDER.indexOf(a.key) - FLAG_ORDER.indexOf(b.key))
+            .map((flag) => {
             const label = flagLabels[flag.key] || {
               name: flag.name,
               description: flag.description || "",
