@@ -32,6 +32,10 @@ const flagLabels: Record<string, { name: string; description: string }> = {
     name: "Gift Cards POS",
     description: "Abilita creazione gift cards in negozio (POS)",
   },
+  PRINTED_GIFT_CARDS: {
+    name: "Gift Cards Cartacee",
+    description: "Abilita generazione e gestione gift card da stampare",
+  },
   MENU_ENABLED: {
     name: "Menu",
     description: "Abilita sezione menu cocktail",
