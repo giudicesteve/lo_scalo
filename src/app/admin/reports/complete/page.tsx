@@ -52,11 +52,25 @@ export default function CompleteReportPage() {
   }
 
   const fetchAllData = async () => {
-    // Fetch orders
-    const ordersRes = await fetch("/api/admin/orders")
-    const ordersData: Order[] = await ordersRes.json()
+    // Fetch orders (con paginazione - prendi tutte le pagine)
+    const allOrders: Order[] = []
+    let page = 1
+    let hasMore = true
     
-    const filteredOrders = ordersData.filter(order => {
+    while (hasMore && page <= 10) { // Max 10 pagine (500 ordini) per sicurezza
+      const ordersRes = await fetch(`/api/admin/orders?page=${page}&limit=50`)
+      const ordersData = await ordersRes.json()
+      
+      if (!ordersData.orders || ordersData.orders.length === 0) {
+        hasMore = false
+      } else {
+        allOrders.push(...ordersData.orders)
+        hasMore = ordersData.pagination?.currentPage < ordersData.pagination?.totalPages
+        page++
+      }
+    }
+    
+    const filteredOrders = allOrders.filter(order => {
       if (!order.paidAt) return false
       const orderDate = new Date(order.paidAt)
       const isOnMonth = orderDate.getFullYear() === year && orderDate.getMonth() === month - 1
