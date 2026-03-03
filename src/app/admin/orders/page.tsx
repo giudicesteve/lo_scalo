@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, RotateCcwIcon, ArrowDownLeftFromCircle, LucideArrowUpCircle } from "lucide-react"
+import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, CreditCard, RotateCcwIcon, ArrowDownLeftFromCircle, LucideArrowUpCircle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
 import { Toast, useToast } from "@/components/Toast"
 import { RefundModal } from "@/components/admin/refunds"
@@ -37,7 +37,7 @@ interface Order {
   total: number
   createdAt: string
   isArchived: boolean
-  orderSource?: "ONLINE" | "MANUAL"
+  orderSource?: "ONLINE" | "MANUAL" | "CARTACEA"
   customerName?: string  // Usato per memorizzare metodo di pagamento per ordini POS
   stripePaymentId?: string
   stripePaymentIntentId?: string
@@ -547,6 +547,11 @@ export default function AdminOrdersPage() {
                         <span className="px-2 py-1 rounded-full text-label-sm bg-purple-100 text-purple-700 flex items-center gap-1">
                           <Store className="w-3 h-3" />
                           In negozio
+                        </span>
+                      ) : order.orderSource === "CARTACEA" ? (
+                        <span className="px-2 py-1 rounded-full text-label-sm bg-amber-100 text-amber-700 flex items-center gap-1">
+                          <CreditCard className="w-3 h-3" />
+                          Cartacea
                         </span>
                       ) : (
                         <span className="px-2 py-1 rounded-full text-label-sm bg-blue-100 text-blue-700 flex items-center gap-1">
