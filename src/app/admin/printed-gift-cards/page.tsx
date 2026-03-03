@@ -101,10 +101,10 @@ export default function PrintedGiftCardsPage() {
   }, [showToast]);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === "authenticated" && featureEnabled === true) {
       fetchCards();
     }
-  }, [status, fetchCards]);
+  }, [status, featureEnabled, fetchCards]);
 
   // Genera codici
   const handleGenerate = async () => {
@@ -212,7 +212,14 @@ export default function PrintedGiftCardsPage() {
   }
 
   if (featureEnabled === false) {
-    return null; // Redirect in corso
+    return (
+      <div className="min-h-screen bg-brand-cream flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-brand-gray">Feature non abilitata</p>
+          <p className="text-label-sm text-brand-gray mt-2">Redirect in corso...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
