@@ -8,8 +8,9 @@
 
 | Data | Task | Descrizione |
 |------|------|-------------|
+| 2026-03-03 | **Gift Card Cartacee** | Sistema PG: generazione CSV, attivazione, guida stampa PDF |
 | 2026-03-02 | **Paginazione** | 50 item/pagina per Ordini e Gift Cards, separata per tab |
-| 2026-03-02 | **Feature Flag System** | 8 flag configurabili, maintenance mode, menu admin dinamico |
+| 2026-03-02 | **Feature Flag System** | 9 flag configurabili, maintenance mode, menu admin dinamico |
 | 2026-03-02 | Tab Annullati Ordini | 3 tab in /admin/orders con auto-switch su ricerca |
 | 2026-03-02 | Gift Card Non Disponibili | Tab dedicato per GC scadute/cancellate |
 | 2026-03-01 | Contabilità con Rimborsi | Pagina rinnovata con ordini + rimborsi unificati |
