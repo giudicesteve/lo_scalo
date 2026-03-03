@@ -61,6 +61,7 @@ export default function PrintedGiftCardsPage() {
   const [activateCode, setActivateCode] = useState("");
   const [activateEmail, setActivateEmail] = useState("");
   const [activatePhone, setActivatePhone] = useState("");
+  const [activatePaymentMethod, setActivatePaymentMethod] = useState<"CASH" | "POS">("POS");
   const [activateExpiresAt, setActivateExpiresAt] = useState("");
   const [foundCard, setFoundCard] = useState<PrintedCard | null>(null);
   
@@ -213,7 +214,7 @@ export default function PrintedGiftCardsPage() {
 
   // Attiva codice
   const handleActivate = async () => {
-    if (!foundCard || !activateEmail) return;
+    if (!foundCard || !activateEmail || !activatePaymentMethod) return;
     
     setIsActivating(true);
     try {
@@ -224,6 +225,7 @@ export default function PrintedGiftCardsPage() {
           code: foundCard.code,
           email: activateEmail,
           phone: activatePhone,
+          paymentMethod: activatePaymentMethod,
           expiresAt: activateExpiresAt || null,
         }),
       });
@@ -434,6 +436,38 @@ export default function PrintedGiftCardsPage() {
                     placeholder="Telefono cliente"
                     className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
                   />
+                  
+                  {/* Metodo di pagamento */}
+                  <div>
+                    <label className="block text-label-sm text-brand-gray mb-2">
+                      Metodo di pagamento *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActivatePaymentMethod("POS")}
+                        className={`px-4 py-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                          activatePaymentMethod === "POS"
+                            ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
+                            : "border-brand-light-gray bg-white text-brand-dark hover:bg-brand-primary/5"
+                        }`}
+                      >
+                        <span className="font-medium">POS</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivatePaymentMethod("CASH")}
+                        className={`px-4 py-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+                          activatePaymentMethod === "CASH"
+                            ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
+                            : "border-brand-light-gray bg-white text-brand-dark hover:bg-brand-primary/5"
+                        }`}
+                      >
+                        <span className="font-medium">Contanti</span>
+                      </button>
+                    </div>
+                  </div>
+                  
                   <div>
                     <label className="block text-label-sm text-brand-gray mb-2">
                       Data scadenza (opzionale)

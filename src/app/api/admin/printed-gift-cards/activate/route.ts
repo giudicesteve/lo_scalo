@@ -24,12 +24,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { code, email, phone, expiresAt } = body;
+    const { code, email, phone, expiresAt, paymentMethod } = body;
 
     // Validazione
-    if (!code || !email) {
+    if (!code || !email || !paymentMethod) {
       return NextResponse.json(
-        { error: "Codice PG e email sono obbligatori" },
+        { error: "Codice PG, email e metodo di pagamento sono obbligatori" },
+        { status: 400 }
+      );
+    }
+
+    if (!["CASH", "POS"].includes(paymentMethod)) {
+      return NextResponse.json(
+        { error: "Metodo di pagamento non valido. Usa CASH o POS" },
         { status: 400 }
       );
     }
@@ -90,7 +97,8 @@ export async function POST(request: NextRequest) {
           email,
           phone: phone || null,
           total: printedCard.value,
-          orderSource: "CARTACEA",
+          orderSource: "MANUAL",
+          customerName: `Pagamento: ${paymentMethod === "CASH" ? "Contanti" : "POS"}`,
           paidAt: new Date(),
           lang: "it",
         },
