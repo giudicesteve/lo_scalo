@@ -28,45 +28,6 @@ const FLAG_ORDER = [
   "LOCATION_ENABLED",
 ]
 
-const flagLabels: Record<string, { name: string; description: string }> = {
-  FRONTEND_ENABLED: {
-    name: "Sito Pubblico",
-    description: "Se disabilitato, mostra solo logo e footer (maintenance mode)",
-  },
-  SHOP_ENABLED: {
-    name: "Negozio",
-    description: "Abilita sezione shop frontend e admin",
-  },
-  GIFT_CARDS_ENABLED: {
-    name: "Gift Cards",
-    description: "Abilita acquisto gift cards online",
-  },
-  GIFT_CARDS_POS_ENABLED: {
-    name: "Gift Cards POS",
-    description: "Abilita creazione gift cards digitali in negozio (POS)",
-  },
-  PRINTED_GIFT_CARDS: {
-    name: "Gift Cards Cartacee",
-    description: "Abilita generazione e gestione gift card da stampare",
-  },
-  MENU_ENABLED: {
-    name: "Menu",
-    description: "Abilita sezione menu cocktail",
-  },
-  STORY_ENABLED: {
-    name: "Storia",
-    description: "Abilita pagina storia del locale",
-  },
-  PLAYLIST_ENABLED: {
-    name: "Playlist",
-    description: "Abilita pagina playlist",
-  },
-  LOCATION_ENABLED: {
-    name: "Dove Siamo",
-    description: "Abilita sezione/link dove siamo",
-  },
-}
-
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -155,7 +116,7 @@ export default function FeatureFlagsPage() {
         prev.map((f) => (f.key === updatedFlag.key ? updatedFlag : f))
       )
       showToast(
-        `${flagLabels[flag.key]?.name || flag.name} ${
+        `${flag.name} ${
           updatedFlag.enabled ? "abilitato" : "disabilitato"
         }`,
         "success"
@@ -228,11 +189,6 @@ export default function FeatureFlagsPage() {
           {[...flags]
             .sort((a, b) => FLAG_ORDER.indexOf(a.key) - FLAG_ORDER.indexOf(b.key))
             .map((flag) => {
-            const label = flagLabels[flag.key] || {
-              name: flag.name,
-              description: flag.description || "",
-            }
-
             return (
               <div
                 key={flag.key}
@@ -242,7 +198,7 @@ export default function FeatureFlagsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <h2 className="text-title-md font-bold text-brand-dark">
-                        {label.name}
+                        {flag.name}
                       </h2>
                       <span
                         className={`px-2 py-0.5 text-label-sm rounded-full ${
@@ -255,7 +211,7 @@ export default function FeatureFlagsPage() {
                       </span>
                     </div>
                     <p className="text-body-sm text-brand-gray mb-3">
-                      {label.description}
+                      {flag.description || ""}
                     </p>
                     {flag.updatedBy && (
                       <p className="text-label-sm text-brand-gray/70">
@@ -275,7 +231,7 @@ export default function FeatureFlagsPage() {
                         : "bg-brand-light-gray"
                     }`}
                     role="switch"
-                    aria-checked={flag.enabled ? true : false}
+                    aria-checked={flag.enabled ? "true" : "false"}
                   >
                     {updating === flag.key ? (
                       <Loader2 className="w-4 h-4 text-brand-gray animate-spin mx-auto" />

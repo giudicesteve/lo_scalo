@@ -37,7 +37,7 @@ const defaultFlags = [
   {
     key: "GIFT_CARDS_POS_ENABLED",
     name: "Gift Cards POS",
-    description: "Abilita creazione gift cards in negozio (POS)",
+    description: "Abilita creazione gift cards digitali in negozio (POS)",
     enabled: true,
   },
   {
@@ -79,8 +79,9 @@ async function seedFeatureFlags() {
     await prisma.featureFlag.upsert({
       where: { key: flag.key },
       update: {
-        // Non sovrascrivere se il flag esiste già
-        // Mantieni lo stato attuale dell'utente
+        // Aggiorna sempre name e description, mantieni enabled
+        name: flag.name,
+        description: flag.description,
       },
       create: {
         key: flag.key,

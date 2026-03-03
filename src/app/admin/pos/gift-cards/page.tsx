@@ -203,7 +203,7 @@ export default function PosGiftCardPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Creazione Gift Card
+            Creazione Gift Card Digitale
           </h1>
         </div>
       </header>
@@ -216,7 +216,7 @@ export default function PosGiftCardPage() {
             </div>
             <div>
               <h2 className="text-title-lg font-bold text-brand-dark">
-                Creazione Gift Card
+                Creazione Gift Card Digitale
               </h2>
               <p className="text-body-sm text-brand-gray">
                 Pagamento in sede (Contanti/POS)

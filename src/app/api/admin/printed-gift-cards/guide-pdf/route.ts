@@ -176,11 +176,11 @@ export async function GET() {
     y -= 25;
 
     const errors = [
-      "❌ NON invertire i colori (QR bianco su sfondo scuro)",
-      "❌ NON comprimere troppo il QR (< 15x15mm finito)",
-      "❌ NON mettere grafica, testo o loghi sopra il QR",
-      "❌ NON usare carta lucida senza opacizzazione",
-      "❌ NON modificare il contenuto del QR (deve essere il codice PG esatto)",
+      "X NON invertire i colori (QR bianco su sfondo scuro)",
+      "X NON comprimere troppo il QR (< 15x15mm finito)",
+      "X NON mettere grafica, testo o loghi sopra il QR",
+      "X NON usare carta lucida senza opacizzazione",
+      "X NON modificare il contenuto del QR (deve essere il codice PG esatto)",
     ];
 
     for (const line of errors) {
@@ -200,11 +200,11 @@ export async function GET() {
     y -= 25;
 
     const bestPractices = [
-      "✓ Testare la lettura del QR con 2-3 app diverse prima della stampa",
-      "✓ Lasciare margine bianco attorno al QR (quiet zone)",
-      "✓ Usare inchiostro nero puro (K100) per il QR",
-      "✓ Verificare la risoluzione: minimo 300 DPI per stampa",
-      "✓ Effettuare una stampa di prova e testare la scansione",
+      "OK Testare la lettura del QR con 2-3 app diverse prima della stampa",
+      "OK Lasciare margine bianco attorno al QR (quiet zone)",
+      "OK Usare inchiostro nero puro (K100) per il QR",
+      "OK Verificare la risoluzione: minimo 300 DPI per stampa",
+      "OK Effettuare una stampa di prova e testare la scansione",
     ];
 
     for (const line of bestPractices) {

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Toast, useToast } from "@/components/Toast";
+import { QRScanner } from "@/components/QRScanner";
 import {
   ArrowLeft,
   Printer,
@@ -28,9 +29,14 @@ interface PrintedCard {
   createdAt: string;
 }
 
+interface ValueBreakdown {
+  value: number;
+  count: number;
+}
+
 interface Stats {
   totalUnused: number;
-  totalUnusedValue: number;
+  valueBreakdown: ValueBreakdown[];
 }
 
 const QUANTITIES = [10, 25, 50, 100, 200, 500, 1000];
@@ -42,7 +48,7 @@ export default function PrintedGiftCardsPage() {
   const { toast, showToast, hideToast } = useToast();
   
   const [cards, setCards] = useState<PrintedCard[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalUnused: 0, totalUnusedValue: 0 });
+  const [stats, setStats] = useState<Stats>({ totalUnused: 0, valueBreakdown: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
@@ -61,8 +67,14 @@ export default function PrintedGiftCardsPage() {
   // Sezione espandibile
   const [showGuide, setShowGuide] = useState(false);
 
+  // QR Scanner
+  const [showScanner, setShowScanner] = useState(false);
+
   // Check feature flag
   const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
+  
+  // Configurazione scadenza
+  const [expiryConfig, setExpiryConfig] = useState<{ expiryType: string; expiryTime: string } | null>(null);
   
   useEffect(() => {
     // Verifica feature flag
@@ -73,17 +85,28 @@ export default function PrintedGiftCardsPage() {
         setFeatureEnabled(flag?.enabled ?? false);
       })
       .catch(() => setFeatureEnabled(false));
+    
+    // Recupera configurazione scadenza
+    fetch("/api/admin/gift-card-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.expiryConfig) {
+          setExpiryConfig(data.expiryConfig);
+          // Pre-popola con la data di scadenza predefinita
+          if (data.defaultExpiryDate) {
+            setActivateExpiresAt(data.defaultExpiryDate.split("T")[0]);
+          }
+        }
+      })
+      .catch(err => console.error("Error fetching expiry config:", err));
   }, []);
 
-  // Redirect se non autenticato o feature disabilitata
+  // Redirect se non autenticato
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
-    if (featureEnabled === false) {
-      router.push("/admin");
-    }
-  }, [status, featureEnabled, router]);
+  }, [status, router]);
 
   const fetchCards = useCallback(async () => {
     try {
@@ -135,8 +158,9 @@ export default function PrintedGiftCardsPage() {
   };
 
   // Cerca codice da attivare
-  const searchCode = async () => {
-    if (!activateCode.trim()) return;
+  const searchCode = async (codeToSearch?: string) => {
+    const searchValue = codeToSearch || activateCode;
+    if (!searchValue.trim()) return;
     
     try {
       const response = await fetch(`/api/admin/printed-gift-cards?used=false`);
@@ -144,7 +168,7 @@ export default function PrintedGiftCardsPage() {
       const data = await response.json();
       
       const card = data.cards.find((c: PrintedCard) => 
-        c.code.toLowerCase() === activateCode.toLowerCase()
+        c.code.toLowerCase() === searchValue.toLowerCase()
       );
       
       if (card) {
@@ -213,11 +237,15 @@ export default function PrintedGiftCardsPage() {
 
   if (featureEnabled === false) {
     return (
-      <div className="min-h-screen bg-brand-cream flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-brand-gray">Feature non abilitata</p>
-          <p className="text-label-sm text-brand-gray mt-2">Redirect in corso...</p>
-        </div>
+      <div className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
+        <h1 className="text-display-md font-bold text-brand-dark mb-2">404</h1>
+        <p className="text-body-lg text-brand-gray mb-6">Pagina non trovata</p>
+        <Link
+          href="/admin"
+          className="px-6 py-3 rounded-full bg-brand-primary text-white hover:bg-brand-primary-hover transition-colors"
+        >
+          Torna alla Dashboard
+        </Link>
       </div>
     );
   }
@@ -233,26 +261,42 @@ export default function PrintedGiftCardsPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Gift Card Cartacee
+            Gestione Gift Card Cartacee
           </h1>
         </div>
       </header>
 
       <div className="p-4 max-w-4xl mx-auto space-y-6">
         
-        {/* Statistiche */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl p-4 shadow-card">
-            <p className="text-label-sm text-brand-gray">Codici Disponibili</p>
-            <p className="text-display-sm font-bold text-brand-dark">{stats.totalUnused}</p>
+        {/* Statistiche - Disponibili per Taglia */}
+        <section className="bg-white rounded-2xl p-6 shadow-card">
+          <h2 className="text-headline-sm font-bold text-brand-dark mb-4">
+            Codici Disponibili per Taglia
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {stats.valueBreakdown.map((item) => (
+              <div
+                key={item.value}
+                className="bg-brand-cream rounded-xl p-3 text-center"
+              >
+                <p className="text-headline-sm font-bold text-brand-dark">
+                  {item.count}
+                </p>
+                <p className="text-label-sm text-brand-gray">
+                  €{(item.value / 100).toFixed(0)}
+                </p>
+              </div>
+            ))}
+            {stats.valueBreakdown.length === 0 && (
+              <p className="text-body-sm text-brand-gray col-span-full text-center py-4">
+                Nessun codice disponibile
+              </p>
+            )}
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-card">
-            <p className="text-label-sm text-brand-gray">Valore Totale</p>
-            <p className="text-display-sm font-bold text-brand-primary">
-              €{(stats.totalUnusedValue / 100).toFixed(2)}
-            </p>
-          </div>
-        </div>
+          <p className="text-label-sm text-brand-gray mt-4 text-center">
+            Totale: <strong>{stats.totalUnused}</strong> codici disponibili
+          </p>
+        </section>
 
         {/* Generazione */}
         <section className="bg-white rounded-2xl p-6 shadow-card">
@@ -268,6 +312,7 @@ export default function PrintedGiftCardsPage() {
                 value={value}
                 onChange={(e) => setValue(Number(e.target.value))}
                 className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
+                title="Seleziona il valore delle Gift Card"
               >
                 {VALUES.map((v) => (
                   <option key={v} value={v}>€{v}.00</option>
@@ -280,6 +325,7 @@ export default function PrintedGiftCardsPage() {
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
                 className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
+                title="Seleziona la quantità di codici da generare"
               >
                 {QUANTITIES.map((q) => (
                   <option key={q} value={q}>{q} codici</option>
@@ -306,7 +352,7 @@ export default function PrintedGiftCardsPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={activateCode}
@@ -314,12 +360,22 @@ export default function PrintedGiftCardsPage() {
                 placeholder="Inserisci codice PG..."
                 className="flex-1 px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark uppercase"
               />
-              <button
-                onClick={searchCode}
-                className="px-6 py-3 rounded-full font-medium bg-brand-dark text-white hover:bg-brand-gray transition-all"
-              >
-                Cerca
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowScanner(true)}
+                  className="flex-1 sm:flex-none px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-primary hover:bg-brand-primary/5 transition-all flex items-center justify-center gap-2"
+                  title="Scansiona QR Code"
+                >
+                  <QrCode className="w-5 h-5" />
+                  <span className="sm:hidden">Scanner</span>
+                </button>
+                <button
+                  onClick={() => searchCode()}
+                  className="flex-1 sm:flex-none px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-primary hover:bg-brand-primary/5 transition-all flex items-center justify-center gap-2"
+                >
+                  Cerca
+                </button>
+              </div>
             </div>
 
             {foundCard && (
@@ -347,13 +403,23 @@ export default function PrintedGiftCardsPage() {
                     placeholder="Telefono cliente"
                     className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
                   />
-                  <input
-                    type="date"
-                    value={activateExpiresAt}
-                    onChange={(e) => setActivateExpiresAt(e.target.value)}
-                    placeholder="Data scadenza (opzionale)"
-                    className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
-                  />
+                  <div>
+                    <label className="block text-label-sm text-brand-gray mb-2">
+                      Data scadenza (opzionale)
+                      {expiryConfig && (
+                        <span className="text-brand-primary ml-2">
+                          (Default: {expiryConfig.expiryTime === "SIX_MONTHS" ? "6 mesi" : expiryConfig.expiryTime === "ONE_YEAR" ? "1 anno" : "2 anni"}
+                          {expiryConfig.expiryType === "END_OF_MONTH" ? " - fine mese" : ""})
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="date"
+                      value={activateExpiresAt}
+                      onChange={(e) => setActivateExpiresAt(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
+                    />
+                  </div>
                   
                   <button
                     onClick={handleActivate}
@@ -490,6 +556,19 @@ export default function PrintedGiftCardsPage() {
         </a>
 
       </div>
+
+      {/* QR Scanner */}
+      {showScanner && (
+        <QRScanner
+          onScan={(code) => {
+            setActivateCode(code);
+            setShowScanner(false);
+            // Trigger automatic search after scan
+            searchCode(code);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }

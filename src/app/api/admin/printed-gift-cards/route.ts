@@ -39,18 +39,27 @@ export async function GET(request: NextRequest) {
       orderBy: [{ used: "asc" }, { createdAt: "desc" }],
     });
 
-    // Statistiche
-    const stats = await prisma.printedGiftCard.aggregate({
-      _count: { id: true },
-      _sum: { value: true },
+    // Statistiche per valore (taglia)
+    const statsByValue = await prisma.printedGiftCard.groupBy({
+      by: ["value"],
       where: { used: false },
+      _count: { id: true },
     });
+
+    // Formatta statistiche: { value: count }
+    const valueBreakdown = statsByValue.map((s) => ({
+      value: s.value,
+      count: s._count.id,
+    })).sort((a, b) => a.value - b.value);
+
+    // Totale
+    const totalUnused = valueBreakdown.reduce((sum, v) => sum + v.count, 0);
 
     return NextResponse.json({
       cards,
       stats: {
-        totalUnused: stats._count.id,
-        totalUnusedValue: stats._sum.value || 0,
+        totalUnused,
+        valueBreakdown,
       },
     });
   } catch (error) {

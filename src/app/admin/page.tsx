@@ -15,7 +15,8 @@ import {
   Calculator,
   FileText,
   Settings,
-  Gift
+  Gift,
+  Printer
 } from "lucide-react"
 
 // Feature flag keys
@@ -23,6 +24,7 @@ const FEATURE_FLAGS = {
   SHOP_ENABLED: "SHOP_ENABLED",
   GIFT_CARDS_ENABLED: "GIFT_CARDS_ENABLED",
   GIFT_CARDS_POS_ENABLED: "GIFT_CARDS_POS_ENABLED",
+  PRINTED_GIFT_CARDS: "PRINTED_GIFT_CARDS",
   MENU_ENABLED: "MENU_ENABLED",
 }
 
@@ -57,15 +59,17 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Mostra "Gestione Gift Card" solo se almeno uno dei due flag è abilitato
+  // Mostra "Gestione Gift Card" solo se almeno uno dei tre flag è abilitato
   const showGiftCardManagement = featureFlags[FEATURE_FLAGS.GIFT_CARDS_ENABLED] !== false || 
-                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false;
+                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ||
+                                  featureFlags[FEATURE_FLAGS.PRINTED_GIFT_CARDS] === true;
 
   // Menu items dinamici basati sui feature flags
   const quickAccessItems = [
     { href: "/admin/orders", label: "Gestione Ordini", icon: ShoppingBag, description: "Tracciare consegna dell'ordine, consultare ordini archiviati, emettere rimborsi, visualizzare rimborsi già emessi" },
     ...(showGiftCardManagement ? [{ href: "/admin/gift-cards", label: "Gestione Gift Card", icon: Wallet, description: "Scalare il credito, gestire le transazioni delle Gift Card, visualizzare gift card archiviate o cancellate" }] : []),
-    ...(featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ? [{ href: "/admin/pos/gift-cards", label: "Creazione Gift Card", icon: CreditCard, description: "Crea Gift Card in sede con pagamento contanti o POS" }] : []),
+    ...(featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ? [{ href: "/admin/pos/gift-cards", label: "Creazione Gift Card Digitali", icon: CreditCard, description: "Crea Gift Card digitali in sede con pagamento contanti o POS" }] : []),
+    ...(featureFlags[FEATURE_FLAGS.PRINTED_GIFT_CARDS] === true ? [{ href: "/admin/printed-gift-cards", label: "Gestione Gift Card Cartacee", icon: Printer, description: "Genera codici PG da stampare e attivazione in negozio" }] : []),
     { href: "/admin/accounting", label: "Contabilità Giornaliera", icon: Calculator, description: "Riepilogo giornaliero ordini e rimborsi (Prodotti e GiftCard)" },
   ];
 

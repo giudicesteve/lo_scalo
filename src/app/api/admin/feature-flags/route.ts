@@ -59,7 +59,7 @@ export async function PUT(request: Request) {
       where: { key },
       data: {
         enabled,
-        updatedBy: session.user.id,
+        updatedBy: session.user.email || session.user.name || "Admin",
       },
     });
 
