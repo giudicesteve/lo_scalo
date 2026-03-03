@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { generateUniqueGiftCardCode } from "@/lib/gift-card";
+
 import { generateOrderNumber } from "@/lib/orders";
 
 /**
@@ -96,13 +96,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 3. Genera codice GC
-      const gcCode = await generateUniqueGiftCardCode(tx);
+      // 3. Usa lo stesso codice PG per la Gift Card
+      // (non generiamo un codice GC nuovo, manteniamo tracciabilità)
 
       // 4. Crea Gift Card
       const giftCard = await tx.giftCard.create({
         data: {
-          code: gcCode,
+          code: printedCard.code,
           initialValue: printedCard.value,
           remainingValue: printedCard.value,
           orderId: order.id,
