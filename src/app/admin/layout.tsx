@@ -81,9 +81,10 @@ export default function AdminLayout({
   }, [pathname])
 
   // Menu items dinamici basati sui feature flags
-  // Mostra "Gestione Gift Card" solo se almeno uno dei due flag è abilitato
+  // Mostra "Gestione Gift Card" solo se almeno uno dei tre flag è abilitato
   const showGiftCardManagement = featureFlags[FEATURE_FLAGS.GIFT_CARDS_ENABLED] !== false || 
-                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false;
+                                  featureFlags[FEATURE_FLAGS.GIFT_CARDS_POS_ENABLED] !== false ||
+                                  featureFlags[FEATURE_FLAGS.PRINTED_GIFT_CARDS] === true;
 
   const menuItems = [
     { href: "/admin/orders", label: "Ordini", icon: ShoppingBag },

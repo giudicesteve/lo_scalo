@@ -61,12 +61,29 @@ export default function PrintedGiftCardsPage() {
   // Sezione espandibile
   const [showGuide, setShowGuide] = useState(false);
 
-  // Redirect se non autenticato
+  // Check feature flag
+  const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Verifica feature flag
+    fetch("/api/feature-flags")
+      .then(res => res.json())
+      .then(data => {
+        const flag = data.flags?.find((f: { key: string; enabled: boolean }) => f.key === "PRINTED_GIFT_CARDS");
+        setFeatureEnabled(flag?.enabled ?? false);
+      })
+      .catch(() => setFeatureEnabled(false));
+  }, []);
+
+  // Redirect se non autenticato o feature disabilitata
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
-  }, [status, router]);
+    if (featureEnabled === false) {
+      router.push("/admin");
+    }
+  }, [status, featureEnabled, router]);
 
   const fetchCards = useCallback(async () => {
     try {
@@ -186,12 +203,16 @@ export default function PrintedGiftCardsPage() {
     }
   };
 
-  if (status === "loading" || isLoading) {
+  if (status === "loading" || isLoading || featureEnabled === null) {
     return (
       <div className="min-h-screen bg-brand-cream flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary" />
       </div>
     );
+  }
+
+  if (featureEnabled === false) {
+    return null; // Redirect in corso
   }
 
   return (
