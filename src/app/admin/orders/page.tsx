@@ -78,7 +78,7 @@ const statusIcons: Record<string, React.ReactNode> = {
   CANCELLED: <X className="w-3 h-3" />,
 }
 
-const ITEMS_PER_PAGE = 50
+const ITEMS_PER_PAGE = 25
 const MIN_SEARCH_LENGTH = 4
 const SEARCH_DEBOUNCE_MS = 300
 

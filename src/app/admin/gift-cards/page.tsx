@@ -24,7 +24,7 @@ import {
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
-const ITEMS_PER_PAGE = 50
+const ITEMS_PER_PAGE = 25
 const MIN_SEARCH_LENGTH = 4
 const SEARCH_DEBOUNCE_MS = 300
 
