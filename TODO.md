@@ -95,6 +95,8 @@
 - **Editor WYSIWYG**: Sostituire textarea HTML con editor rich text
 - **Report accettazioni**: Statistiche su chi ha accettato cosa
 
+- ~~**Health Check**~~ ✅ **COMPLETATO** - Endpoint `/api/health` per monitoraggio
+
 ---
 
 ## ✅ Completati - Accessibilità (A11y)
