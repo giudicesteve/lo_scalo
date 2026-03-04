@@ -269,7 +269,7 @@ export default function PosGiftCardPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-label-md text-brand-gray mb-2">

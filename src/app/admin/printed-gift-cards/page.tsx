@@ -532,7 +532,7 @@ export default function PrintedGiftCardsPage() {
                   Valore: <strong>€{(foundCard.value / 100).toFixed(2)}</strong>
                 </p>
                 
-                <div className="space-y-3 mt-4">
+                <form className="space-y-3 mt-4" onSubmit={(e) => { e.preventDefault(); handleActivate(); }} noValidate>
                   <div>
                     <label className="block text-label-sm text-brand-gray mb-2">
                       Email cliente <span className="text-red-500">*</span>
@@ -649,7 +649,7 @@ export default function PrintedGiftCardsPage() {
                   >
                     {isActivating ? "Attivazione..." : "Attiva Gift Card"}
                   </button>
-                </div>
+                </form>
               </div>
             )}
           </div>
