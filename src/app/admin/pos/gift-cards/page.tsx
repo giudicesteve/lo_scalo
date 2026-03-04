@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, Store, CreditCard, Banknote, Gift, Mail, CheckCircle, Loader2, AlertCircle, X } from "lucide-react"
+import { useToast } from "@/components/Toast"
 import { Toast, useToast } from "@/components/Toast"
 
 // Tagli disponibili per creazione POS (hardcoded, indipendente da e-commerce)
@@ -43,7 +44,7 @@ export default function PosGiftCardPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH")
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   
-  const { toast, showToast, hideToast } = useToast()
+  const { showToast } = useToast()
   
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -285,12 +286,15 @@ export default function PosGiftCardPage() {
                 placeholder="cliente@email.it"
                 className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-colors ${
                   errors.email 
-                    ? "border-red-500 focus:border-red-500" 
+                    ? "border-red-500 ring-2 ring-red-200" 
                     : "border-brand-light-gray focus:border-brand-primary"
                 }`}
               />
               {errors.email ? (
-                <p className="text-label-sm text-red-500 mt-1">{errors.email}</p>
+                <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.email}
+                </p>
               ) : (
                 <p className="text-label-sm text-brand-gray mt-1">
                   L&apos;email è obbligatoria per l&apos;invio della Gift Card
@@ -314,12 +318,19 @@ export default function PosGiftCardPage() {
                 placeholder="+39 347 585 2220"
                 className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-colors ${
                   errors.phone 
-                    ? "border-red-500 focus:border-red-500" 
+                    ? "border-red-500 ring-2 ring-red-200" 
                     : "border-brand-light-gray focus:border-brand-primary"
                 }`}
               />
-              {errors.phone && (
-                <p className="text-label-sm text-red-500 mt-1">{errors.phone}</p>
+              {errors.phone ? (
+                <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.phone}
+                </p>
+              ) : (
+                <p className="text-label-sm text-brand-gray mt-1">
+                  Il telefono è obbligatorio per contattare il cliente
+                </p>
               )}
             </div>
 

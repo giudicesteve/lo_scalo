@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Toast, useToast } from "@/components/Toast";
+import { AlertCircle } from "lucide-react";
 import { QRScanner } from "@/components/QRScanner";
 import {
   ArrowLeft,
@@ -534,6 +535,9 @@ export default function PrintedGiftCardsPage() {
                 
                 <div className="space-y-3 mt-4">
                   <div>
+                    <label className="block text-label-sm text-brand-gray mb-2">
+                      Email cliente <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="email"
                       value={activateEmail}
@@ -541,15 +545,22 @@ export default function PrintedGiftCardsPage() {
                         setActivateEmail(e.target.value)
                         if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
                       }}
-                      placeholder="Email cliente *"
+                      placeholder="cliente@email.it"
                       className={`w-full px-4 py-3 rounded-xl border bg-white text-brand-dark focus:outline-none transition-colors ${
                         errors.email 
-                          ? "border-red-500 focus:border-red-500" 
+                          ? "border-red-500 ring-2 ring-red-200" 
                           : "border-brand-light-gray focus:border-brand-primary"
                       }`}
                     />
-                    {errors.email && (
-                      <p className="text-label-sm text-red-500 mt-1">{errors.email}</p>
+                    {errors.email ? (
+                      <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.email}
+                      </p>
+                    ) : (
+                      <p className="text-label-sm text-brand-gray mt-1">
+                        L&apos;email è obbligatoria per l&apos;invio della Gift Card
+                      </p>
                     )}
                   </div>
                   <div>
@@ -566,12 +577,19 @@ export default function PrintedGiftCardsPage() {
                       placeholder="+39 347 585 2220"
                       className={`w-full px-4 py-3 rounded-xl border bg-white text-brand-dark focus:outline-none transition-colors ${
                         errors.phone 
-                          ? "border-red-500 focus:border-red-500" 
+                          ? "border-red-500 ring-2 ring-red-200" 
                           : "border-brand-light-gray focus:border-brand-primary"
                       }`}
                     />
-                    {errors.phone && (
-                      <p className="text-label-sm text-red-500 mt-1">{errors.phone}</p>
+                    {errors.phone ? (
+                      <p className="text-red-500 text-label-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.phone}
+                      </p>
+                    ) : (
+                      <p className="text-label-sm text-brand-gray mt-1">
+                        Il telefono è obbligatorio per contattare il cliente
+                      </p>
                     )}
                   </div>
                   
