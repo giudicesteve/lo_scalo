@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
         ...item,
         unitPrice: item.unitPrice / 100,
         totalPrice: item.totalPrice / 100,
+        product: item.Product, // Normalizza Product in product per compatibilità frontend
       })),
       giftCards: order.giftCards.map(gc => ({
         ...gc,
