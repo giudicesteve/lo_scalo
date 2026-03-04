@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { RefundMethod } from "@prisma/client"
 import { centsToEuro } from "@/lib/utils/currency"
+import { getItalyDayRange, getItalyMonthRange } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -380,20 +381,18 @@ export async function GET(req: Request) {
     // Filter by specific date (YYYY-MM-DD) - used for daily accounting
     if (date) {
       const [yearStr, monthStr, dayStr] = date.split('-').map(Number)
-      const startDate = new Date(Date.UTC(yearStr, monthStr - 1, dayStr, 0, 0, 0))
-      const endDate = new Date(Date.UTC(yearStr, monthStr - 1, dayStr, 23, 59, 59, 999))
+      const { start, end } = getItalyDayRange(yearStr, monthStr, dayStr)
       where.refundedAt = {
-        gte: startDate,
-        lte: endDate,
+        gte: start,
+        lte: end,
       }
     }
     // Filter by month/year if provided (used for monthly report)
     else if (year && month) {
-      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1)
-      const endDate = new Date(parseInt(year), parseInt(month), 1)
+      const { start, end } = getItalyMonthRange(parseInt(year), parseInt(month))
       where.refundedAt = {
-        gte: startDate,
-        lt: endDate,
+        gte: start,
+        lte: end,
       }
     }
 
