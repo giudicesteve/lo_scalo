@@ -117,6 +117,11 @@ export async function GET(request: NextRequest) {
         ...item,
         unitPrice: item.unitPrice / 100,
         totalPrice: item.totalPrice / 100,
+        // FIX: Usa productName (snapshot) invece della relazione Product
+        // che potrebbe non essere disponibile se il prodotto è soft-deleted
+        product: {
+          name: item.productName || item.Product?.name || 'Prodotto',
+        },
       })),
       giftCards: order.giftCards.map(gc => ({
         ...gc,

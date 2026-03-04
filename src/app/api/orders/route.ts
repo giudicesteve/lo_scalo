@@ -144,6 +144,7 @@ export async function POST(req: Request) {
     logToFile(`✅ Numero ordine: ${orderNumber}`);
 
     // Verifica disponibilità FUORI dalla transazione per raccogliere tutti gli errori
+    // OPTIMIZED: Carica tutti i prodotti in una query sola (N+1 fix)
     logToFile("🔍 Verifica disponibilità prodotti...");
     const unavailableItems: Array<{
       name: string;
@@ -152,15 +153,21 @@ export async function POST(req: Request) {
       size?: string;
     }> = [];
 
+    // Pre-carica tutti i prodotti con le loro varianti in UNA query
+    const productIds = productItems.map((item: { id: string }) => item.id);
+    const products = await prisma.product.findMany({
+      where: { 
+        id: { in: productIds },
+        isDeleted: false,
+      },
+      include: { ProductVariant: true },
+    });
+    const productMap = new Map(products.map(p => [p.id, p]));
+    logToFile(`    ✅ Caricati ${products.length} prodotti in una query`);
+
     for (const item of productItems) {
       logToFile(`    Prodotto ${item.id} - qty: ${item.quantity}`);
-      const product = await prisma.product.findFirst({
-        where: { 
-          id: item.id,
-          isDeleted: false, // Escludi prodotti eliminati
-        },
-        include: { ProductVariant: true },
-      });
+      const product = productMap.get(item.id);
 
       if (!product) {
         logToFile(`    ❌ Prodotto ${item.id} non trovato`);
@@ -222,11 +229,9 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
       logToFile(`  ⬇️ Decremento disponibilità per ${productItems.length} prodotti...`);
       // 2. Decrementa disponibilità (riserva prodotti)
+      // OPTIMIZED: Riutilizza productMap dalla verifica precedente (N+1 fix)
       for (const item of productItems) {
-        const product = await tx.product.findUnique({
-          where: { id: item.id },
-          include: { ProductVariant: true },
-        });
+        const product = productMap.get(item.id);
 
         if (product?.hasSizes && item.size) {
           const variant = product.ProductVariant.find(
@@ -275,11 +280,9 @@ export async function POST(req: Request) {
       logToFile(`  ✅ Ordine creato: ${order.id}`);
 
       // Create order items for products
+      // OPTIMIZED: Riutilizza productMap (N+1 fix)
       for (const item of productItems) {
-        const product = await tx.product.findUnique({
-          where: { id: item.id },
-          include: { ProductVariant: true },
-        });
+        const product = productMap.get(item.id);
 
         let variantId: string | undefined;
         if (product?.hasSizes && item.size) {
@@ -300,8 +303,8 @@ export async function POST(req: Request) {
             productId: item.id,
             variantId: variantId,
             quantity: item.quantity,
-            unitPrice: euroToCents(item.price), // Convert euro to cents for database
-            totalPrice: euroToCents(item.price * item.quantity), // Convert euro to cents for database
+            unitPrice: euroToCents(item.price),
+            totalPrice: euroToCents(item.price * item.quantity),
             size: item.size || "Unica",
             productName: product?.name || "Prodotto",
             productNameEn: product?.nameEn || product?.name || "Prodotto",

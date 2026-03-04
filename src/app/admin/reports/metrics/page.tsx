@@ -13,11 +13,7 @@ import {
   ShoppingCart,
   TrendingUp,
   TrendingDown,
-  FileSpreadsheet,
-  Printer,
 } from "lucide-react"
-import * as XLSX from "xlsx"
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
 interface OrderItem {
   id: string
@@ -205,297 +201,6 @@ export default function MetricsReportPage() {
   const isCurrentPeriod = viewMode === "month" 
     ? selectedMonth === new Date().toISOString().slice(0, 7)
     : selectedYear === new Date().getFullYear()
-
-  const exportToExcel = () => {
-    const rows: Record<string, string | number>[] = []
-    
-    rows.push({
-      "Metrica": "Totale Prodotti (€)",
-      "Valore": metrics.totalProductsSale,
-      "Quantità": metrics.totalProductQuantity,
-    })
-    rows.push({
-      "Metrica": "Totale Gift Card (€)",
-      "Valore": metrics.totalGiftCardsSale,
-      "Quantità": metrics.totalGiftCardQuantity,
-    })
-    rows.push({
-      "Metrica": "Totale Incasso (€)",
-      "Valore": metrics.totalRevenue,
-      "Quantità": "",
-    })
-    rows.push({
-      "Metrica": "Carrello Medio (€)",
-      "Valore": metrics.avgCartValue.toFixed(2),
-      "Quantità": "",
-    })
-    
-    rows.push({})
-    rows.push({ "Metrica": "TOP 5 PRODOTTI", "Valore": "", "Quantità": "" })
-    metrics.topProducts.forEach((p, i) => {
-      rows.push({
-        "Metrica": `${i + 1}. ${p.name}`,
-        "Valore": p.revenue,
-        "Quantità": p.quantity,
-      })
-    })
-    
-    rows.push({})
-    rows.push({ "Metrica": "BOTTOM 5 PRODOTTI", "Valore": "", "Quantità": "" })
-    metrics.bottomProducts.forEach((p, i) => {
-      rows.push({
-        "Metrica": `${i + 1}. ${p.name}`,
-        "Valore": p.revenue,
-        "Quantità": p.quantity,
-      })
-    })
-    
-    rows.push({})
-    rows.push({ "Metrica": "TOP 5 GIFT CARD", "Valore": "", "Quantità": "" })
-    metrics.topGiftCards.forEach((gc, i) => {
-      rows.push({
-        "Metrica": `${i + 1}. Gift Card ${gc.value}€`,
-        "Valore": gc.revenue,
-        "Quantità": gc.quantity,
-      })
-    })
-    
-    rows.push({})
-    rows.push({ "Metrica": "BOTTOM 5 GIFT CARD", "Valore": "", "Quantità": "" })
-    metrics.bottomGiftCards.forEach((gc, i) => {
-      rows.push({
-        "Metrica": `${i + 1}. Gift Card ${gc.value}€`,
-        "Valore": gc.revenue,
-        "Quantità": gc.quantity,
-      })
-    })
-
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Metriche")
-    
-    const colWidths = [{ wch: 40 }, { wch: 15 }, { wch: 12 }]
-    ws['!cols'] = colWidths
-    
-    const fileName = viewMode === "month" 
-      ? `LoScalo_Metriche_${selectedMonth}.xlsx`
-      : `LoScalo_Metriche_${selectedYear}.xlsx`
-    XLSX.writeFile(wb, fileName)
-  }
-
-  const generatePDF = async () => {
-    const pdfDoc = await PDFDocument.create()
-    let page = pdfDoc.addPage([595, 842])
-    const { width, height } = page.getSize()
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-    
-    let y = height - 50
-    const margin = 40
-    
-    const periodLabel = viewMode === "month" ? "Mensili" : "Annuali"
-    
-    // Header
-    page.drawText(`Lo Scalo - Metriche ${periodLabel}`, {
-      x: margin,
-      y,
-      size: 20,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    })
-    
-    y -= 30
-    page.drawText(`Periodo: ${formatPeriod()}`, {
-      x: margin,
-      y,
-      size: 12,
-      font,
-      color: rgb(0.4, 0.4, 0.4),
-    })
-    
-    y -= 20
-    page.drawText(`Totale Ordini: ${metrics.totalOrders}`, {
-      x: margin,
-      y,
-      size: 10,
-      font,
-      color: rgb(0.4, 0.4, 0.4),
-    })
-    
-    y -= 40
-    
-    const drawMetricCard = (label: string, value: string, color: [number, number, number]) => {
-      page.drawRectangle({
-        x: margin,
-        y: y - 5,
-        width: width - margin * 2,
-        height: 50,
-        color: rgb(0.97, 0.97, 0.97),
-      })
-      
-      page.drawText(label, {
-        x: margin + 15,
-        y: y + 20,
-        size: 10,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      })
-      
-      page.drawText(value, {
-        x: margin + 15,
-        y: y,
-        size: 16,
-        font: fontBold,
-        color: rgb(color[0], color[1], color[2]),
-      })
-      
-      y -= 65
-    }
-    
-    // Main metrics
-    drawMetricCard("Totale Prodotti", `${metrics.totalProductsSale.toFixed(2)}€`, [0.2, 0.4, 0.8])
-    drawMetricCard("Totale Gift Card", `${metrics.totalGiftCardsSale.toFixed(2)}€`, [0.2, 0.6, 0.2])
-    drawMetricCard("Totale Incasso", `${metrics.totalRevenue.toFixed(2)}€`, [0.8, 0.3, 0.1])
-    drawMetricCard("Carrello Medio", `${metrics.avgCartValue.toFixed(2)}€`, [0.4, 0.2, 0.6])
-    
-    // Check for new page
-    if (y < 200) {
-      page = pdfDoc.addPage([595, 842])
-      y = height - 50
-    }
-    
-    // Top Products
-    y -= 20
-    page.drawText("Top 5 Prodotti", {
-      x: margin,
-      y,
-      size: 12,
-      font: fontBold,
-      color: rgb(0.2, 0.6, 0.2),
-    })
-    y -= 20
-    
-    metrics.topProducts.forEach((p, i) => {
-      page.drawText(`${i + 1}. ${p.name.substring(0, 40)}${p.name.length > 40 ? '...' : ''}`, {
-        x: margin + 10,
-        y,
-        size: 9,
-        font,
-      })
-      page.drawText(`${p.quantity} pz - ${p.revenue.toFixed(2)}€`, {
-        x: width - margin - 100,
-        y,
-        size: 9,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      })
-      y -= 15
-    })
-    
-    // Bottom Products
-    if (metrics.bottomProducts.length > 0) {
-      y -= 15
-      page.drawText("Bottom 5 Prodotti", {
-        x: margin,
-        y,
-        size: 12,
-        font: fontBold,
-        color: rgb(0.8, 0.2, 0.2),
-      })
-      y -= 20
-      
-      metrics.bottomProducts.forEach((p, i) => {
-        page.drawText(`${i + 1}. ${p.name.substring(0, 40)}${p.name.length > 40 ? '...' : ''}`, {
-          x: margin + 10,
-          y,
-          size: 9,
-          font,
-        })
-        page.drawText(`${p.quantity} pz - ${p.revenue.toFixed(2)}€`, {
-          x: width - margin - 100,
-          y,
-          size: 9,
-          font,
-          color: rgb(0.4, 0.4, 0.4),
-        })
-        y -= 15
-      })
-    }
-    
-    // Check for new page
-    if (y < 200) {
-      page = pdfDoc.addPage([595, 842])
-      y = height - 50
-    }
-    
-    // Top Gift Cards
-    y -= 20
-    page.drawText("Top 5 Gift Card", {
-      x: margin,
-      y,
-      size: 12,
-      font: fontBold,
-      color: rgb(0.2, 0.6, 0.2),
-    })
-    y -= 20
-    
-    metrics.topGiftCards.forEach((gc, i) => {
-      page.drawText(`${i + 1}. Gift Card ${gc.value}€`, {
-        x: margin + 10,
-        y,
-        size: 9,
-        font,
-      })
-      page.drawText(`${gc.quantity} vendute - ${gc.revenue.toFixed(2)}€`, {
-        x: width - margin - 120,
-        y,
-        size: 9,
-        font,
-        color: rgb(0.4, 0.4, 0.4),
-      })
-      y -= 15
-    })
-    
-    // Bottom Gift Cards
-    if (metrics.bottomGiftCards.length > 0) {
-      y -= 15
-      page.drawText("Bottom 5 Gift Card", {
-        x: margin,
-        y,
-        size: 12,
-        font: fontBold,
-        color: rgb(0.8, 0.2, 0.2),
-      })
-      y -= 20
-      
-      metrics.bottomGiftCards.forEach((gc, i) => {
-        page.drawText(`${i + 1}. Gift Card ${gc.value}€`, {
-          x: margin + 10,
-          y,
-          size: 9,
-          font,
-        })
-        page.drawText(`${gc.quantity} vendute - ${gc.revenue.toFixed(2)}€`, {
-          x: width - margin - 120,
-          y,
-          size: 9,
-          font,
-          color: rgb(0.4, 0.4, 0.4),
-        })
-        y -= 15
-      })
-    }
-    
-    const pdfBytes = await pdfDoc.save()
-    const blob = new Blob([pdfBytes as unknown as ArrayBuffer], { type: "application/pdf" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    const fileName = viewMode === "month" 
-      ? `LoScalo_Metriche_${selectedMonth}.pdf`
-      : `LoScalo_Metriche_${selectedYear}.pdf`
-    link.download = fileName
-    link.click()
-  }
 
   if (loading) {
     return (
@@ -689,7 +394,7 @@ export default function MetricsReportPage() {
                       <span className="w-6 h-6 bg-green-500 text-white text-label-sm rounded-full flex items-center justify-center">
                         {i + 1}
                       </span>
-                      <span className="text-body-sm font-medium text-brand-dark truncate max-w-[150px]">
+                      <span className="text-body-sm font-medium text-brand-dark truncate max-w-[250px]">
                         {p.name}
                       </span>
                     </div>
@@ -719,7 +424,7 @@ export default function MetricsReportPage() {
                         <span className="w-6 h-6 bg-red-500 text-white text-label-sm rounded-full flex items-center justify-center">
                           {i + 1}
                         </span>
-                        <span className="text-body-sm font-medium text-brand-dark truncate max-w-[150px]">
+                        <span className="text-body-sm font-medium text-brand-dark truncate max-w-[250px]">
                           {p.name}
                         </span>
                       </div>
@@ -800,35 +505,7 @@ export default function MetricsReportPage() {
           </div>
         </div>
 
-        {/* Export Buttons */}
-        <div className="bg-white rounded-2xl shadow-card p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-title-md font-bold text-brand-dark">
-                Export Dati
-              </h2>
-              <p className="text-body-sm text-brand-gray">
-                Scarica le metriche in Excel o PDF
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={exportToExcel}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-body-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export Excel
-              </button>
-              <button
-                onClick={generatePDF}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-full text-body-sm font-medium hover:bg-brand-dark transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                Stampa PDF
-              </button>
-            </div>
-          </div>
-        </div>
+
       </div>
     </main>
   )

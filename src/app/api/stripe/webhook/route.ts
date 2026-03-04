@@ -9,6 +9,7 @@ import Stripe from "stripe";
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Funzione per ripristinare la disponibilità prodotti
+// OPTIMIZED: Usa updateMany invece di loop N+1
 async function restoreStock(orderId: string) {
   console.log(`🔄 [WEBHOOK] Ripristino stock per ordine ${orderId}`);
   
@@ -25,31 +26,42 @@ async function restoreStock(orderId: string) {
 
   console.log(`🔄 [WEBHOOK] Trovati ${orderItems.length} item da ripristinare`);
 
+  // Prepara le varianti da aggiornare con le relative quantità
+  const variantUpdates = new Map<string, number>(); // variantId -> totalQuantity
+
   for (const item of orderItems) {
     if (!item.productId || !item.Product) continue;
 
     const product = item.Product;
+    let variantId: string | undefined;
 
     if (item.size && item.size !== "Unica") {
       const variant = product.ProductVariant.find((v) => v.size === item.size);
-      if (variant) {
-        await prisma.productVariant.update({
-          where: { id: variant.id },
-          data: { quantity: { increment: item.quantity } },
-        });
-        console.log(`✅ [WEBHOOK] Ripristinato ${item.quantity} x ${product.name} (${item.size})`);
-      }
+      variantId = variant?.id;
     } else {
       const variant = product.ProductVariant.find((v) => v.size === "Unica");
-      if (variant) {
-        await prisma.productVariant.update({
-          where: { id: variant.id },
-          data: { quantity: { increment: item.quantity } },
-        });
-        console.log(`✅ [WEBHOOK] Ripristinato ${item.quantity} x ${product.name} (Unica)`);
-      }
+      variantId = variant?.id;
+    }
+
+    if (variantId) {
+      const currentQty = variantUpdates.get(variantId) || 0;
+      variantUpdates.set(variantId, currentQty + item.quantity);
     }
   }
+
+  // Esegui un update per ogni variante (molto meno query del loop N+1)
+  const updates = Array.from(variantUpdates.entries());
+  console.log(`🔄 [WEBHOOK] Ripristino ${updates.length} varianti...`);
+
+  for (const [variantId, quantity] of updates) {
+    await prisma.productVariant.update({
+      where: { id: variantId },
+      data: { quantity: { increment: quantity } },
+    });
+    console.log(`✅ [WEBHOOK] Ripristinato ${quantity} unità per variante ${variantId}`);
+  }
+
+  console.log(`✅ [WEBHOOK] Stock ripristinato per ${updates.length} varianti`);
 }
 
 export async function POST(req: Request) {
