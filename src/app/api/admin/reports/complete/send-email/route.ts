@@ -101,22 +101,60 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    // Transform refunds to calculate productTotal and giftCardTotal from items JSON
-    const transformedRefunds = refunds.map(refund => {
+    // Converti ordini da cents a euro
+    const ordersInEuro = orders.map(order => ({
+      ...order,
+      total: order.total / 100,
+      items: order.items.map(item => ({
+        ...item,
+        unitPrice: item.unitPrice / 100,
+        totalPrice: item.totalPrice / 100,
+      })),
+      giftCards: order.giftCards.map(gc => ({
+        ...gc,
+        initialValue: gc.initialValue / 100,
+      })),
+    }))
+
+    // Converti rimborsi da cents a euro
+    const refundsInEuro = refunds.map(refund => {
       const items = refund.items as Array<{type: string, price?: number, value?: number, quantity?: number}>
       const productTotal = items
         .filter(item => item.type === 'PRODUCT')
         .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0)
       const giftCardTotal = items
         .filter(item => item.type === 'GIFT_CARD')
-        .reduce((sum, item) => sum + (item.value || 0), 0)
+        .reduce((sum, item) => sum + (item.price || 0), 0) // price = initialValue per GC
       
       return {
         ...refund,
-        productTotal,
-        giftCardTotal,
+        totalRefunded: refund.totalRefunded / 100,
+        productTotal: productTotal / 100,
+        giftCardTotal: giftCardTotal / 100,
       }
     })
+
+    // Converti transazioni da cents a euro
+    const transactionsInEuro = transactions.map(t => ({
+      ...t,
+      amount: t.amount / 100,
+      giftCard: {
+        ...t.giftCard,
+        initialValue: t.giftCard.initialValue / 100,
+        remainingValue: t.giftCard.remainingValue / 100,
+      },
+    }))
+
+    // Converti gift card scadute da cents a euro
+    const expiredCardsInEuro = expiredCards.map(gc => ({
+      ...gc,
+      initialValue: gc.initialValue / 100,
+      remainingValue: gc.remainingValue / 100,
+      transactions: gc.transactions.map(t => ({
+        ...t,
+        amount: t.amount / 100,
+      })),
+    }))
 
     // Format month/year for email and PDF
     const monthNames = [
@@ -125,19 +163,19 @@ export async function POST(request: NextRequest) {
     ]
     const monthName = monthNames[month - 1]
 
-    // Generate Excel using shared utility
-    const wb = generateCompleteExcel({ orders, refunds: transformedRefunds, transactions, expiredCards })
+    // Generate Excel using shared utility (con dati in euro)
+    const wb = generateCompleteExcel({ orders: ordersInEuro, refunds: refundsInEuro, transactions: transactionsInEuro, expiredCards: expiredCardsInEuro })
     const excelBuffer = workbookToBuffer(wb)
 
-    // Generate PDF using server-side function
+    // Generate PDF using server-side function (con dati in euro)
     const monthYearLabel = `${monthName} ${year}`
-    const pdfBytes = await generateCompletePDF({ orders, refunds: transformedRefunds, transactions, expiredCards }, monthYearLabel)
+    const pdfBytes = await generateCompletePDF({ orders: ordersInEuro, refunds: refundsInEuro, transactions: transactionsInEuro, expiredCards: expiredCardsInEuro }, monthYearLabel)
 
-    // Calculate totals for email
-    const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
-    const totalRefunds = transformedRefunds.reduce((sum, r) => sum + r.totalRefunded, 0)
-    const totalUsed = transactions.reduce((sum, t) => sum + t.amount, 0)
-    const totalUnused = expiredCards.reduce((sum, g) => sum + g.remainingValue, 0)
+    // Calculate totals for email (già in euro)
+    const totalRevenue = ordersInEuro.reduce((sum, o) => sum + o.total, 0)
+    const totalRefunds = refundsInEuro.reduce((sum, r) => sum + r.totalRefunded, 0)
+    const totalUsed = transactionsInEuro.reduce((sum, t) => sum + t.amount, 0)
+    const totalUnused = expiredCardsInEuro.reduce((sum, g) => sum + g.remainingValue, 0)
 
     // Send email
     await sendEmail({
