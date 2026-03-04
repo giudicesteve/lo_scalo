@@ -3,12 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { generateOrderNumber } from "@/lib/orders";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
 import { centsToEuro } from "@/lib/utils/currency";
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 
 
 // POST /api/admin/pos/gift-cards
 // Crea una gift card manualmente (POS/Contanti)
 // Nota: L'autenticazione è gestita dal middleware in middleware.ts
 export async function POST(req: NextRequest) {
+  // Rate limiting: max 100 richieste al minuto per admin
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.adminApi)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccata creazione POS gift card`)
+    return rateLimitResponse
+  }
+
   try {
     const body = await req.json();
     const { email, phone, paymentMethod, giftCardValue } = body;

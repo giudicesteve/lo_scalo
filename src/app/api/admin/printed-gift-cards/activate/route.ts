@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 import { generateOrderNumber } from "@/lib/orders";
 
 /**
@@ -9,6 +9,13 @@ import { generateOrderNumber } from "@/lib/orders";
  * Attiva un codice PG creando ordine + Gift Card
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting: max 100 richieste al minuto per admin
+  const rateLimitResponse = withRateLimit(request, rateLimitConfigs.adminApi)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccata attivazione GC cartacea`)
+    return rateLimitResponse
+  }
+
   try {
     const session = await auth();
     if (!session?.user?.email) {

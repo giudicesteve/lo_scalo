@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { euroToCents, centsToEuro } from "@/lib/utils/currency";
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 
 // POST - Usa una gift card
 export async function POST(req: Request) {
+  // Rate limiting: max 100 richieste al minuto per admin
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.adminApi)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccato uso gift card`)
+    return rateLimitResponse
+  }
+
   try {
     const body = await req.json();
     const { id, amount, note, receiptNumber, receiptImage } = body;

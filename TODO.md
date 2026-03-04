@@ -30,9 +30,26 @@
 
 ## 📋 Backlog
 
-### 🔥 Priorità Alta
+### 🔥 Priorità Alta (Ottimizzazione & Sicurezza)
 
-*No high priority tasks*
+Vedi `OPTIMIZATION_REPORT.md` per dettagli completi.
+
+#### Sicurezza
+- **Rate Limiting**: Implementare rate limiting su API pubbliche e admin (@upstash/ratelimit)
+- **Content Security Policy**: Aggiungere headers CSP, X-Frame-Options, X-Content-Type-Options
+- **Webhook Idempotency**: Tracciare event ID di Stripe per prevenire doppio processamento
+
+#### Performance Database
+- **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
+- **Indici DB**: Aggiungere indici su Order (orderNumber, email, phone) e GiftCard (code, purchasedAt)
+- **Connection Pool**: Configurare pool Neon esplicitamente
+
+### 🔶 Priorità Media (Caching & Performance)
+
+- **Cache Headers**: Aggiungere Cache-Control alle API pubbliche
+- **React Query**: Implementare caching lato client
+- **Image Optimization**: Rimuovere `unoptimized: true` da next.config
+- **Bundle Analyzer**: Analizzare e ottimizzare bundle size
 
 ### 🔶 Priorità Media
 

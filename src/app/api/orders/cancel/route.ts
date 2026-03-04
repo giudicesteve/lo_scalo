@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 
 // POST - Cancella ordine e ripristina disponibilità
 export async function POST(req: Request) {
+  // Rate limiting: max 10 richieste al minuto per IP
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.publicApi)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccata cancellazione ordine`)
+    return rateLimitResponse
+  }
+
   try {
     const { orderNumber } = await req.json();
 

@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
 import { centsToEuro } from "@/lib/utils/currency";
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 import Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -52,6 +53,13 @@ async function restoreStock(orderId: string) {
 }
 
 export async function POST(req: Request) {
+  // Rate limiting: molto permissivo per Stripe (1000 req/min)
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.webhook)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Webhook Stripe rate limited`)
+    return rateLimitResponse
+  }
+
   const payload = await req.text();
   const signature = req.headers.get("stripe-signature") || "";
 

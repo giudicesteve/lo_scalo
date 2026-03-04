@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { RefundMethod } from "@prisma/client"
 import { centsToEuro } from "@/lib/utils/currency"
 import { getItalyDayRange, getItalyMonthRange } from "@/lib/date-utils"
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware"
 
 export const dynamic = "force-dynamic"
 
@@ -51,6 +52,13 @@ async function generateRefundNumber(): Promise<string> {
  * 4. Creates refund record
  */
 export async function POST(req: Request) {
+  // Rate limiting: max 100 richieste al minuto per admin
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.adminApi)
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccata creazione rimborso`)
+    return rateLimitResponse
+  }
+
   try {
     const session = await auth()
     

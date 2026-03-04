@@ -96,6 +96,13 @@ export default function PosGiftCardPage() {
       const data = await res.json()
 
       if (!res.ok) {
+        // Gestione specifica per rate limiting (429)
+        if (res.status === 429) {
+          const retryAfter = data.retryAfter || 60
+          throw new Error(
+            `Troppe richieste. Riprova tra ${retryAfter} secondi.`
+          )
+        }
         throw new Error(data.error || "Errore durante la creazione")
       }
 

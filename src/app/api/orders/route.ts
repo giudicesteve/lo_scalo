@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { calculateGiftCardExpiry } from "@/lib/gift-card-expiry";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
 import { euroToCents } from "@/lib/utils/currency";
+import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
 
 // Helper per logging (solo console)
 function logToFile(message: string) {
@@ -72,6 +73,13 @@ async function generateOrderNumber(): Promise<string> {
 }
 
 export async function POST(req: Request) {
+  // Rate limiting: max 10 ordini al minuto per IP
+  const rateLimitResponse = withRateLimit(req, rateLimitConfigs.publicApi);
+  if (rateLimitResponse) {
+    console.warn(`[RATE LIMIT] Bloccata creazione ordine - IP limitato`);
+    return rateLimitResponse;
+  }
+
   logToFile("=".repeat(50));
   logToFile("🛒 NUOVO ORDINE RICEVUTO");
 
