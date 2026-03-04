@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -118,6 +118,10 @@ export default function PrintedGiftCardsPage() {
     }
   }, [status, router]);
 
+  // Ref per showToast per evitare loop di dipendenze
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
+
   const fetchCards = useCallback(async () => {
     try {
       const [cardsRes, batchesRes] = await Promise.all([
@@ -136,11 +140,11 @@ export default function PrintedGiftCardsPage() {
       setBatches(batchesData.batches || []);
     } catch (error) {
       console.error("Error fetching cards:", error);
-      showToast("Errore nel caricamento", "error");
+      showToastRef.current("Errore nel caricamento", "error");
     } finally {
       setIsLoading(false);
     }
-  }, [showToast]);
+  }, []); // No dependencies - usa ref per toast
 
   useEffect(() => {
     if (status === "authenticated" && featureEnabled === true) {
