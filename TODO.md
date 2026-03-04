@@ -65,7 +65,15 @@
 
 ### 🔶 Priorità Media
 
-*No medium priority tasks*
+#### UX/UI - Loader e Loading States
+- **Loader migliorati**: Implementare skeleton screens o loader più informativi per operazioni lunghe (generazione report, caricamento dati, esport Excel/PDF)
+- **Timeout handling**: Gestire meglio i timeout di caricamento con retry automatico o messaggi informativi
+- **Progressive loading**: Caricamento incrementale per liste lunghe (ordini, gift cards)
+
+#### UX/UI - Personalizzazione Brand
+- **Logo personalizzabile**: Upload logo custom per admin e sito (sostituire logo Lo Scalo)
+- **Colori brand personalizzabili**: Sistema di theming per colori primari/secondari ( Tailwind config dinamico o CSS variables)
+- **Preview in tempo reale**: Anteprima delle modifiche brand prima del salvataggio
 
 ### 🔷 Priorità Bassa
 
@@ -146,4 +154,4 @@
 
 ---
 
-*Ultimo aggiornamento: 2026-03-04*
+*Ultimo aggiornamento: 2026-03-05*
