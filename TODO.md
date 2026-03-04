@@ -49,7 +49,7 @@
   - `GiftCard`: 5 indici (ricerca, filtri tab, scadenze)
   - `Product`, `OrderItem`, `GiftCardTransaction`, `Category`, `Cocktail`, `GiftCardTemplate`
   - Documentazione: `DATABASE_INDEXES.md`
-- **Connection Pool**: Configurare pool Neon esplicitamente
+- ~~**Connection Pool**~~ ✅ **COMPLETATO** - Configurato pool Neon (max: 5, timeout: 5s/30s)
 
 #### Performance Database
 - **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
