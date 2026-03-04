@@ -43,8 +43,7 @@ interface Order {
 interface RefundItem {
   type: 'PRODUCT' | 'GIFT_CARD'
   name: string
-  price: number  // Per prodotti: prezzo in CENTS
-  value?: number // Per gift card: valore in CENTS
+  price: number  // Prezzo in CENTS (per prodotti e gift card)
   quantity?: number
   size?: string
 }
@@ -241,10 +240,8 @@ function DailyReportContent() {
       } else {
         const items = (tx as any).refundItems as RefundItem[] || []
         detail = items.map((item: RefundItem) => {
-          // item.price/value è in cents
-          const itemTotalEuro = item.type === 'PRODUCT' 
-            ? ((item.price / 100) * (item.quantity || 1))
-            : ((item.value || 0) / 100)
+          // item.price è in cents (per prodotti e gift card)
+          const itemTotalEuro = (item.price / 100) * (item.quantity || 1)
           return `${item.quantity || 1}x ${item.name}${item.size ? ` (${item.size})` : ''} (${itemTotalEuro.toFixed(2)}€)`
         }).join(" | ")
       }
@@ -604,9 +601,9 @@ function DailyReportContent() {
           y -= rowHeight
           
           gcItems.forEach((item: RefundItem) => {
-            // item.value è in cents per gift card
-            const itemValueEuro = (item.value || 0) / 100
-            page.drawText(`• ${item.name}: -${itemValueEuro.toFixed(2)}€`, {
+            // item.price è in cents per gift card (initialValue)
+            const itemPriceEuro = item.price / 100
+            page.drawText(`• ${item.name}: -${itemPriceEuro.toFixed(2)}€`, {
               x: margin + 30,
               y,
               size: 8,
@@ -1075,7 +1072,7 @@ function DailyReportContent() {
                                 <>
                                   {/* Items rimborso */}
                                   {(tx as any).refundItems?.map((item: RefundItem, idx: number) => {
-                                    // item.price/value è in cents
+                                    // item.price è in cents (per prodotti e gift card)
                                     return (
                                       <div key={idx} className="text-body-sm text-brand-dark">
                                         {item.type === 'PRODUCT' ? (
@@ -1086,7 +1083,7 @@ function DailyReportContent() {
                                         ) : (
                                           <>
                                             <span className="text-purple-600">1x {item.name}</span>
-                                            <span className="text-brand-gray ml-1">({((item.value || 0) / 100).toFixed(2)}€)</span>
+                                            <span className="text-brand-gray ml-1">({(item.price / 100).toFixed(2)}€)</span>
                                           </>
                                         )}
                                       </div>
@@ -1352,11 +1349,11 @@ function DailyReportContent() {
                               </div>
                               <div className="space-y-1">
                                 {(tx as any).refundItems?.filter((i: RefundItem) => i.type === 'GIFT_CARD').map((item: RefundItem, idx: number) => {
-                                  // item.value è in cents per gift card
-                                  const itemValueEuro = (item.value || 0) / 100
+                                  // item.price è in cents per gift card (initialValue)
+                                  const itemPriceEuro = item.price / 100
                                   return (
                                     <div key={idx} className="text-body-sm text-brand-dark">
-                                      • 1x {item.name} ({itemValueEuro.toFixed(2)}€)
+                                      • 1x {item.name} ({itemPriceEuro.toFixed(2)}€)
                                     </div>
                                   )
                                 })}

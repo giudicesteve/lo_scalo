@@ -92,15 +92,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Calcola productTotal e giftCardTotal per ogni rimborso (items è JSON)
-    // NOTA: nel database price/value sono in CENTS!
+    // NOTA: nel database price è in CENTS per entrambi!
     const refundsWithTotals = refunds.map(refund => {
-      const items = refund.items as Array<{type: string, price?: number, value?: number, quantity?: number}>
+      const items = refund.items as Array<{type: string, price?: number, quantity?: number}>
       const productTotal = items
         .filter(item => item.type === 'PRODUCT')
         .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0)
       const giftCardTotal = items
         .filter(item => item.type === 'GIFT_CARD')
-        .reduce((sum, item) => sum + (item.value || 0), 0)
+        .reduce((sum, item) => sum + (item.price || 0), 0) // price = initialValue per GC
       
       return {
         ...refund,
