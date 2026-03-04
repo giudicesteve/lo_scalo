@@ -91,6 +91,46 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Calcola productTotal e giftCardTotal per ogni rimborso (items è JSON)
+    const refundsWithTotals = refunds.map(refund => {
+      const items = refund.items as Array<{type: string, price?: number, value?: number, amount?: number}>
+      const productTotal = items
+        .filter(item => item.type === 'PRODUCT')
+        .reduce((sum, item) => sum + (item.price || item.amount || 0), 0)
+      const giftCardTotal = items
+        .filter(item => item.type === 'GIFT_CARD')
+        .reduce((sum, item) => sum + (item.value || item.amount || 0), 0)
+      
+      return {
+        ...refund,
+        productTotal,
+        giftCardTotal,
+      }
+    })
+
+    // Converti valori da cents a euro per ordini
+    const ordersInEuro = orders.map(order => ({
+      ...order,
+      total: order.total / 100,
+      items: order.items.map(item => ({
+        ...item,
+        unitPrice: item.unitPrice / 100,
+        totalPrice: item.totalPrice / 100,
+      })),
+      giftCards: order.giftCards.map(gc => ({
+        ...gc,
+        initialValue: gc.initialValue / 100,
+      })),
+    }))
+
+    // Converti valori da cents a euro per rimborsi
+    const refundsInEuro = refundsWithTotals.map(refund => ({
+      ...refund,
+      totalRefunded: refund.totalRefunded / 100,
+      productTotal: refund.productTotal / 100,
+      giftCardTotal: refund.giftCardTotal / 100,
+    }))
+
     // Conta ordini problematici (COMPLETED/DELIVERED senza paidAt, creati in questa data)
     const problematicOrders = await prisma.order.findMany({
       where: {
@@ -110,8 +150,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      orders,
-      refunds,
+      orders: ordersInEuro,
+      refunds: refundsInEuro,
       problematicOrders,
       meta: {
         date: dateParam,

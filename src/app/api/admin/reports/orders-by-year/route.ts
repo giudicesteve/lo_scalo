@@ -70,7 +70,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ orders });
+    // Converti valori da cents a euro
+    const ordersInEuro = orders.map(order => ({
+      ...order,
+      total: order.total / 100,
+      items: order.items.map(item => ({
+        ...item,
+        unitPrice: item.unitPrice / 100,
+        totalPrice: item.totalPrice / 100,
+      })),
+      giftCards: order.giftCards.map(gc => ({
+        ...gc,
+        initialValue: gc.initialValue / 100,
+      })),
+    }))
+
+    return NextResponse.json({ orders: ordersInEuro });
   } catch (error) {
     console.error("Error fetching orders by year:", error);
     return NextResponse.json(
