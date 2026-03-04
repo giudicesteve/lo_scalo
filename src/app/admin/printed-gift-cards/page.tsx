@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Toast, useToast } from "@/components/Toast";
-import { AlertCircle } from "lucide-react";
 import { QRScanner } from "@/components/QRScanner";
 import {
   ArrowLeft,
