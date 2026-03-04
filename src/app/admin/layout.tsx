@@ -97,7 +97,7 @@ export default function AdminLayout({
   const menuItems2 = [
     ...(featureFlags[FEATURE_FLAGS.MENU_ENABLED] !== false ? [{ href: "/admin/menu", label: "Menu", icon: Wine }] : []),
     ...(featureFlags[FEATURE_FLAGS.SHOP_ENABLED] !== false ? [{ href: "/admin/shop", label: "Negozio", icon: Store }] : []),
-    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Tagli Gift Card", icon: Gift }] : []),
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Negozio - Tagli Gift Card", icon: Gift }] : []),
   ];
 
   return (

@@ -48,7 +48,7 @@ interface Batch {
 }
 
 const QUANTITIES = [10, 25, 50, 100, 200, 500, 1000];
-const VALUES = [10, 20, 25, 50, 100, 150, 200];
+const VALUES = [10, 25, 50, 75, 100, 150, 200, 250, 500];
 
 export default function PrintedGiftCardsPage() {
   const { data: session, status } = useSession();

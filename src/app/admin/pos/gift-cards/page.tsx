@@ -5,16 +5,19 @@ import Link from "next/link"
 import { ArrowLeft, Store, CreditCard, Banknote, Gift, Mail, CheckCircle, Loader2, AlertCircle, X } from "lucide-react"
 import { Toast, useToast } from "@/components/Toast"
 
-interface GiftCardTemplate {
+// Tagli disponibili per creazione POS (hardcoded, indipendente da e-commerce)
+const AVAILABLE_VALUES = [25, 50, 75, 100, 150, 200, 250, 500]
+
+interface GiftCardValue {
   id: string
   value: number
-  price: number
+  label: string
 }
 
 type PaymentMethod = "CASH" | "POS"
 
 export default function PosGiftCardPage() {
-  const [templates, setTemplates] = useState<GiftCardTemplate[]>([])
+  const [values, setValues] = useState<GiftCardValue[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<{
@@ -36,29 +39,22 @@ export default function PosGiftCardPage() {
     email: string
     phone: string
     paymentMethod: PaymentMethod
-    giftCardTemplateId: string
+    giftCardValue: number
   } | null>(null)
 
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/pos/gift-cards")
-      if (!res.ok) throw new Error("Failed to fetch")
-      const data = await res.json()
-      setTemplates(data)
-      if (data.length > 0) {
-        setSelectedTemplate(data[0].id)
-      }
-    } catch (error) {
-      console.error("Error fetching templates:", error)
-      showToast("Errore nel caricamento dei tagli", "error")
-    } finally {
-      setLoading(false)
-    }
-  }, [showToast])
-
+  // Inizializza i tagli da array hardcoded (indipendente da DB e FF)
   useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
+    const giftCardValues = AVAILABLE_VALUES.map((val, index) => ({
+      id: `pos-gc-${val}`,
+      value: val,
+      label: `€${val}`,
+    }))
+    setValues(giftCardValues)
+    if (giftCardValues.length > 0) {
+      setSelectedTemplate(giftCardValues[0].id)
+    }
+    setLoading(false)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,11 +65,17 @@ export default function PosGiftCardPage() {
     }
 
     // Save form data and show confirmation modal
+    const selectedValue = values.find(v => v.id === selectedTemplate)?.value
+    if (!selectedValue) {
+      showToast("Seleziona un taglio valido", "error")
+      return
+    }
+    
     setFormData({
       email,
       phone,
       paymentMethod,
-      giftCardTemplateId: selectedTemplate,
+      giftCardValue: selectedValue,
     })
     setShowConfirmModal(true)
   }
@@ -107,7 +109,7 @@ export default function PosGiftCardPage() {
       // Reset form
       setEmail("")
       setPhone("")
-      setSelectedTemplate(templates[0]?.id || "")
+      setSelectedTemplate(values[0]?.id || "")
       setPaymentMethod("CASH")
       setFormData(null)
     } catch (error) {
@@ -299,30 +301,25 @@ export default function PosGiftCardPage() {
                 Taglio Gift Card <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {templates.map((template) => (
+                {values.map((gcValue) => (
                   <button
-                    key={template.id}
+                    key={gcValue.id}
                     type="button"
-                    onClick={() => setSelectedTemplate(template.id)}
+                    onClick={() => setSelectedTemplate(gcValue.id)}
                     className={`py-4 px-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
-                      selectedTemplate === template.id
+                      selectedTemplate === gcValue.id
                         ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
                         : "border-brand-light-gray text-brand-dark hover:border-brand-primary/50"
                     }`}
                   >
                     <Gift className="w-5 h-5 mb-1" />
-                    <span className="text-title-sm font-bold">€{template.value}</span>
-                    {template.price !== template.value && (
-                      <span className="text-label-xs text-brand-gray">
-                        Prezzo: €{template.price}
-                      </span>
-                    )}
+                    <span className="text-title-sm font-bold">{gcValue.label}</span>
                   </button>
                 ))}
               </div>
-              {templates.length === 0 && (
+              {values.length === 0 && (
                 <p className="text-body-sm text-red-500 mt-2">
-                  Nessun taglio disponibile. Configura i tagli in Impostazioni &gt; Negozio.
+                  Nessun taglio disponibile.
                 </p>
               )}
             </div>
@@ -340,7 +337,7 @@ export default function PosGiftCardPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={submitting || templates.length === 0}
+              disabled={submitting || values.length === 0}
               className="w-full py-4 px-6 bg-brand-primary text-white rounded-xl font-bold text-title-sm hover:bg-brand-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
@@ -399,7 +396,7 @@ export default function PosGiftCardPage() {
                 <div className="flex justify-between text-body-sm">
                   <span className="text-brand-gray">Importo:</span>
                   <span className="font-bold text-brand-primary">
-                    €{templates.find(t => t.id === selectedTemplate)?.value}
+                    €{values.find(v => v.id === selectedTemplate)?.value}
                   </span>
                 </div>
                 <div className="flex justify-between text-body-sm">

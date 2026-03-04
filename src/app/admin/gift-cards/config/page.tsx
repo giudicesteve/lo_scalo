@@ -85,7 +85,7 @@ export default function GiftCardConfigPage() {
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
-            Tagli Gift Card
+            Negozio - Tagli Gift Card
           </h1>
         </div>
       </header>
@@ -93,7 +93,7 @@ export default function GiftCardConfigPage() {
       <div className="p-4 max-w-7xl mx-auto">
         {/* Add Template Button */}
         <button
-          onClick={() => setEditingTemplate({ value: 50, price: 50 })}
+          onClick={() => setEditingTemplate({})}
           className="btn-primary mb-6 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />

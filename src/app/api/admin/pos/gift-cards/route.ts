@@ -4,16 +4,17 @@ import { generateOrderNumber } from "@/lib/orders";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
 import { centsToEuro } from "@/lib/utils/currency";
 
+
 // POST /api/admin/pos/gift-cards
 // Crea una gift card manualmente (POS/Contanti)
 // Nota: L'autenticazione è gestita dal middleware in middleware.ts
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, phone, paymentMethod, giftCardTemplateId } = body;
+    const { email, phone, paymentMethod, giftCardValue } = body;
 
     // Validazione
-    if (!email || !phone || !paymentMethod || !giftCardTemplateId) {
+    if (!email || !phone || !paymentMethod || !giftCardValue) {
       return NextResponse.json(
         {
           error:
@@ -34,15 +35,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Recupera il template della gift card
-    const template = await prisma.giftCardTemplate.findUnique({
-      where: { id: giftCardTemplateId, isActive: true },
-    });
-
-    if (!template) {
+    // Validazione valore gift card (deve essere un numero positivo)
+    const valueInCents = Math.round(giftCardValue * 100);
+    if (valueInCents <= 0) {
       return NextResponse.json(
-        { error: "Taglio gift card non trovato o non attivo" },
-        { status: 404 }
+        { error: "Valore gift card non valido" },
+        { status: 400 }
       );
     }
 
@@ -96,7 +94,7 @@ export async function POST(req: NextRequest) {
           type: "GIFT_CARD",
           email: email,
           phone: phone,
-          total: template.value,
+          total: valueInCents,
           orderSource: "MANUAL",
           paidAt: new Date(), // Pagamento immediato (POS/Contanti)
           // Note interne per identificare il pagamento
@@ -108,8 +106,8 @@ export async function POST(req: NextRequest) {
       const giftCard = await tx.giftCard.create({
         data: {
           code: giftCardCode,
-          initialValue: template.value,
-          remainingValue: template.value,
+          initialValue: valueInCents,
+          remainingValue: valueInCents,
           orderId: order.id,
           isActive: true, // Attiva immediatamente (già pagata)
           expiresAt,
@@ -182,28 +180,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/admin/pos/gift-cards/templates
-// Recupera i template disponibili per le gift card
-export async function GET() {
-  try {
-    const templates = await prisma.giftCardTemplate.findMany({
-      where: { isActive: true },
-      orderBy: { value: "asc" },
-    });
 
-    // Convert value and price from cents to euro
-    const transformedTemplates = templates.map((template) => ({
-      ...template,
-      value: centsToEuro(template.value),
-      price: centsToEuro(template.price),
-    }));
-
-    return NextResponse.json(transformedTemplates);
-  } catch (error) {
-    console.error("Error fetching gift card templates:", error);
-    return NextResponse.json(
-      { error: "Errore durante il recupero dei template" },
-      { status: 500 }
-    );
-  }
-}

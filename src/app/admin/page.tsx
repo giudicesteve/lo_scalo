@@ -76,7 +76,7 @@ export default function AdminDashboard() {
   const configItems = [
     ...(featureFlags[FEATURE_FLAGS.MENU_ENABLED] !== false ? [{ href: "/admin/menu", label: "Menu", icon: Wine, description: "Configura categorie e cocktail" }] : []),
     ...(featureFlags[FEATURE_FLAGS.SHOP_ENABLED] !== false ? [{ href: "/admin/shop", label: "Negozio", icon: Store, description: "Configura Prodotti e magazzino" }] : []),
-    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Tagli Gift Card", icon: Gift, description: "Configura i tagli delle Gift Card disponibili" }] : []),
+    ...(showGiftCardManagement ? [{ href: "/admin/gift-cards/config", label: "Negozio - Tagli Gift Card", icon: Gift, description: "Configura i tagli delle Gift Card disponibili nel negozio" }] : []),
   ];
 
   return (
