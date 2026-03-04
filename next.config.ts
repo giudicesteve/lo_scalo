@@ -1,20 +1,22 @@
+import withBundleAnalyzer from "@next/bundle-analyzer";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     // Ottimizzazione immagini abilitata (Vercel Image Optimization)
     // Rispetto a 'unoptimized: true', riduce banda del 30-50%
     minimumCacheTTL: 2678400, // 31 giorni cache
-    formats: ["image/webp", "image/avif"], // Formati moderni
+    formats: ["image/webp", "image/avif"] as ("image/webp" | "image/avif")[], // Formati moderni
     remotePatterns: [
       // Dominio per logo email (imgbb)
       {
-        protocol: "https",
+        protocol: "https" as const,
         hostname: "i.ibb.co",
         pathname: "/**",
       },
       // Immagini profilo Google (per admin/auth)
       {
-        protocol: "https",
+        protocol: "https" as const,
         hostname: "lh3.googleusercontent.com",
         pathname: "/**",
       },
@@ -99,4 +101,9 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Bundle Analyzer - abilita con ANALYZE=true npm run build
+const withAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default withAnalyzer(nextConfig);
