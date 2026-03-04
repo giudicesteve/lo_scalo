@@ -96,10 +96,10 @@ export default function MonthlyReportPage() {
     try {
       const [y, m] = selectedDate.split('-')
       
-      // Fetch orders
-      const ordersRes = await fetch("/api/admin/orders")
+      // Fetch orders filtrati per mese (API dedicata)
+      const ordersRes = await fetch(`/api/admin/reports/orders-by-month?year=${y}&month=${m}`)
       const ordersData = await ordersRes.json()
-      setOrders(Array.isArray(ordersData) ? ordersData : [])
+      setOrders(ordersData.orders || [])
       
       // Fetch refunds for this month
       const refundsRes = await fetch(`/api/admin/refunds?year=${y}&month=${m}`)
@@ -114,15 +114,10 @@ export default function MonthlyReportPage() {
 
   const [year, month] = selectedDate.split('-').map(Number)
 
+  // Ordini già filtrati dalla API, solo ordinamento
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      if (!order.paidAt) return false
-      const orderDate = new Date(order.paidAt)
-      const isOnMonth = orderDate.getFullYear() === year && orderDate.getMonth() === month - 1
-      const isPaidOrder = ["COMPLETED", "DELIVERED"].includes(order.status)
-      return isOnMonth && isPaidOrder
-    }).sort((a, b) => new Date(a.paidAt!).getTime() - new Date(b.paidAt!).getTime())
-  }, [orders, year, month])
+    return orders.sort((a, b) => new Date(a.paidAt!).getTime() - new Date(b.paidAt!).getTime())
+  }, [orders])
 
   const monthlyRefunds = useMemo(() => {
     return refunds.sort((a, b) => new Date(a.refundedAt).getTime() - new Date(b.refundedAt).getTime())
