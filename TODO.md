@@ -58,7 +58,7 @@
 
 ### 🔶 Priorità Media (Caching & Performance)
 
-- **Cache Headers**: Aggiungere Cache-Control alle API pubbliche
+- ~~**Cache Headers**~~ ✅ **COMPLETATO** - Cache aggiunta a 5 API pubbliche
 - **React Query**: Implementare caching lato client
 - ~~**Image Optimization**~~ ✅ **COMPLETATO** - Ottimizzazione abilitata, cache 31 giorni, formati webp/avif
 - **Bundle Analyzer**: Analizzare e ottimizzare bundle size

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-// Force dynamic rendering - uses request.url
+// Cache 5 minuti (policy cambiano raramente)
+// Nota: essendo dinamica (usa req.url), usiamo Cache-Control headers
 export const dynamic = 'force-dynamic'
 
 // GET /api/policies?type=TERMS|PRIVACY|COOKIES&lang=it|en
@@ -39,7 +40,12 @@ export async function GET(req: Request) {
       effectiveDate: policy.effectiveDate,
     }))
 
-    return NextResponse.json(localizedPolicies)
+    return NextResponse.json(localizedPolicies, {
+      headers: {
+        // Cache 5 minuti client-side (CDN non cached perché force-dynamic)
+        'Cache-Control': 'public, max-age=300',
+      },
+    })
   } catch (error) {
     console.error("Error fetching policies:", error)
     return NextResponse.json(

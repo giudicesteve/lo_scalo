@@ -2,7 +2,9 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { centsToEuro } from "@/lib/utils/currency"
 
-export const revalidate = 0
+// Cache per 5 minuti con stale-while-revalidate
+// Il menu cambia raramente, ma vogliamo aggiornamenti senza redeploy
+export const revalidate = 300
 
 export async function GET() {
   // Check if DATABASE_URL is available
@@ -36,7 +38,9 @@ export async function GET() {
 
     return NextResponse.json(categoriesWithEuroPrices, {
       headers: {
-        'Cache-Control': 'no-store, max-age=0',
+        // Cache 5 minuti, stale-while-revalidate 1 ora
+        // Risposta immediata, aggiornamento in background
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
       },
     })
   } catch (error) {

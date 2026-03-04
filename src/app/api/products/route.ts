@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
 
-export const revalidate = 0;
+// Cache 1 minuto (stock può cambiare)
+export const revalidate = 60;
 
 export async function GET() {
   // During build time, database might not be available
@@ -34,7 +35,8 @@ export async function GET() {
 
     return NextResponse.json(transformedProducts, {
       headers: {
-        "Cache-Control": "no-store, max-age=0",
+        // Cache 1 minuto, stale-while-revalidate 5 minuti
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {

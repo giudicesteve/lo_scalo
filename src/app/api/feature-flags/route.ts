@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Cache 1 minuto (feature flags possono cambiare per toggle)
+export const revalidate = 60
+
 /**
  * GET /api/feature-flags
  * Ritorna tutti i feature flags (accesso pubblico)
@@ -12,7 +15,12 @@ export async function GET() {
       orderBy: { key: "asc" },
     });
 
-    return NextResponse.json({ flags });
+    return NextResponse.json({ flags }, {
+      headers: {
+        // Cache 1 minuto, stale-while-revalidate 5 minuti
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error("[Feature Flags API] Error fetching flags:", error);
     return NextResponse.json(

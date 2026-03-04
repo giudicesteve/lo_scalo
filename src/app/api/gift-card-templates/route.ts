@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { centsToEuro } from "@/lib/utils/currency";
 
+// Cache 5 minuti (template cambiano raramente)
+export const revalidate = 300
+
 export async function GET() {
   // During build time, database might not be available
   if (!process.env.DATABASE_URL) {
@@ -21,7 +24,12 @@ export async function GET() {
       price: centsToEuro(template.price),
     }));
 
-    return NextResponse.json(transformedTemplates)
+    return NextResponse.json(transformedTemplates, {
+      headers: {
+        // Cache 5 minuti, stale-while-revalidate 1 ora
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+      },
+    })
   } catch (error) {
     console.error("Error fetching gift card templates:", error)
     return NextResponse.json([])
