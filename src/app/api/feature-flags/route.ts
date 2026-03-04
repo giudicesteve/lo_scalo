@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cacheConfig, generateCacheHeaders } from "@/lib/cache-config";
 
-// Cache 1 minuto (feature flags possono cambiare per toggle)
-export const revalidate = 60
+// Cache controllata via headers (configurabile tramite CACHE_FEATURE_FLAGS_TTL)
 
 /**
  * GET /api/feature-flags
@@ -16,10 +16,10 @@ export async function GET() {
     });
 
     return NextResponse.json({ flags }, {
-      headers: {
-        // Cache 1 minuto, stale-while-revalidate 5 minuti
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      },
+      headers: generateCacheHeaders(
+        cacheConfig.featureFlags.ttl,
+        cacheConfig.featureFlags.staleWhileRevalidate
+      ),
     });
   } catch (error) {
     console.error("[Feature Flags API] Error fetching flags:", error);

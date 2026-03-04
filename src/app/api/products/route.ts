@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
+import { cacheConfig, generateCacheHeaders } from "@/lib/cache-config";
 
-// Cache 1 minuto (stock può cambiare)
-export const revalidate = 60;
+// Cache controllata via headers (configurabile tramite CACHE_PRODUCTS_TTL)
 
 export async function GET() {
   // During build time, database might not be available
@@ -34,10 +34,10 @@ export async function GET() {
     }));
 
     return NextResponse.json(transformedProducts, {
-      headers: {
-        // Cache 1 minuto, stale-while-revalidate 5 minuti
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-      },
+      headers: generateCacheHeaders(
+        cacheConfig.products.ttl,
+        cacheConfig.products.staleWhileRevalidate
+      ),
     });
   } catch (error) {
     // During build time, database might not be available - return empty array

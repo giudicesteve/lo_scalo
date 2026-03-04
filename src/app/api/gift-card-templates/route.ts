@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { centsToEuro } from "@/lib/utils/currency";
+import { cacheConfig, generateCacheHeaders } from "@/lib/cache-config";
 
-// Cache 5 minuti (template cambiano raramente)
-export const revalidate = 300
+// Cache controllata via headers (configurabile tramite CACHE_GIFT_CARDS_TTL)
 
 export async function GET() {
   // During build time, database might not be available
@@ -25,10 +25,10 @@ export async function GET() {
     }));
 
     return NextResponse.json(transformedTemplates, {
-      headers: {
-        // Cache 5 minuti, stale-while-revalidate 1 ora
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-      },
+      headers: generateCacheHeaders(
+        cacheConfig.giftCardTemplates.ttl,
+        cacheConfig.giftCardTemplates.staleWhileRevalidate
+      ),
     })
   } catch (error) {
     console.error("Error fetching gift card templates:", error)

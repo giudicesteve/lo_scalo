@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { centsToEuro } from "@/lib/utils/currency"
+import { cacheConfig, generateCacheHeaders } from "@/lib/cache-config"
 
-// Cache per 5 minuti con stale-while-revalidate
-// Il menu cambia raramente, ma vogliamo aggiornamenti senza redeploy
-export const revalidate = 300
+// Cache controllata via headers (più flessibile di export const revalidate)
+// Il valore è configurabile tramite CACHE_CATEGORIES_TTL env var
 
 export async function GET() {
   // Check if DATABASE_URL is available
@@ -37,11 +37,10 @@ export async function GET() {
     }))
 
     return NextResponse.json(categoriesWithEuroPrices, {
-      headers: {
-        // Cache 5 minuti, stale-while-revalidate 1 ora
-        // Risposta immediata, aggiornamento in background
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-      },
+      headers: generateCacheHeaders(
+        cacheConfig.categories.ttl,
+        cacheConfig.categories.staleWhileRevalidate
+      ),
     })
   } catch (error) {
     console.error("Error fetching categories:", error)
@@ -49,7 +48,7 @@ export async function GET() {
     return NextResponse.json([], {
       status: 200,
       headers: {
-        'Cache-Control': 'no-store, max-age=0',
+        'Cache-Control': 'no-store',
       },
     })
   }
