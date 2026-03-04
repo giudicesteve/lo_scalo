@@ -8,6 +8,18 @@ import { Toast, useToast } from "@/components/Toast"
 // Tagli disponibili per creazione POS (hardcoded, indipendente da e-commerce)
 const AVAILABLE_VALUES = [25, 50, 75, 100, 150, 200, 250, 500]
 
+// Validazione email (stessa del carrello)
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+// Validazione telefono (stessa del carrello)
+function isValidPhone(phone: string): boolean {
+  const phoneRegex = /^\+[\d\s\-\(\)\.]{6,20}$/
+  return phoneRegex.test(phone)
+}
+
 interface GiftCardValue {
   id: string
   value: number
@@ -56,13 +68,36 @@ export default function PosGiftCardPage() {
     setLoading(false)
   }, [])
 
+  const [errors, setErrors] = useState<{
+    email?: string
+    phone?: string
+  }>({})
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!email || !phone || !selectedTemplate) {
-      showToast("Compila tutti i campi obbligatori", "error")
+    const newErrors: { email?: string; phone?: string } = {}
+    
+    // Validazione email
+    if (!email?.trim()) {
+      newErrors.email = "L'email è obbligatoria"
+    } else if (!isValidEmail(email)) {
+      newErrors.email = "L'email non è valida"
+    }
+    
+    // Validazione telefono
+    if (!phone?.trim()) {
+      newErrors.phone = "Il numero di telefono è obbligatorio"
+    } else if (!isValidPhone(phone)) {
+      newErrors.phone = "Il numero di telefono non è valido (deve iniziare con +)"
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
+    
+    setErrors({})
 
     // Save form data and show confirmation modal
     const selectedValue = values.find(v => v.id === selectedTemplate)?.value
@@ -243,14 +278,24 @@ export default function PosGiftCardPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
+                }}
                 placeholder="cliente@email.it"
-                required
-                className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
+                className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-colors ${
+                  errors.email 
+                    ? "border-red-500 focus:border-red-500" 
+                    : "border-brand-light-gray focus:border-brand-primary"
+                }`}
               />
-              <p className="text-label-sm text-brand-gray mt-1">
-                L&apos;email è obbligatoria per l&apos;invio della Gift Card
-              </p>
+              {errors.email ? (
+                <p className="text-label-sm text-red-500 mt-1">{errors.email}</p>
+              ) : (
+                <p className="text-label-sm text-brand-gray mt-1">
+                  L&apos;email è obbligatoria per l&apos;invio della Gift Card
+                </p>
+              )}
             </div>
 
             {/* Phone */}
@@ -262,11 +307,20 @@ export default function PosGiftCardPage() {
                 id="phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value)
+                  if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }))
+                }}
                 placeholder="+39 347 585 2220"
-                required
-                className="w-full px-4 py-3 rounded-xl border-2 border-brand-light-gray focus:border-brand-primary focus:outline-none"
+                className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none transition-colors ${
+                  errors.phone 
+                    ? "border-red-500 focus:border-red-500" 
+                    : "border-brand-light-gray focus:border-brand-primary"
+                }`}
               />
+              {errors.phone && (
+                <p className="text-label-sm text-red-500 mt-1">{errors.phone}</p>
+              )}
             </div>
 
             {/* Payment Method */}

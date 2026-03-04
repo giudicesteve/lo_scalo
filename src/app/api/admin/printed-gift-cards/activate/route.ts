@@ -34,9 +34,22 @@ export async function POST(request: NextRequest) {
     const { code, email, phone, expiresAt, paymentMethod } = body;
 
     // Validazione
-    if (!code || !email || !paymentMethod) {
+    if (!code || !email || !phone || !paymentMethod) {
       return NextResponse.json(
-        { error: "Codice PG, email e metodo di pagamento sono obbligatori" },
+        { error: "Codice PG, email, telefono e metodo di pagamento sono obbligatori" },
+        { status: 400 }
+      );
+    }
+
+    // Validazione email
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return NextResponse.json({ error: "Email non valida" }, { status: 400 });
+    }
+
+    // Validazione telefono (stessa del carrello)
+    if (!phone.match(/^\+[\d\s\-\(\)\.]{6,20}$/)) {
+      return NextResponse.json(
+        { error: "Numero di telefono non valido. Deve iniziare con +" },
         { status: 400 }
       );
     }

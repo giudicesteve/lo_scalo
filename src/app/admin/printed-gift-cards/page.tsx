@@ -50,6 +50,18 @@ interface Batch {
 const QUANTITIES = [10, 25, 50, 100, 200, 500, 1000];
 const VALUES = [10, 25, 50, 75, 100, 150, 200, 250, 500];
 
+// Validazione email (stessa del carrello)
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+// Validazione telefono (stessa del carrello)
+function isValidPhone(phone: string): boolean {
+  const phoneRegex = /^\+[\d\s\-\(\)\.]{6,20}$/
+  return phoneRegex.test(phone)
+}
+
 export default function PrintedGiftCardsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -234,9 +246,37 @@ export default function PrintedGiftCardsPage() {
     }
   };
 
+  const [errors, setErrors] = useState<{
+    email?: string
+    phone?: string
+  }>({})
+
   // Attiva codice
   const handleActivate = async () => {
-    if (!foundCard || !activateEmail || !activatePaymentMethod) return;
+    if (!foundCard) return
+    
+    const newErrors: { email?: string; phone?: string } = {}
+    
+    // Validazione email
+    if (!activateEmail?.trim()) {
+      newErrors.email = "L'email è obbligatoria"
+    } else if (!isValidEmail(activateEmail)) {
+      newErrors.email = "L'email non è valida"
+    }
+    
+    // Validazione telefono (obbligatorio)
+    if (!activatePhone?.trim()) {
+      newErrors.phone = "Il numero di telefono è obbligatorio"
+    } else if (!isValidPhone(activatePhone)) {
+      newErrors.phone = "Il numero di telefono non è valido (deve iniziare con +)"
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    
+    setErrors({})
     
     setIsActivating(true);
     try {
@@ -493,20 +533,44 @@ export default function PrintedGiftCardsPage() {
                 </p>
                 
                 <div className="space-y-3 mt-4">
-                  <input
-                    type="email"
-                    value={activateEmail}
-                    onChange={(e) => setActivateEmail(e.target.value)}
-                    placeholder="Email cliente *"
-                    className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
-                  />
-                  <input
-                    type="tel"
-                    value={activatePhone}
-                    onChange={(e) => setActivatePhone(e.target.value)}
-                    placeholder="Telefono cliente"
-                    className="w-full px-4 py-3 rounded-xl border border-brand-light-gray bg-white text-brand-dark"
-                  />
+                  <div>
+                    <input
+                      type="email"
+                      value={activateEmail}
+                      onChange={(e) => {
+                        setActivateEmail(e.target.value)
+                        if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
+                      }}
+                      placeholder="Email cliente *"
+                      className={`w-full px-4 py-3 rounded-xl border bg-white text-brand-dark focus:outline-none transition-colors ${
+                        errors.email 
+                          ? "border-red-500 focus:border-red-500" 
+                          : "border-brand-light-gray focus:border-brand-primary"
+                      }`}
+                    />
+                    {errors.email && (
+                      <p className="text-label-sm text-red-500 mt-1">{errors.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="tel"
+                      value={activatePhone}
+                      onChange={(e) => {
+                        setActivatePhone(e.target.value)
+                        if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }))
+                      }}
+                      placeholder="Telefono cliente *"
+                      className={`w-full px-4 py-3 rounded-xl border bg-white text-brand-dark focus:outline-none transition-colors ${
+                        errors.phone 
+                          ? "border-red-500 focus:border-red-500" 
+                          : "border-brand-light-gray focus:border-brand-primary"
+                      }`}
+                    />
+                    {errors.phone && (
+                      <p className="text-label-sm text-red-500 mt-1">{errors.phone}</p>
+                    )}
+                  </div>
                   
                   {/* Metodo di pagamento */}
                   <div>
@@ -560,7 +624,7 @@ export default function PrintedGiftCardsPage() {
                   
                   <button
                     onClick={handleActivate}
-                    disabled={isActivating || !activateEmail}
+                    disabled={isActivating || !activateEmail || !activatePhone}
                     className="w-full py-3 px-6 rounded-full font-medium bg-green-500 text-white hover:bg-green-600 transition-all disabled:opacity-50"
                   >
                     {isActivating ? "Attivazione..." : "Attiva Gift Card"}

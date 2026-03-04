@@ -36,6 +36,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email non valida" }, { status: 400 });
     }
 
+    // Validazione telefono (stessa del carrello)
+    if (!phone.match(/^\+[\d\s\-\(\)\.]{6,20}$/)) {
+      return NextResponse.json(
+        { error: "Numero di telefono non valido. Deve iniziare con +" },
+        { status: 400 }
+      );
+    }
+
     if (!["CASH", "POS"].includes(paymentMethod)) {
       return NextResponse.json(
         { error: "Metodo di pagamento non valido. Usa CASH o POS" },
