@@ -96,7 +96,7 @@
 - **Report accettazioni**: Statistiche su chi ha accettato cosa
 
 - ~~**Health Check**~~ ✅ **COMPLETATO** - Endpoint `/api/health` per monitoraggio
-- ~~**Bundle Analyzer**~~ ✅ **COMPLETATO** - `npm run analyze` per analisi bundle
+- ~~**Favicon**~~ ✅ **COMPLETATO** - Aggiunto favicon.ico in public/
 
 ---
 
