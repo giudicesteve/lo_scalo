@@ -43,7 +43,7 @@ export default function PosGiftCardPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH")
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   
-  const { showToast } = useToast()
+  const { toast, showToast, hideToast } = useToast()
   
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false)
