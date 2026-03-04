@@ -553,6 +553,9 @@ export default function PrintedGiftCardsPage() {
                     )}
                   </div>
                   <div>
+                    <label className="block text-label-sm text-brand-gray mb-2">
+                      Telefono cliente <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="tel"
                       value={activatePhone}
@@ -560,7 +563,7 @@ export default function PrintedGiftCardsPage() {
                         setActivatePhone(e.target.value)
                         if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }))
                       }}
-                      placeholder="Telefono cliente *"
+                      placeholder="+39 347 585 2220"
                       className={`w-full px-4 py-3 rounded-xl border bg-white text-brand-dark focus:outline-none transition-colors ${
                         errors.phone 
                           ? "border-red-500 focus:border-red-500" 
