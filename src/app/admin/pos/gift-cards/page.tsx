@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, Store, CreditCard, Banknote, Gift, Mail, CheckCircle, Loader2, AlertCircle, X } from "lucide-react"
-import { useToast } from "@/components/Toast"
 import { Toast, useToast } from "@/components/Toast"
 
 // Tagli disponibili per creazione POS (hardcoded, indipendente da e-commerce)
