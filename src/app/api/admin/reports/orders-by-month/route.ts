@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { getItalyMonthRange } from "@/lib/date-utils";
 
 /**
  * GET /api/admin/reports/orders-by-month?year=2026&month=3
@@ -33,16 +34,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Calcola date di inizio e fine mese
-    const startDate = new Date(year, month - 1, 1, 0, 0, 0);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // Calcola date UTC corrispondenti all'inizio/fine del mese in Italia
+    const { start, end } = getItalyMonthRange(year, month)
 
     // Recupera ordini pagati nel range di date
     const orders = await prisma.order.findMany({
       where: {
         paidAt: {
-          gte: startDate,
-          lte: endDate,
+          gte: start,
+          lte: end,
         },
         status: {
           in: ["COMPLETED", "DELIVERED"],

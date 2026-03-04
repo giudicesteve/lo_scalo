@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
+import { getItalyMonthRange } from "@/lib/date-utils";
 
 // Force dynamic rendering - uses req.url
 export const dynamic = "force-dynamic";
@@ -19,16 +20,14 @@ export async function GET(req: Request) {
       );
     }
 
-    // Calcola inizio e fine mese in UTC (considerando timezone italiana)
-    // Il mese in JavaScript è 0-based, quindi sottraiamo 1
-    const startOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
-    const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+    // Calcola date UTC corrispondenti all'inizio/fine del mese in Italia
+    const { start, end } = getItalyMonthRange(year, month)
 
     const transactions = await prisma.giftCardTransaction.findMany({
       where: {
         createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
+          gte: start,
+          lte: end,
         },
       },
       orderBy: {
