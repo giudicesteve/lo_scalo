@@ -32,12 +32,24 @@
 
 ### 🔥 Priorità Alta (Ottimizzazione & Sicurezza)
 
-Vedi `OPTIMIZATION_REPORT.md` per dettagli completi.
+~~#### Rate Limiting~~ ✅ **COMPLETATO**
+- Implementato rate limiting in-memory configurabile via env vars
+- Default: 3 req/min pubbliche, 100/min admin, 1000/min webhook
+- API protette: orders, refunds, pos/gift-cards, webhook
 
-#### Sicurezza
-- **Rate Limiting**: Implementare rate limiting su API pubbliche e admin (@upstash/ratelimit)
-- **Content Security Policy**: Aggiungere headers CSP, X-Frame-Options, X-Content-Type-Options
-- **Webhook Idempotency**: Tracciare event ID di Stripe per prevenire doppio processamento
+~~#### Content Security Policy~~ ✅ **COMPLETATO**
+- Headers CSP configurati per Stripe, Google OAuth
+- Voto A su securityheaders.com
+- X-Frame-Options, X-Content-Type-Options, Referrer-Policy attivi
+
+#### Performance Database
+- **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
+- ~~**Indici DB**~~ ✅ **COMPLETATO** - 21 indici applicati su Neon
+  - `Order`: 6 indici (ricerca, filtri, report)
+  - `GiftCard`: 5 indici (ricerca, filtri tab, scadenze)
+  - `Product`, `OrderItem`, `GiftCardTransaction`, `Category`, `Cocktail`, `GiftCardTemplate`
+  - Documentazione: `DATABASE_INDEXES.md`
+- **Connection Pool**: Configurare pool Neon esplicitamente
 
 #### Performance Database
 - **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
@@ -56,6 +68,15 @@ Vedi `OPTIMIZATION_REPORT.md` per dettagli completi.
 *No medium priority tasks*
 
 ### 🔷 Priorità Bassa
+
+#### Miglioramenti Webhook (Futuro)
+- **Stripe Webhook Idempotency Completa**: Tracciare event ID per prevenire doppie email
+  - Problema: Se Stripe ritenta `checkout.session.completed`, email viene inviata di nuovo
+  - Soluzione: Tabella `ProcessedStripeEvent` con event ID tracciati
+  - Campo aggiuntivo: `Order.processedStripeEventId`
+  - Priorità: Bassa (probabilità retry Stripe bassa per bar locale)
+
+#### Shop Enhancements
 
 #### Shop Enhancements
 - **Guida alle taglie**: Aggiungere guida taglie nel negozio
