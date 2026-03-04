@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -73,38 +73,36 @@ export default function MetricsReportPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
 
-  useEffect(() => {
-    fetchOrders()
-  }, [])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await fetch("/api/admin/orders")
-      const data = await res.json()
-      setOrders(data)
+      if (viewMode === "month") {
+        // Vista mese: usa API orders-by-month
+        const [year, month] = selectedMonth.split('-').map(Number)
+        const res = await fetch(`/api/admin/reports/orders-by-month?year=${year}&month=${month}`)
+        const data = await res.json()
+        setOrders(data.orders || [])
+      } else {
+        // Vista anno: usa API orders-by-year
+        const res = await fetch(`/api/admin/reports/orders-by-year?year=${selectedYear}`)
+        const data = await res.json()
+        setOrders(data.orders || [])
+      }
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [viewMode, selectedMonth, selectedYear])
 
+  useEffect(() => {
+    fetchOrders()
+  }, [fetchOrders])
+
+  // Ordini già filtrati dalla API
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      if (!order.paidAt) return false
-      const orderDate = new Date(order.paidAt)
-      const isPaidOrder = ["COMPLETED", "DELIVERED"].includes(order.status)
-      
-      if (viewMode === "month") {
-        const [year, month] = selectedMonth.split('-').map(Number)
-        const isOnMonth = orderDate.getFullYear() === year && orderDate.getMonth() === month - 1
-        return isOnMonth && isPaidOrder
-      } else {
-        // Year view
-        return orderDate.getFullYear() === selectedYear && isPaidOrder
-      }
-    }).sort((a, b) => new Date(a.paidAt!).getTime() - new Date(b.paidAt!).getTime())
-  }, [orders, viewMode, selectedMonth, selectedYear])
+    return orders.sort((a, b) => new Date(a.paidAt!).getTime() - new Date(b.paidAt!).getTime())
+  }, [orders])
 
   const metrics = useMemo(() => {
     const totalOrders = filteredOrders.length
