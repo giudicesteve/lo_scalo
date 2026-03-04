@@ -23,9 +23,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // Content Security Policy e altri header di sicurezza
   async headers() {
     return [

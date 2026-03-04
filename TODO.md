@@ -69,6 +69,8 @@
 
 ### 🔷 Priorità Bassa
 
+~~#### TypeScript Strict~~ ✅ **COMPLETATO** - `ignoreBuildErrors` rimosso, build passa con strict mode
+
 #### Miglioramenti Webhook (Futuro)
 - **Stripe Webhook Idempotency Completa**: Tracciare event ID per prevenire doppie email
   - Problema: Se Stripe ritenta `checkout.session.completed`, email viene inviata di nuovo
