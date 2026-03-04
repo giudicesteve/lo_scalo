@@ -125,7 +125,24 @@
 
 ## 💡 Idee Future
 
-*No ideas at the moment*
+#### Verifica Saldo Gift Card (Pubblica)
+**Descrizione**: Pagina pubblica dove il cliente può verificare il saldo residuo della propria gift card inserendo codice + email o scansionando il QR code.
+
+**Sicurezza** (critico - previene enumeration attacks):
+- **Autenticazione a 2 fattori**: Codice GC + Email (entrambi obbligatori)
+- **Rate limiting**: Max 5 tentativi per IP ogni 10 minuti
+- **Delay artificiale**: 1 secondo di attesa prima della risposta (mitiga timing attack)
+- **Messaggio generico**: "Dati non corretti o gift card non trovata" (non rivela se il codice esiste)
+- **reCAPTCHA v3**: Aggiungere dopo il primo tentativo fallito
+
+**UX**:
+- Input manuale codice + email
+- QR Scanner (reusa componente esistente `QrScanner`)
+- Visualizzazione saldo, data scadenza, storico transazioni (opzionale)
+
+**Route proposta**: `/gift-card/balance` o `/verifica-gift-card`
+
+**Priorità**: Media (nice to have, non bloccante)
 
 ---
 
