@@ -8,6 +8,8 @@
 
 | Data | Task | Descrizione |
 |------|------|-------------|
+| 2026-03-04 | **Testing Completo** | Test di tutti i report, funzionalità, timezone, conversioni cents/euro |
+| 2026-03-04 | **POS Gift Cards** | Decoupled da DB, valori hardcoded [10,25,50,75,100,150,200,250,500] |
 | 2026-03-03 | **Gift Card Cartacee** | Sistema PG: generazione CSV, attivazione, guida stampa PDF |
 | 2026-03-02 | **Paginazione** | 50 item/pagina per Ordini e Gift Cards, separata per tab |
 | 2026-03-02 | **Feature Flag System** | 9 flag configurabili, maintenance mode, menu admin dinamico |
@@ -22,24 +24,7 @@
 
 ## 🚧 In Progress
 
-### 🚨 URGENTE - Testing Completo
-
-| Data | Task | Descrizione | Priorità |
-|------|------|-------------|----------|
-| 2026-03-04 | **Test Report** | Testare tutti i nuovi report (monthly, metrics, complete, accounting) | 🔴 Altissima |
-| 2026-03-04 | **Test Funzionalità** | Verificare tutte le funzionalità modificate (timezone, conversione cents/euro) | 🔴 Altissima |
-| 2026-03-04 | **Test Date/Timezone** | Verificare gestione date con DST (ora legale/solare), date passate/future | 🔴 Altissima |
-
-**Checklist Testing:**
-- [ ] Report Mensile - visualizzazione corretta dati
-- [ ] Report Metrics - vista mese/anno, calcoli corretti
-- [ ] Report Complete - export Excel/PDF
-- [ ] Contabilità Giornaliera - ordini, rimborsi, totali
-- [ ] Gift Card - transazioni, scadute
-- [ ] Rimborsi - calcolo importi prodotti e GC
-- [ ] Date - verificare cambio ora legale/solare
-- [ ] Timezone - ordini a cavallo della mezzanotte
-- [ ] Cents/Euro - conversioni corrette in tutte le pagine
+*No tasks in progress*
 
 ---
 
@@ -51,10 +36,7 @@
 
 ### 🔶 Priorità Media
 
-~~#### Paginazione Ordini~~ ✅ **COMPLETATO**
-- 50 ordini per pagina
-- Paginazione separata per ogni tab (Attivi, Archiviati, Annullati)
-- Paginazione anche per Gift Cards (Attive, Credito esaurito, Non Disponibili)
+*No medium priority tasks*
 
 ### 🔷 Priorità Bassa
 
