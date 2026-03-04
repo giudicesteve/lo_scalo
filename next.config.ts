@@ -1,7 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    unoptimized: true,
+    // Ottimizzazione immagini abilitata (Vercel Image Optimization)
+    // Rispetto a 'unoptimized: true', riduce banda del 30-50%
+    minimumCacheTTL: 2678400, // 31 giorni cache
+    formats: ["image/webp", "image/avif"], // Formati moderni
+    remotePatterns: [
+      // Dominio per logo email (imgbb)
+      {
+        protocol: "https",
+        hostname: "i.ibb.co",
+        pathname: "/**",
+      },
+      // Immagini profilo Google (per admin/auth)
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,

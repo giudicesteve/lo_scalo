@@ -60,7 +60,7 @@
 
 - **Cache Headers**: Aggiungere Cache-Control alle API pubbliche
 - **React Query**: Implementare caching lato client
-- **Image Optimization**: Rimuovere `unoptimized: true` da next.config
+- ~~**Image Optimization**~~ ✅ **COMPLETATO** - Ottimizzazione abilitata, cache 31 giorni, formati webp/avif
 - **Bundle Analyzer**: Analizzare e ottimizzare bundle size
 
 ### 🔶 Priorità Media
