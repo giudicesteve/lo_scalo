@@ -22,7 +22,24 @@
 
 ## 🚧 In Progress
 
-*No active tasks*
+### 🚨 URGENTE - Testing Completo
+
+| Data | Task | Descrizione | Priorità |
+|------|------|-------------|----------|
+| 2026-03-04 | **Test Report** | Testare tutti i nuovi report (monthly, metrics, complete, accounting) | 🔴 Altissima |
+| 2026-03-04 | **Test Funzionalità** | Verificare tutte le funzionalità modificate (timezone, conversione cents/euro) | 🔴 Altissima |
+| 2026-03-04 | **Test Date/Timezone** | Verificare gestione date con DST (ora legale/solare), date passate/future | 🔴 Altissima |
+
+**Checklist Testing:**
+- [ ] Report Mensile - visualizzazione corretta dati
+- [ ] Report Metrics - vista mese/anno, calcoli corretti
+- [ ] Report Complete - export Excel/PDF
+- [ ] Contabilità Giornaliera - ordini, rimborsi, totali
+- [ ] Gift Card - transazioni, scadute
+- [ ] Rimborsi - calcolo importi prodotti e GC
+- [ ] Date - verificare cambio ora legale/solare
+- [ ] Timezone - ordini a cavallo della mezzanotte
+- [ ] Cents/Euro - conversioni corrette in tutte le pagine
 
 ---
 
@@ -87,4 +104,4 @@
 
 ---
 
-*Ultimo aggiornamento: 2026-03-02*
+*Ultimo aggiornamento: 2026-03-04*
