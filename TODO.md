@@ -43,7 +43,9 @@
 - X-Frame-Options, X-Content-Type-Options, Referrer-Policy attivi
 
 #### Performance Database
-- **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
+- ~~**Fix N+1 Queries**~~ ✅ **COMPLETATO**
+  - Order creation: carica tutti i prodotti in una query sola con `findMany` + `Map`
+  - Webhook stock restore: usa `updateMany` invece di loop N+1
 - ~~**Indici DB**~~ ✅ **COMPLETATO** - 21 indici applicati su Neon
   - `Order`: 6 indici (ricerca, filtri, report)
   - `GiftCard`: 5 indici (ricerca, filtri tab, scadenze)
@@ -51,24 +53,19 @@
   - Documentazione: `DATABASE_INDEXES.md`
 - ~~**Connection Pool**~~ ✅ **COMPLETATO** - Configurato pool Neon (max: 5, timeout: 5s/30s)
 
-#### Performance Database
-- **Fix N+1 Queries**: Ottimizzare order creation e webhook stock restore
-- **Indici DB**: Aggiungere indici su Order (orderNumber, email, phone) e GiftCard (code, purchasedAt)
-- **Connection Pool**: Configurare pool Neon esplicitamente
-
 ### 🔶 Priorità Media (Caching & Performance)
 
 - ~~**Cache Headers**~~ ✅ **COMPLETATO** - Cache aggiunta a 5 API pubbliche
-- **React Query**: Implementare caching lato client
 - ~~**Image Optimization**~~ ✅ **COMPLETATO** - Ottimizzazione abilitata, cache 31 giorni, formati webp/avif
 - **Bundle Analyzer**: Analizzare e ottimizzare bundle size
+- **React Query**: Implementare caching lato client ( TanStack Query )
 
 ### 🔶 Priorità Media
 
 #### UX/UI - Loader e Loading States
-- **Loader migliorati**: Implementare skeleton screens o loader più informativi per operazioni lunghe (generazione report, caricamento dati, esport Excel/PDF)
+- ~~**Loader migliorati**~~ ✅ **COMPLETATO** - Skeleton screens per paginazione e tab switching
 - **Timeout handling**: Gestire meglio i timeout di caricamento con retry automatico o messaggi informativi
-- **Progressive loading**: Caricamento incrementale per liste lunghe (ordini, gift cards)
+- **Progressive loading**: Caricamento incrementale per liste lunghe (virtual scrolling o infinite scroll)
 
 #### UX/UI - Personalizzazione Brand
 - **Logo personalizzabile**: Upload logo custom per admin e sito (sostituire logo Lo Scalo)
