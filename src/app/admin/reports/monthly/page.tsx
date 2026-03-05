@@ -833,7 +833,7 @@ export default function MonthlyReportPage() {
           <Link href="/admin/reports" className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
-          <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
+          <h1 className="text-title-md sm:text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2 text-center w-full px-12">
             Report Mensile Vendite e Rimborsi
           </h1>
         </div>

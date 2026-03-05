@@ -188,7 +188,7 @@ export default function PosGiftCardPage() {
             <Link href="/admin" className="p-2 -ml-2">
               <ArrowLeft className="w-6 h-6 text-brand-dark" />
             </Link>
-            <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
+            <h1 className="text-title-md sm:text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2 text-center w-full px-12">
               Cr. Gift Card
             </h1>
           </div>
@@ -246,7 +246,7 @@ export default function PosGiftCardPage() {
           <Link href="/admin" className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
-          <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">
+          <h1 className="text-title-md sm:text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2 text-center w-full px-12">
             Creazione Gift Card Digitale
           </h1>
         </div>
