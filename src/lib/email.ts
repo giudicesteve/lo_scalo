@@ -603,8 +603,8 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
   }
 }
 
-// Logo URL pubblico
-const LOGO_URL = 'https://i.ibb.co/JjXJtRjT/Lo-Scalo-vertical-orange.png'
+// Logo URL - GitHub Raw (CDN gratuita)
+const LOGO_URL = 'https://raw.githubusercontent.com/giudicesteve/lo_scalo/main/public/resources/Lo_Scalo_vertical_black.png'
 
 // HTML template per conferma ordine
 function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false, lang: string = 'it'): string {
