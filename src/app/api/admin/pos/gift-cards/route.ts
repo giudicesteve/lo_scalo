@@ -4,12 +4,18 @@ import { generateOrderNumber } from "@/lib/orders";
 import { generateUniqueGiftCardCode } from "@/lib/gift-card";
 import { centsToEuro } from "@/lib/utils/currency";
 import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
+import { checkAdmin } from "@/lib/api-auth";
 
+export const dynamic = 'force-dynamic'
 
 // POST /api/admin/pos/gift-cards
 // Crea una gift card manualmente (POS/Contanti)
-// Nota: L'autenticazione è gestita dal middleware in middleware.ts
 export async function POST(req: NextRequest) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   // Rate limiting: max 100 richieste al minuto per admin
   const rateLimitResponse = withRateLimit(req, rateLimitConfigs.adminApi)
   if (rateLimitResponse) {

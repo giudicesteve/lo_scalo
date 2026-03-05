@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkAdmin } from "@/lib/api-auth";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
   try {
     // Esegui tutte le count in parallelo
     const [active, exhausted, unavailable] = await Promise.all([

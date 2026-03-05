@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
 import { getItalyMonthRange } from "@/lib/date-utils";
+import { checkAdmin } from "@/lib/api-auth";
 
-// Force dynamic rendering - uses req.url
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 // GET - Lista tutte le gift card scadute in un mese specifico
 export async function GET(req: Request) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const year = parseInt(searchParams.get("year") || "");

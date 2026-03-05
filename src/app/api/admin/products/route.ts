@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { euroToCents, centsToEuro } from "@/lib/utils/currency";
+import { checkAdmin } from "@/lib/api-auth";
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic';
 
 // Helper to generate a unique ID for ProductVariant
 function generateVariantId(): string {
@@ -10,6 +14,11 @@ function generateVariantId(): string {
 // GET - Lista tutti i prodotti (esclusi quelli eliminati)
 export async function GET(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const { searchParams } = new URL(req.url, process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
     const includeDeleted = searchParams.get("includeDeleted") === "true";
     
@@ -39,6 +48,11 @@ export async function GET(req: Request) {
 // POST - Crea nuovo prodotto
 export async function POST(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json();
 
     // Se il prodotto non ha taglie, aggiungi una size "Unica" di default
@@ -89,6 +103,11 @@ export async function POST(req: Request) {
 // PUT - Aggiorna prodotto
 export async function PUT(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json();
 
     // Aggiorna il prodotto base
@@ -212,6 +231,11 @@ export async function PUT(req: Request) {
 // DELETE - Soft delete prodotto
 export async function DELETE(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {

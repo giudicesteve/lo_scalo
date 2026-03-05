@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { euroToCents, centsToEuro } from "@/lib/utils/currency";
+import { euroToCents, centsToEuro } from "@/lib/utils/currency"
+import { checkAdmin } from "@/lib/api-auth"
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic'
 
 // GET - Lista cocktail
 export async function GET() {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const cocktails = await prisma.cocktail.findMany({
       orderBy: { order: "asc" },
     });
@@ -24,6 +33,11 @@ export async function GET() {
 // POST - Crea nuovo cocktail
 export async function POST(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json()
     
     // Validazione: nameIt e nameEn sono obbligatori
@@ -77,6 +91,11 @@ export async function POST(req: Request) {
 // PUT - Aggiorna cocktail
 export async function PUT(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json()
     
     // Validazione per aggiornamento
@@ -142,6 +161,11 @@ export async function PUT(req: Request) {
 // DELETE - Elimina cocktail
 export async function DELETE(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const { searchParams } = new URL(req.url)
     const id = searchParams.get("id")
     if (!id) {

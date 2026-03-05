@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkAdmin } from "@/lib/api-auth";
+
+export const dynamic = 'force-dynamic';
 
 // POST - Archivia o ripristina una gift card
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   try {
     const { id: giftCardId } = await params;
     const body = await req.json();

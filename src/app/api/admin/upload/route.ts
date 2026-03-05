@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 import sharp from "sharp"
+import { checkAdmin } from "@/lib/api-auth"
+
+export const dynamic = 'force-dynamic'
 
 // Formati supportati
 const ALLOWED_TYPES = [
@@ -12,6 +15,11 @@ const ALLOWED_TYPES = [
 ]
 
 export async function POST(req: Request) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+  
   try {
     console.log("Upload started...")
     

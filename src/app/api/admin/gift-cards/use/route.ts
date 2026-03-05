@@ -2,9 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { euroToCents, centsToEuro } from "@/lib/utils/currency";
 import { withRateLimit, rateLimitConfigs } from "@/lib/rate-limit-middleware";
+import { checkAdmin } from "@/lib/api-auth";
+
+export const dynamic = 'force-dynamic';
 
 // POST - Usa una gift card
 export async function POST(req: Request) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   // Rate limiting: max 100 richieste al minuto per admin
   const rateLimitResponse = withRateLimit(req, rateLimitConfigs.adminApi)
   if (rateLimitResponse) {

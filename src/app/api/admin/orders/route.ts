@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
+import { checkAdmin } from "@/lib/api-auth"
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic'
 
 // Order status type matching the database schema
 type OrderStatus = "PENDING_PAYMENT" | "COMPLETED" | "DELIVERED" | "CANCELLED";
@@ -8,6 +12,11 @@ type OrderStatus = "PENDING_PAYMENT" | "COMPLETED" | "DELIVERED" | "CANCELLED";
 // GET - Lista ordini con paginazione
 export async function GET(req: Request) {
   try {
+    // Check admin authentication
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
     const { searchParams } = new URL(req.url);
     const archivedParam = searchParams.get("archived");
     const statusParam = searchParams.get("status");
@@ -140,6 +149,11 @@ export async function GET(req: Request) {
 // PUT - Aggiorna ordine (status, archivia)
 export async function PUT(req: Request) {
   try {
+    // Check admin authentication
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
     const body = await req.json();
     const data: { status?: OrderStatus; isArchived?: boolean } = {};
 

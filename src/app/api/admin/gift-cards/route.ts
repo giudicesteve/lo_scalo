@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { centsToEuro } from "@/lib/utils/currency";
+import { checkAdmin } from "@/lib/api-auth"
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic'
 
 // GET - Lista gift card con paginazione e filtri per tab
 export async function GET(req: Request) {
   try {
+    // Check admin authentication
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
     const { searchParams } = new URL(req.url);
     const tab = searchParams.get("tab"); // "active" | "exhausted" | "unavailable"
     const search = searchParams.get("search");

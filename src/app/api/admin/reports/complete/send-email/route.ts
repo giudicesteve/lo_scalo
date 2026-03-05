@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
+import { checkAdmin } from "@/lib/api-auth"
 import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
 import { generateCompleteExcel, workbookToBuffer } from "@/lib/reports/excel"
 import { generateCompletePDF } from "@/lib/reports/pdf-server"
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
+  const authCheck = await checkAdmin();
+  if ("error" in authCheck) {
+    return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+  }
+
   try {
     const { year, month, email } = await request.json()
 
