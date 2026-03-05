@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState, useMemo } from "react"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Package, CreditCard, Gift, AlertTriangle, FileSpreadsheet, Printer, AlertCircle, RotateCcw, PlusCircle, MinusCircle } from "lucide-react"
@@ -93,7 +94,7 @@ function DailyReportContent() {
     setLoading(true)
     try {
       // Usa API dedicata contabilità che filtra server-side per data (timezone Italia)
-      const res = await fetch(`/api/admin/accounting?date=${selectedDate}`)
+      const res = await fetchAdminAPI(`/api/admin/accounting?date=${selectedDate}`)
       const data = await res.json()
       
       setOrders(data.orders || [])

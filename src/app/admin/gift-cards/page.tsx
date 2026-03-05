@@ -22,6 +22,7 @@ import {
   Download,
 } from "lucide-react"
 import * as XLSX from "xlsx"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
 const ITEMS_PER_PAGE = 25
@@ -194,7 +195,7 @@ export default function AdminGiftCardsPage() {
         params.set("search", search)
       }
       
-      const res = await fetch(`/api/admin/gift-cards?${params.toString()}`)
+      const res = await fetchAdminAPI(`/api/admin/gift-cards?${params.toString()}`)
       const data = await res.json()
       
       if (data.giftCards) {
@@ -347,7 +348,7 @@ export default function AdminGiftCardsPage() {
     setUseSuccess(null)
 
     try {
-      const res = await fetch("/api/admin/gift-cards/use", {
+      const res = await fetchAdminAPI("/api/admin/gift-cards/use", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -405,7 +406,7 @@ export default function AdminGiftCardsPage() {
     const { transactionId, giftCardId } = deleteConfirm
     
     try {
-      const res = await fetch(
+      const res = await fetchAdminAPI(
         `/api/admin/gift-cards/transactions/${transactionId}`,
         {
           method: "DELETE",
@@ -777,7 +778,7 @@ export default function AdminGiftCardsPage() {
   useEffect(() => {
     const fetchTotals = async () => {
       try {
-        const res = await fetch("/api/admin/gift-cards/counts")
+        const res = await fetchAdminAPI("/api/admin/gift-cards/counts")
         if (res.ok) {
           const data = await res.json()
           setPagination(prev => ({

@@ -64,7 +64,7 @@
 
 #### UX/UI - Loader e Loading States
 - ~~**Loader migliorati**~~ ✅ **COMPLETATO** - Skeleton screens per paginazione e tab switching
-- **Timeout handling**: Gestire meglio i timeout di caricamento con retry automatico o messaggi informativi
+- ~~**Timeout handling**~~ ✅ **COMPLETATO** - Retry automatico con exponential backoff per API principali (orders, gift-cards, accounting, reports)
 - ~~**Progressive loading**~~ ✅ **COMPLETATO** - Virtual scrolling per liste lunghe
 
 #### UX/UI - Personalizzazione Brand

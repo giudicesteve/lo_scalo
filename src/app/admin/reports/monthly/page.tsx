@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -97,12 +98,12 @@ export default function MonthlyReportPage() {
       const [y, m] = selectedDate.split('-')
       
       // Fetch orders filtrati per mese (API dedicata)
-      const ordersRes = await fetch(`/api/admin/reports/orders-by-month?year=${y}&month=${m}`)
+      const ordersRes = await fetchAdminAPI(`/api/admin/reports/orders-by-month?year=${y}&month=${m}`)
       const ordersData = await ordersRes.json()
       setOrders(ordersData.orders || [])
       
       // Fetch refunds for this month
-      const refundsRes = await fetch(`/api/admin/refunds?year=${y}&month=${m}`)
+      const refundsRes = await fetchAdminAPI(`/api/admin/refunds?year=${y}&month=${m}`)
       const refundsData = await refundsRes.json()
       setRefunds(refundsData.refunds || [])
     } catch (error) {

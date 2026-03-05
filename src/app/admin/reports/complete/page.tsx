@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -53,23 +54,23 @@ export default function CompleteReportPage() {
 
   const fetchAllData = async () => {
     // Fetch orders filtrati per mese (API dedicata ai report)
-    const ordersRes = await fetch(`/api/admin/reports/orders-by-month?year=${year}&month=${month}`)
+    const ordersRes = await fetchAdminAPI(`/api/admin/reports/orders-by-month?year=${year}&month=${month}`)
     const ordersData = await ordersRes.json()
     const filteredOrders: Order[] = ordersData.orders || []
 
     // Fetch refunds
-    const refundsRes = await fetch(`/api/admin/refunds?year=${year}&month=${month}`)
+    const refundsRes = await fetchAdminAPI(`/api/admin/refunds?year=${year}&month=${month}`)
     const refundsData = await refundsRes.json()
     const monthlyRefunds: Refund[] = (refundsData.refunds || []).sort(
       (a: Refund, b: Refund) => new Date(a.refundedAt).getTime() - new Date(b.refundedAt).getTime()
     )
 
     // Fetch gift card transactions
-    const transactionsRes = await fetch(`/api/admin/gift-cards/transactions/monthly?year=${year}&month=${month}`)
+    const transactionsRes = await fetchAdminAPI(`/api/admin/gift-cards/transactions/monthly?year=${year}&month=${month}`)
     const transactionsData: GiftCardTransaction[] = await transactionsRes.json()
 
     // Fetch expired gift cards
-    const expiredRes = await fetch(`/api/admin/gift-cards/expired/monthly?year=${year}&month=${month}`)
+    const expiredRes = await fetchAdminAPI(`/api/admin/gift-cards/expired/monthly?year=${year}&month=${month}`)
     const expiredData: ExpiredGiftCard[] = await expiredRes.json()
 
     return {
@@ -118,7 +119,7 @@ export default function CompleteReportPage() {
     setEmailStatus(null)
 
     try {
-      const response = await fetch('/api/admin/reports/complete/send-email', {
+      const response = await fetchAdminAPI('/api/admin/reports/complete/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

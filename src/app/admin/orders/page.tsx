@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ArrowLeft, Search, Mail, Archive, RotateCcw, CheckCircle, Clock, X, AlertTriangle, Store, Globe, CreditCard, RotateCcwIcon, ArrowDownLeftFromCircle, LucideArrowUpCircle } from "lucide-react"
 import { ConfirmDialog } from "@/components/Dialog"
@@ -219,7 +220,7 @@ export default function AdminOrdersPage() {
         params.set("search", search)
       }
       
-      const res = await fetch(`/api/admin/orders?${params.toString()}`)
+      const res = await fetchAdminAPI(`/api/admin/orders?${params.toString()}`)
       const data = await res.json()
       
       if (data.orders) {
@@ -313,7 +314,7 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     const fetchTotals = async () => {
       try {
-        const res = await fetch("/api/admin/orders/counts")
+        const res = await fetchAdminAPI("/api/admin/orders/counts")
         if (res.ok) {
           const data = await res.json()
           setPagination(prev => ({

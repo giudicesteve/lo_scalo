@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo, useCallback } from "react"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -66,7 +67,7 @@ export default function ExpiredGiftCardsReportPage() {
     setLoading(true)
     try {
       const [year, month] = selectedDate.split('-').map(Number)
-      const res = await fetch(`/api/admin/gift-cards/expired/monthly?year=${year}&month=${month}`)
+      const res = await fetchAdminAPI(`/api/admin/gift-cards/expired/monthly?year=${year}&month=${month}`)
       const data = await res.json()
       if (res.ok) {
         setGiftCards(data)

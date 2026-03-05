@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo, useCallback } from "react"
+import { fetchAdminAPI } from "@/lib/fetch-retry"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -75,12 +76,12 @@ export default function MetricsReportPage() {
       if (viewMode === "month") {
         // Vista mese: usa API orders-by-month
         const [year, month] = selectedMonth.split('-').map(Number)
-        const res = await fetch(`/api/admin/reports/orders-by-month?year=${year}&month=${month}`)
+        const res = await fetchAdminAPI(`/api/admin/reports/orders-by-month?year=${year}&month=${month}`)
         const data = await res.json()
         setOrders(data.orders || [])
       } else {
         // Vista anno: usa API orders-by-year
-        const res = await fetch(`/api/admin/reports/orders-by-year?year=${selectedYear}`)
+        const res = await fetchAdminAPI(`/api/admin/reports/orders-by-year?year=${selectedYear}`)
         const data = await res.json()
         setOrders(data.orders || [])
       }
