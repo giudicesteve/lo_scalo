@@ -9,30 +9,28 @@
 
 > A full-stack e-commerce platform for a cocktail bar in Cremia (Lake Como), Italy.
 
-![Lo Scalo](public/logo.png)
-
 ---
 
-## ✨ Features
+## Features
 
 ### For Customers
-- 🍹 **Browse Menu** - View cocktails organized by categories
-- 🛍️ **Shop Products** - Purchase merchandise (in-store pickup)
-- 🎁 **Gift Cards** - Buy digital gift cards (€50, €100, €200)
-- 💳 **Secure Checkout** - Stripe payment with 30-minute sessions
-- 🌍 **Bilingual** - Full Italian/English support
+- **Browse Menu** - View cocktails organized by categories
+- **Shop Products** - Purchase merchandise (in-store pickup)
+- **Gift Cards** - Buy digital gift cards (€50, €100, €200)
+- **Secure Checkout** - Stripe payment with 30-minute sessions
+- **Bilingual** - Full Italian/English support
 
 ### For Admins
-- 📦 **Order Management** - Track from payment to delivery
-- 🎫 **Gift Card System** - Issue, track, redeem with receipt upload
-- 💰 **Daily Accounting** - Export to Excel/PDF
-- 📊 **Reports & Analytics** - Monthly metrics, top/bottom sellers
-- 📝 **Legal Policies** - Versioned Terms, Privacy, Cookies (IT/EN)
-- ⚙️ **Feature Flags** - Enable/disable sections without deployment
+- **Order Management** - Track from payment to delivery
+- **Gift Card System** - Issue, track, redeem with receipt upload
+- **Daily Accounting** - Export to Excel/PDF
+- **Reports & Analytics** - Monthly metrics, top/bottom sellers
+- **Legal Policies** - Versioned Terms, Privacy, Cookies (IT/EN)
+- **Feature Flags** - Enable/disable sections without deployment
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 20.x
@@ -143,7 +141,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Test Cards (Stripe)
 
@@ -169,14 +167,14 @@ stripe trigger checkout.session.expired
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **[AGENTS.md](./AGENTS.md)** - Complete technical documentation for developers/AI
 - **[STRIPE_SETUP.md](./STRIPE_SETUP.md)** - Stripe configuration guide
 
 ---
 
-## 🎨 Brand Colors
+## Brand Colors
 
 ```css
 --brand-primary: #F05A28;      /* Orange - Actions */
@@ -190,20 +188,15 @@ stripe trigger checkout.session.expired
 
 ---
 
-## 📝 License
+## License
 
 Private - All rights reserved.
 
 ---
 
-## 🙏 Credits
+## Credits
 
 Developed with ❤️ for **Lo Scalo - Craft Drinks by the Lake**  
 📍 Frazione San Vito, 9 - 22010 Cremia (CO), Italy
 
 ---
-
-<p align="center">
-  <a href="https://loscalo.it">🌐 Website</a> •
-  <a href="https://instagram.com/loscalo">📸 Instagram</a>
-</p>
