@@ -57,7 +57,7 @@
 
 - ~~**Cache Headers**~~ ✅ **COMPLETATO** - Cache aggiunta a 5 API pubbliche
 - ~~**Image Optimization**~~ ✅ **COMPLETATO** - Ottimizzazione abilitata, cache 31 giorni, formati webp/avif
-- **Bundle Analyzer**: Analizzare e ottimizzare bundle size
+~~- **Bundle Analyzer**~~ ✅ **COMPLETATO**
 - **React Query**: Implementare caching lato client ( TanStack Query )
 
 ### 🔶 Priorità Media
@@ -65,7 +65,7 @@
 #### UX/UI - Loader e Loading States
 - ~~**Loader migliorati**~~ ✅ **COMPLETATO** - Skeleton screens per paginazione e tab switching
 - **Timeout handling**: Gestire meglio i timeout di caricamento con retry automatico o messaggi informativi
-- **Progressive loading**: Caricamento incrementale per liste lunghe (virtual scrolling o infinite scroll)
+- ~~**Progressive loading**~~ ✅ **COMPLETATO** - Virtual scrolling per liste lunghe
 
 #### UX/UI - Personalizzazione Brand
 - **Logo personalizzabile**: Upload logo custom per admin e sito (sostituire logo Lo Scalo)
@@ -76,12 +76,8 @@
 
 ~~#### TypeScript Strict~~ ✅ **COMPLETATO** - `ignoreBuildErrors` rimosso, build passa con strict mode
 
-#### Miglioramenti Webhook (Futuro)
-- **Stripe Webhook Idempotency Completa**: Tracciare event ID per prevenire doppie email
-  - Problema: Se Stripe ritenta `checkout.session.completed`, email viene inviata di nuovo
-  - Soluzione: Tabella `ProcessedStripeEvent` con event ID tracciati
-  - Campo aggiuntivo: `Order.processedStripeEventId`
-  - Priorità: Bassa (probabilità retry Stripe bassa per bar locale)
+~~#### Miglioramenti Webhook~~ ✅ **COMPLETATO**
+- ~~**Stripe Webhook Idempotency Completa**~~ ✅ **COMPLETATO** - Tabella `ProcessedStripeEvent` con event ID tracciati, previene doppie email su retry Stripe
 
 #### Shop Enhancements
 
