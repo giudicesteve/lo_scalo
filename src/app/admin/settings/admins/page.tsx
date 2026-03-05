@@ -166,7 +166,7 @@ export default function AdminManagementPage() {
       {/* Header */}
       <header className="bg-white border-b border-brand-light-gray">
         <div className="flex items-center px-4 py-3 relative">
-          <Link href="/admin/settings" className="p-2 -ml-2">
+          <Link href="/admin/settings" className="p-2 -ml-2 relative z-10">
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark absolute left-1/2 -translate-x-1/2">

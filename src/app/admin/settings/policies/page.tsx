@@ -200,7 +200,7 @@ export default function AdminPoliciesPage() {
       {/* Header */}
       <header className="bg-white border-b border-brand-light-gray">
         <div className="flex items-center justify-between px-4 py-3 min-h-[64px]">
-          <Link href="/admin/settings" className="p-2 -ml-2">
+          <Link href="/admin/settings" className="p-2 -ml-2 relative z-10">
             <ArrowLeft className="w-6 h-6 text-brand-dark" />
           </Link>
           <h1 className="text-headline-sm font-bold text-brand-dark text-center flex-1 px-2">
