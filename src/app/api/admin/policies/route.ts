@@ -10,12 +10,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin
+    // Check if user is admin with manage admins permission
     const admin = await prisma.admin.findUnique({
       where: { email: session.user.email },
     })
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -48,12 +48,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin
+    // Check if user is admin with manage admins permission
     const admin = await prisma.admin.findUnique({
       where: { email: session.user.email },
     })
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

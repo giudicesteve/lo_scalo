@@ -15,12 +15,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin
+    // Check if user is admin with manage admins permission
     const admin = await prisma.admin.findUnique({
       where: { email: session.user.email },
     })
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -58,21 +58,13 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin and has manage admins permission
+    // Check if user is admin with manage admins permission
     const admin = await prisma.admin.findUnique({
       where: { email: session.user.email },
     })
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    // Only super admins can change settings
-    if (!admin.canManageAdmins) {
-      return NextResponse.json(
-        { error: "Only super admins can change expiry settings" },
-        { status: 403 }
-      )
     }
 
     const body = await req.json()

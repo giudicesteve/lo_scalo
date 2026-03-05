@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { ArrowLeft, Clock, Calendar, Save, AlertTriangle, X, FileText } from "lucide-react"
+import { ArrowLeft, Clock, Calendar, Save, AlertTriangle, X, FileText, Shield } from "lucide-react"
 import { Toast, useToast } from "@/components/Toast"
 
 type ExpiryType = "EXACT_DATE" | "END_OF_MONTH"
@@ -19,11 +19,16 @@ export default function GiftCardExpirySettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [unauthorized, setUnauthorized] = useState(false)
   const { toast, showToast, hideToast } = useToast()
 
   const fetchExpirySettings = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/settings/gift-card-expiry")
+      if (res.status === 403) {
+        setUnauthorized(true)
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setExpirySettings(data)
@@ -91,6 +96,28 @@ export default function GiftCardExpirySettingsPage() {
     return (
       <main className="min-h-screen bg-brand-cream flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary" />
+      </main>
+    )
+  }
+
+  if (unauthorized) {
+    return (
+      <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-brand-gray mx-auto mb-4" />
+          <h1 className="text-headline-lg font-bold text-brand-dark mb-2">
+            Accesso Negato
+          </h1>
+          <p className="text-body-lg text-brand-gray mb-6">
+            Solo gli utenti con il permesso &quot;Gestione Admin&quot; possono modificare le impostazioni di scadenza Gift Card.
+          </p>
+          <Link
+            href="/admin/settings"
+            className="px-6 py-3 rounded-full border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-colors"
+          >
+            Torna alle Impostazioni
+          </Link>
+        </div>
       </main>
     )
   }

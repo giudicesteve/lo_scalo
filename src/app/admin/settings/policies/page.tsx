@@ -36,6 +36,7 @@ const policyIcons: Record<PolicyType, typeof FileText> = {
 export default function AdminPoliciesPage() {
   const [policies, setPolicies] = useState<PolicyDocument[]>([])
   const [loading, setLoading] = useState(true)
+  const [unauthorized, setUnauthorized] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [previewPolicy, setPreviewPolicy] = useState<PolicyDocument | null>(null)
   const [archiveConfirm, setArchiveConfirm] = useState<string | null>(null)
@@ -52,6 +53,10 @@ export default function AdminPoliciesPage() {
   const fetchPolicies = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/policies")
+      if (res.status === 403) {
+        setUnauthorized(true)
+        return
+      }
       if (!res.ok) throw new Error("Failed to fetch")
       const data = await res.json()
       setPolicies(data)
@@ -189,9 +194,31 @@ export default function AdminPoliciesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-cream flex items-center justify-center">
-        <div className="text-brand-gray">Caricamento...</div>
-      </div>
+      <main className="min-h-screen bg-brand-cream flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary" />
+      </main>
+    )
+  }
+
+  if (unauthorized) {
+    return (
+      <main className="min-h-screen bg-brand-cream flex flex-col items-center justify-center p-6">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-brand-gray mx-auto mb-4" />
+          <h1 className="text-headline-lg font-bold text-brand-dark mb-2">
+            Accesso Negato
+          </h1>
+          <p className="text-body-lg text-brand-gray mb-6">
+            Solo gli utenti con il permesso &quot;Gestione Admin&quot; possono gestire i documenti legali.
+          </p>
+          <Link
+            href="/admin/settings"
+            className="px-6 py-3 rounded-full border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-colors"
+          >
+            Torna alle Impostazioni
+          </Link>
+        </div>
+      </main>
     )
   }
 
