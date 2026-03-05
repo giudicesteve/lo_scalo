@@ -3,6 +3,32 @@ import QRCode from 'qrcode'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { prisma } from './prisma'
 
+// Default logo URLs
+const DEFAULT_LOGO_EMAIL = 'https://raw.githubusercontent.com/giudicesteve/lo_scalo/main/public/resources/Lo_Scalo_vertical_black.png'
+
+// Cache for logo URL (fetched once per request)
+let cachedLogoEmail: string | null = null
+let cacheTimestamp = 0
+const CACHE_TTL = 60000 // 1 minute
+
+async function getLogoEmail(): Promise<string> {
+  const now = Date.now()
+  if (cachedLogoEmail && now - cacheTimestamp < CACHE_TTL) {
+    return cachedLogoEmail
+  }
+
+  try {
+    const config = await prisma.siteConfig.findUnique({
+      where: { key: 'logoEmail' }
+    })
+    cachedLogoEmail = config?.value || DEFAULT_LOGO_EMAIL
+    cacheTimestamp = now
+    return cachedLogoEmail
+  } catch {
+    return DEFAULT_LOGO_EMAIL
+  }
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = 'Lo Scalo <onboarding@resend.dev>'
@@ -161,7 +187,7 @@ async function generateGiftCardPDF(giftCard: GiftCardInfo): Promise<Buffer> {
   let logoImage = null
   let logoDims = null
   try {
-    const logoUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/resources/Lo_Scalo_vertical_black.png`
+    const logoUrl = await getLogoEmail()
     const response = await fetch(logoUrl)
     if (response.ok) {
       const logoBytes = await response.arrayBuffer()
@@ -430,7 +456,7 @@ export async function sendOrderConfirmation(order: OrderDetails): Promise<EmailR
     : ''
 
   const attachments = hasGiftCards ? await generateGiftCardAttachments(order) : []
-  const htmlContent = generateOrderConfirmationHtml(order, attachments.length > 0, lang)
+  const htmlContent = await generateOrderConfirmationHtml(order, attachments.length > 0, lang)
 
   const dateLocale = lang === 'en' ? 'en-US' : 'it-IT'
   const text = `
@@ -510,7 +536,7 @@ export async function sendAdminNotification(order: OrderDetails): Promise<EmailR
 <body style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4; color: #231F20; background-color: #f5f5f5;">
   <div style="background-color: white; margin: 0 auto; padding: 8px; border: 2px solid #000000;">
     <div style="margin-bottom: 15px;">
-      <img src="${LOGO_URL}" alt="Lo Scalo" style="max-width: 140px; height: auto; display: block;" />
+      <img src="${await getLogoEmail()}" alt="Logo" style="max-width: 140px; height: auto; display: block;" />
     </div>
     <h2 style="margin: 0 0 15px 0; color: #000000; font-size: 16px; border-bottom: 2px solid #000000; padding-bottom: 5px;">🛒 NUOVO ORDINE #${order.orderNumber}</h2>
     
@@ -603,11 +629,9 @@ Admin: ${process.env.NEXTAUTH_URL}/admin/orders
   }
 }
 
-// Logo URL - GitHub Raw (CDN gratuita)
-const LOGO_URL = 'https://raw.githubusercontent.com/giudicesteve/lo_scalo/main/public/resources/Lo_Scalo_vertical_black.png'
-
 // HTML template per conferma ordine
-function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false, lang: string = 'it'): string {
+async function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: boolean = false, lang: string = 'it'): Promise<string> {
+  const logoUrl = await getLogoEmail()
   const hasProducts = order.items.length > 0
   const hasGiftCards = order.giftCards.length > 0
 
@@ -623,7 +647,7 @@ function generateOrderConfirmationHtml(order: OrderDetails, hasAttachments: bool
   <div style="background-color: white; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;">
     <div style="background-color: ${BRAND_CREAM}; border-radius: 16px;padding: 32px 24px; text-align: center; border-bottom: 1px solid rgba(78,110,88,0.1);">
       <div style="margin-bottom: 6px;">
-        <img src="${LOGO_URL}" alt="Lo Scalo" style="max-width: 160px; height: auto;" />
+        <img src="${logoUrl}" alt="Logo" style="max-width: 160px; height: auto;" />
       </div>
       <h1 style="font-size: 24px; font-weight: 700; color: ${BRAND_DARK}; margin: 0 0 8px;">${t('email.order.greeting', lang)}</h1>
       <div style="font-size: 15px; color: #666; font-weight: 500;">${t('email.order.number', lang)} <strong style="color: ${BRAND_DARK};">#${order.orderNumber}</strong></div>

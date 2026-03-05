@@ -33,6 +33,11 @@
 ### 🔥 Priorità Alta (Ottimizzazione & Sicurezza)
 
 ~~#### Rate Limiting~~ ✅ **COMPLETATO**
+
+#### Rate Limiting Login (Enhancement)
+- Rate limit specifico su `/api/auth/callback/google` (es. 10 tentativi/ora per IP)
+- Protezione enumeration attack (scoprire email registrate)
+- Priorità: Bassa (Google OAuth già protetto)
 - Implementato rate limiting in-memory configurabile via env vars
 - Default: 3 req/min pubbliche, 100/min admin, 1000/min webhook
 - API protette: orders, refunds, pos/gift-cards, webhook

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, Scale, Users, Clock, Shield, ToggleLeft } from "lucide-react"
+import { ArrowLeft, ChevronRight, Scale, Users, Clock, Shield, ToggleLeft, Palette } from "lucide-react"
 
 const settingsItems = [
   { 
@@ -10,6 +10,12 @@ const settingsItems = [
     label: "Gestione Utenti", 
     icon: Users, 
     description: "Gestione utenti, permessi e accessi al pannello"
+  },
+  { 
+    href: "/admin/settings/brand", 
+    label: "Brand e Logo", 
+    icon: Palette, 
+    description: "Configura logo personalizzato per sito, email e PDF"
   },
   { 
     href: "/admin/settings/gift-card-expiry", 

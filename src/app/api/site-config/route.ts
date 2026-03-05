@@ -1,81 +1,67 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
-// Forza dynamic rendering per evitare problemi con request.url durante la build
 export const dynamic = 'force-dynamic'
 
-// GET - Recupera configurazioni
-export async function GET(request: Request) {
+// GET /api/site-config - Legge tutte le configurazioni (pubblico)
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const key = searchParams.get("key")
-
-    // Se viene passato un key, ritorna solo quella configurazione
-    if (key) {
-      const config = await prisma.siteConfig.findUnique({
-        where: { key },
-      })
-
-      // Se non esiste, ritorna default values per chiavi conosciute
-      if (!config) {
-        const defaults: Record<string, string> = {
-          MENU_ENABLED: "true",
-          SHOP_ENABLED: "true",
-        }
-        return NextResponse.json({ key, value: defaults[key] || "" })
-      }
-
-      return NextResponse.json({ key, value: config.value })
-    }
-
-    // Altrimenti ritorna tutte le configurazioni come oggetto
-    const allConfigs = await prisma.siteConfig.findMany()
-    const configObject: Record<string, string> = {}
+    const configs = await prisma.siteConfig.findMany()
     
-    // Aggiungi defaults
-    configObject["MENU_ENABLED"] = "true"
-    configObject["SHOP_ENABLED"] = "true"
+    const configMap = configs.reduce((acc, config) => {
+      acc[config.key] = config.value
+      return acc
+    }, {} as Record<string, string>)
     
-    // Sovrascrivi con valori dal DB
-    allConfigs.forEach((config) => {
-      configObject[config.key] = config.value
-    })
-
-    return NextResponse.json(configObject)
+    return NextResponse.json(configMap)
   } catch (error) {
-    console.error('[API SiteConfig] Error:', error)
-    // Return defaults on error
-    return NextResponse.json({
-      MENU_ENABLED: "true",
-      SHOP_ENABLED: "true",
-    })
+    console.error("Error fetching site config:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch site config" },
+      { status: 500 }
+    )
   }
 }
 
-// PUT - Aggiorna o crea un valore di configurazione
-export async function PUT(request: Request) {
+// PUT /api/site-config - Aggiorna configurazioni (solo admin)
+export async function PUT(req: Request) {
   try {
-    const body = await request.json()
+    const session = await auth()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const admin = await prisma.admin.findUnique({
+      where: { email: session.user.email },
+    })
+
+    if (!admin || !admin.canManageAdmins) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const body = await req.json()
     const { key, value } = body
 
-    if (!key || value === undefined) {
+    if (!key || typeof value !== "string") {
       return NextResponse.json(
-        { error: "Key and value required" },
+        { error: "Invalid input" },
         { status: 400 }
       )
     }
 
+    // Upsert: crea se non esiste, aggiorna se esiste
     const config = await prisma.siteConfig.upsert({
       where: { key },
-      update: { value },
+      update: { value, updatedAt: new Date() },
       create: { key, value },
     })
 
-    return NextResponse.json({ key: config.key, value: config.value })
+    return NextResponse.json(config)
   } catch (error) {
-    console.error("Error updating config:", error)
+    console.error("Error updating site config:", error)
     return NextResponse.json(
-      { error: "Failed to update config" },
+      { error: "Failed to update site config" },
       { status: 500 }
     )
   }
