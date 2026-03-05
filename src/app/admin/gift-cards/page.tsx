@@ -179,6 +179,7 @@ export default function AdminGiftCardsPage() {
         [tab]: { page, total: cached.total }
       }))
       setLoading(false)
+      if (showLoading) setIsTabLoading(false)
       return
     }
     

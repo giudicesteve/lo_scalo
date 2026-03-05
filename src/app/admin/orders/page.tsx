@@ -195,6 +195,7 @@ export default function AdminOrdersPage() {
         [tab]: { page, total: cached.total }
       }))
       setLoading(false)
+      if (showLoading) setIsTabLoading(false)
       return
     }
     
