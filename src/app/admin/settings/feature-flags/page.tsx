@@ -56,7 +56,7 @@ export default function FeatureFlagsPage() {
 
   const fetchFlags = useCallback(async () => {
     try {
-      const res = await fetch("/api/feature-flags")
+      const res = await fetch("/api/admin/feature-flags")
       if (res.status === 403) {
         setUnauthorized(true)
         return

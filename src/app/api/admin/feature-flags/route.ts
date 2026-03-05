@@ -1,10 +1,52 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheConfig, generateCacheHeaders } from "@/lib/cache-config";
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic'
+
+/**
+ * GET /api/admin/feature-flags
+ * Ritorna tutti i feature flags (richiede canManageAdmins)
+ */
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const admin = await prisma.admin.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!admin || !admin.canManageAdmins) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const flags = await prisma.featureFlag.findMany({
+      orderBy: { key: "asc" },
+    });
+
+    return NextResponse.json({ flags }, {
+      headers: generateCacheHeaders(
+        cacheConfig.featureFlags.ttl,
+        cacheConfig.featureFlags.staleWhileRevalidate
+      ),
+    });
+  } catch (error) {
+    console.error("[Feature Flags API] Error fetching flags:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch feature flags" },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * PUT /api/admin/feature-flags
- * Aggiorna un feature flag (richiede autenticazione admin)
+ * Aggiorna un feature flag (richiede canManageAdmins)
  * Body: { key: string, enabled: boolean }
  */
 export async function PUT(request: Request) {
@@ -18,14 +60,14 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Verifica che l'utente sia un admin valido
+    // Verifica che l'utente sia un admin con permessi di gestione
     const admin = await prisma.admin.findUnique({
       where: { email: session.user.email! },
     });
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json(
-        { error: "Forbidden - Admin privileges required" },
+        { error: "Forbidden - Admin management privileges required" },
         { status: 403 }
       );
     }
