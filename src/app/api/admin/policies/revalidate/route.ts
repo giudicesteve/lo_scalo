@@ -17,7 +17,7 @@ export async function POST() {
       where: { email: session.user.email },
     })
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

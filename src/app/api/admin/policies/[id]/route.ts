@@ -18,7 +18,7 @@ export async function GET(
       where: { email: session.user.email },
     });
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -56,7 +56,7 @@ export async function PUT(
       where: { email: session.user.email },
     });
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -122,7 +122,7 @@ export async function DELETE(
       where: { email: session.user.email },
     });
 
-    if (!admin) {
+    if (!admin || !admin.canManageAdmins) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
