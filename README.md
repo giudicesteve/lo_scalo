@@ -1,381 +1,209 @@
-# Lo Scalo - Craft Drinks by the Lake
+# 🍸 Lo Scalo - Craft Drinks by the Lake
 
-[![Next.js](https://img.shields.io/badge/Next.js-16+-000000?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4+-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-7.4+-2D3748?logo=prisma)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-4169E1?logo=postgresql)](https://www.postgresql.org/)
-[![Stripe](https://img.shields.io/badge/Stripe-20+-635BFF?logo=stripe)](https://stripe.com/)
-[![License](https://img.shields.io/badge/License-Proprietary-ff69b4)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.4.1-2D3748)](https://prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.1-38B2AC)](https://tailwindcss.com/)
+[![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF)](https://stripe.com/)
 
-> A full-stack e-commerce platform for **Lo Scalo**, a cocktail bar on Lake Como, Italy. Built with Next.js 16, React 19, TypeScript, Stripe, and PostgreSQL.
+> A full-stack e-commerce platform for a cocktail bar in Cremia (Lake Como), Italy.
 
----
-
-## Features
-
-### Customer Experience
-- **Bilingual Support**: Full Italian and English language support with `next-intl` 4.8
-- **Digital Menu**: Browse cocktails organized by categories with detailed descriptions
-- **Online Shop**: Purchase merchandise with size selection and stock checking
-- **Gift Cards**: Buy digital gift cards (€50, €100, €200) with QR codes and PDF delivery
-- **Secure Payments**: Stripe Checkout with 30-minute payment sessions
-- **Email Confirmations**: Automated order confirmations with Resend
-- **Mobile-First**: Optimized for mobile, tablet, and desktop
-
-### Admin Dashboard
-- **Secure Login**: Google OAuth with role-based access control
-- **Order Management**: Track orders from payment to delivery with status workflow
-- **Gift Card Management**: Activate, redeem, and track gift card usage with receipt upload
-- **Refund System**: Process partial refunds for products and full refunds for gift cards
-- **Reports & Analytics**: 
-  - Daily accounting reports with Excel/PDF export
-  - Monthly reports with orders AND refunds (net revenue calculation)
-  - **Complete Report**: All reports combined in single Excel/PDF file
-  - Reports default to previous month (for finalized accounting periods)
-  - Top/bottom sellers metrics
-  - Gift card transaction reports
-  - Expired gift cards tracking
-  - Email delivery of complete reports with both Excel and PDF attachments
-- **Menu Management**: CRUD for cocktail categories and items
-- **Shop Management**: Product inventory with multi-size support
-- **Legal Policies**: Versioned Terms, Privacy, and Cookie policies (IT/EN)
-- **Settings**: Gift card expiry configuration, user management
-
-### Technical Highlights
-- **Next.js 16 + React 19**: Latest framework versions with Server Components
-- **Prisma 7 + Neon**: Serverless PostgreSQL with Neon adapter
-- **Real-time Stock**: Atomic stock reservation during checkout
-- **Idempotent Webhooks**: Safe Stripe webhook handling with duplicate prevention
-- **Gift Card Expiry**: Automated daily cron job for expiration handling
-- **Policy Versioning**: Database-driven legal documents with acceptance tracking
-- **Currency Precision**: All monetary values stored as integers (cents) to prevent floating-point errors
+![Lo Scalo](public/logo.png)
 
 ---
 
-## Architecture
+## ✨ Features
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                            │
-├─────────────────────────────────────────────────────────────────┤
-│  Public Pages        │  Cart (Zustand)      │  Admin Panel      │
-│  • Landing           │  • Persist to        │  • Dashboard      │
-│  • Menu              │    localStorage      │  • Orders         │
-│  • Shop              │  • Stripe Checkout   │  • Gift Cards     │
-│  • Gift Cards        │    integration       │  • Reports        │
-│  • Checkout          │                      │  • Settings       │
-└──────────┬──────────────────────────────────────┬───────────────┘
-           │                                      │
-           ▼                                      ▼
-┌───────────────────────────────────────────────────────────────────┐
-│                      NEXT.JS 16 API LAYER                         │
-├───────────────────────────────────────────────────────────────────┤
-│  Public API          │  Admin API             │  Webhooks         │
-│  • /api/products     │  • /api/admin/orders   │  • Stripe events  │
-│  • /api/menu         │  • /api/admin/shop     │  • Cron jobs      │
-│  • /api/orders       │  • /api/admin/reports  │                   │
-│                      │  • /api/admin/refunds  │                   │
-└──────────┬──────────────────────────────────────┬─────────────────┘
-           │                                      │
-           ▼                                      ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    SERVICE LAYER                                 │
-├──────────────────────────────────────────────────────────────────┤
-│  Stripe             │  Resend              │  Prisma 7 ORM       │
-│  • Checkout         │  • Order emails      │  • Neon Adapter     │
-│  • Webhooks         │  • Gift card PDFs    │  • PostgreSQL       │
-│  • Refunds          │  • Admin alerts      │  • Transactions     │
-└──────────────────────────────────────────────────────────────────┘
-```
+### For Customers
+- 🍹 **Browse Menu** - View cocktails organized by categories
+- 🛍️ **Shop Products** - Purchase merchandise (in-store pickup)
+- 🎁 **Gift Cards** - Buy digital gift cards (€50, €100, €200)
+- 💳 **Secure Checkout** - Stripe payment with 30-minute sessions
+- 🌍 **Bilingual** - Full Italian/English support
+
+### For Admins
+- 📦 **Order Management** - Track from payment to delivery
+- 🎫 **Gift Card System** - Issue, track, redeem with receipt upload
+- 💰 **Daily Accounting** - Export to Excel/PDF
+- 📊 **Reports & Analytics** - Monthly metrics, top/bottom sellers
+- 📝 **Legal Policies** - Versioned Terms, Privacy, Cookies (IT/EN)
+- ⚙️ **Feature Flags** - Enable/disable sections without deployment
 
 ---
 
-## Tech Stack
-
-| Category | Technology | Version |
-|----------|------------|---------|
-| **Framework** | Next.js | 16.1.6 |
-| **UI Library** | React | 19.2.4 |
-| **Language** | TypeScript | 5.x |
-| **Styling** | Tailwind CSS | 3.4.1 |
-| **UI Components** | shadcn/ui | Latest |
-| **Authentication** | NextAuth.js | 5.0.0-beta.30 |
-| **i18n** | next-intl | 4.8.3 |
-| **State** | Zustand | 5.0.11 |
-| **ORM** | Prisma | 7.4.1 |
-| **Database** | Neon PostgreSQL | Serverless |
-| **Payments** | Stripe | 20.3.1 |
-| **Email** | Resend | 6.9.2 |
-
----
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- **Node.js** 18.x or higher
-- **PostgreSQL** 14.x or higher (or use [Neon](https://neon.tech) for serverless)
-- **Stripe Account** (test mode for development)
-- **Google OAuth Credentials** (for admin login)
-- **Resend Account** (for email sending)
+- Node.js 20.x
+- PostgreSQL database (we use [Neon](https://neon.tech))
+- Stripe account
+- Google OAuth credentials
+- Resend account (for emails)
 
 ### Installation
 
-1. **Clone the repository**
-
 ```bash
-git clone https://github.com/yourusername/lo-scalo.git
-cd lo-scalo
-```
+# Clone repository
+git clone https://github.com/giudicesteve/lo_scalo.git
+cd lo_scalo
 
-2. **Install dependencies**
-
-```bash
+# Install dependencies
 npm install
-```
 
-3. **Set up environment variables**
-
-```bash
+# Set up environment variables
 cp .env.example .env
-```
+# Edit .env with your values
 
-Edit `.env` with your configuration (see [Environment Variables](#-environment-variables) below).
+# Database setup
+npx prisma migrate dev
 
-4. **Set up the database**
-
-```bash
-# Generate Prisma client
-npm run db:generate
-
-# Run migrations
-npm run db:migrate
-
-# Seed initial data (optional)
-npm run db:seed
-```
-
-5. **Run the development server**
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-6. **Set up Stripe webhooks (for local development)**
+### Environment Variables
 
 ```bash
-# Install Stripe CLI: https://stripe.com/docs/stripe-cli
+# Database (Neon PostgreSQL)
+DATABASE_URL="postgresql://user:pass@host-pooler/db?sslmode=require"
+DATABASE_URL_UNPOOLED="postgresql://user:pass@host/db?sslmode=require"
 
-# Login to Stripe
+# Authentication (NextAuth.js)
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+
+# Payments (Stripe)
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+
+# Email (Resend)
+RESEND_API_KEY="re_..."
+
+# Optional: Rate Limiting
+RATE_LIMIT_PUBLIC_API=10
+RATE_LIMIT_ADMIN_API=100
+```
+
+---
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | [Next.js 16](https://nextjs.org/) with App Router |
+| **Language** | TypeScript 5.x |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) + shadcn/ui |
+| **Database** | [Neon](https://neon.tech) PostgreSQL (Serverless) |
+| **ORM** | [Prisma 7](https://prisma.io/) |
+| **Auth** | [NextAuth.js](https://next-auth.js.org/) (Google OAuth) |
+| **Payments** | [Stripe](https://stripe.com/) Checkout |
+| **State** | [Zustand](https://github.com/pmndrs/zustand) |
+| **i18n** | [next-intl](https://next-intl-docs.vercel.app/) |
+
+### Project Structure
+
+```
+lo_scalo/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── (routes)/     # Public pages
+│   │   ├── admin/        # Admin panel
+│   │   ├── api/          # API routes
+│   │   └── layout.tsx    # Root layout
+│   ├── components/       # Shared components
+│   ├── lib/             # Utilities & configs
+│   └── store/           # Zustand stores
+├── prisma/              # Database schema
+└── public/              # Static assets
+```
+
+---
+
+## 💳 Stripe Setup
+
+See [STRIPE_SETUP.md](./STRIPE_SETUP.md) for detailed Stripe configuration.
+
+Quick webhook setup:
+```bash
+# Install Stripe CLI
+# https://stripe.com/docs/stripe-cli
+
+# Login
 stripe login
 
-# Forward webhooks to your local server
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
-
-# Copy the webhook signing secret to your .env file
+# Listen for webhooks locally
+stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
 ---
 
-## Environment Variables
+## 🧪 Testing
 
-Create a `.env` file with the following variables:
+### Test Cards (Stripe)
 
-### Required
+| Card Number | Scenario |
+|-------------|----------|
+| `4242 4242 4242 4242` | Payment succeeds |
+| `4000 0000 0000 0002` | Card declined |
+| `4000 0000 0000 3220` | 3D Secure required |
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL pooled connection string | `postgresql://user:pass@host-pooler/db?sslmode=require` |
-| `DATABASE_URL_UNPOOLED` | PostgreSQL direct connection (for migrations) | `postgresql://user:pass@host/db?sslmode=require` |
-| `NEXTAUTH_URL` | Your app URL | `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | Random secret for JWT | `your-secret-min-32-chars` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | `123-abc.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth secret | `GOCSPX-...` |
-| `STRIPE_SECRET_KEY` | Stripe secret key | `sk_test_...` or `sk_live_...` |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret | `whsec_...` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe public key | `pk_test_...` or `pk_live_...` |
-| `RESEND_API_KEY` | Resend API key | `re_...` |
-
-### Optional
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CRON_SECRET` | Secret for cron job authentication | - |
-| `ADMIN_EMAIL` | Fallback admin email | - |
-| `NODE_ENV` | Environment mode | `development` |
-
----
-
-## Testing
-
-### Stripe Test Cards
-
-Use these cards for testing payments:
-
-| Card Number           | Scenario                               |
-|-----------------------|----------------------------------------|
-| `4242 4242 4242 4242` | Payment succeeds                       |
-| `4000 0000 0000 0002` | Card declined                          |
-| `4000 0000 0000 3220` | 3D Secure required                     |
-| `4000 0000 0000 6975` | Card declined (insufficient funds)     |
-
-CVC: any number  
-Issue date: any future Month/Year
-
-### Database Management
+### Local Webhook Testing
 
 ```bash
-# Open Prisma Studio (visual database editor)
-npx prisma studio
+# Terminal 1: Start dev server
+npm run dev
 
-# Reset database (⚠️ deletes all data)
-npx prisma migrate reset
+# Terminal 2: Start Stripe webhook listener
+stripe listen --forward-to localhost:3000/api/stripe/webhook
 
-# Generate Prisma client after schema changes
-npx prisma generate
+# Terminal 3: Trigger test events
+stripe trigger checkout.session.completed
+stripe trigger checkout.session.expired
 ```
 
-### Email Testing
+---
 
-In development, Resend only sends to verified email addresses:
+## 📚 Documentation
 
-1. Add your email in [Resend Dashboard](https://resend.com) → Senders
-2. Verify by clicking the confirmation link
-3. Use your verified email for test orders
+- **[AGENTS.md](./AGENTS.md)** - Complete technical documentation for developers/AI
+- **[STRIPE_SETUP.md](./STRIPE_SETUP.md)** - Stripe configuration guide
 
 ---
 
-## Deployment
+## 🎨 Brand Colors
 
-### Vercel (Recommended)
-
-1. **Push to GitHub**
-
-```bash
-git push origin main
+```css
+--brand-primary: #F05A28;      /* Orange - Actions */
+--brand-primary-hover: #D94E22;
+--brand-cream: #FFF5F0;        /* Backgrounds */
+--brand-cream-dark: #F5E6DE;
+--brand-dark: #231F20;         /* Text */
+--brand-gray: #6B6565;         /* Secondary text */
+--brand-light-gray: #E8E0DC;   /* Borders */
 ```
 
-2. **Connect to Vercel**
-   - Import project in [Vercel Dashboard](https://vercel.com)
-   - Select your repository
-   - Framework preset: Next.js
+---
 
-3. **Configure Environment Variables**
-   - Add all variables from `.env` in Project Settings
-   - Ensure both `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED` are set
+## 📝 License
 
-4. **Configure Database**
-   - Use [Neon](https://neon.tech) or [Vercel Postgres](https://vercel.com/storage/postgres)
-   - Update `DATABASE_URL` with production connection string
-
-5. **Configure Stripe Webhooks**
-   - In Stripe Dashboard: Developers → Webhooks
-   - Add endpoint: `https://yourdomain.com/api/webhooks/stripe`
-   - Select events: `checkout.session.completed`, `checkout.session.expired`
-   - Copy signing secret to `STRIPE_WEBHOOK_SECRET`
-
-6. **Configure Cron Jobs**
-
-Add to `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/jobs/deactivate-expired-gift-cards",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
-
-7. **Deploy**
-
-```bash
-vercel --prod
-```
-
-### Production Checklist
-
-- [ ] Switch Stripe to live mode (`pk_live_`, `sk_live_`)
-- [ ] Verify domain in Resend and update `FROM_EMAIL`
-- [ ] Add real admin emails to database
-- [ ] Configure gift card expiry settings
-- [ ] Verify legal policies are active
-- [ ] Test complete purchase flow
-- [ ] Check cron job logs after 24 hours
-- [ ] Verify both `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are configured
+Private - All rights reserved.
 
 ---
 
-## Scripts
+## 🙏 Credits
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run db:generate` | Generate Prisma client |
-| `npm run db:migrate` | Run database migrations |
-| `npm run db:seed` | Seed database with initial data |
-| `npm run db:studio` | Open Prisma Studio |
-
----
-
-## Documentation
-
-For detailed technical documentation, see [AGENTS.md](./AGENTS.md) which includes:
-
-- Complete business logic specification
-- Stripe integration flow diagrams
-- Order state machine
-- Email template specifications
-- Database schema with relationships
-- API endpoint documentation
-- Prisma 7 + Neon configuration
-- Context7 documentation references
-
----
-
-## Context7 - Documentazione Aggiornata
-
-Questo progetto utilizza **Context7** per accedere alla documentazione ufficiale aggiornata delle librerie:
-
-| Libreria | Context7 ID | Documentazione |
-|----------|-------------|----------------|
-| Next.js / next-intl | `/amannn/next-intl` | [Context7](https://context7.com/amannn/next-intl) |
-| Prisma 7 | `/llmstxt/prisma_io_llms_txt` | [Context7](https://context7.com/llmstxt/prisma_io_llms_txt) |
-| Stripe | `/websites/stripe` | [Context7](https://context7.com/websites/stripe) |
-| React 19 | `/websites/react_dev` | [Context7](https://context7.com/websites/react_dev) |
-| Tailwind CSS | `/websites/tailwindcss` | [Context7](https://context7.com/websites/tailwindcss) |
-
----
-
-## Contributing
-
-This is a proprietary project for Lo Scalo. For issues or feature requests, please contact the development team.
-
----
-
-## Acknowledgments
-
-- **Design & Development**: [Steve Giudice](mailto:giudice.steve@gmail.com)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-- **Icons**: [Lucide](https://lucide.dev/)
-
----
-
-## License
-
-Proprietary - All rights reserved by Lo Scalo and Steve Giudice.
+Developed with ❤️ for **Lo Scalo - Craft Drinks by the Lake**  
+📍 Frazione San Vito, 9 - 22010 Cremia (CO), Italy
 
 ---
 
 <p align="center">
-  Made with ❤️ for Lo Scalo - Craft Drinks By The Lake, Cremia (CO)
+  <a href="https://loscalo.it">🌐 Website</a> •
+  <a href="https://instagram.com/loscalo">📸 Instagram</a>
 </p>
