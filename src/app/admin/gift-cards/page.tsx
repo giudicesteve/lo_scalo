@@ -152,11 +152,16 @@ export default function AdminGiftCardsPage() {
   const giftCardsCacheRef = useRef(giftCardsCache)
   giftCardsCacheRef.current = giftCardsCache
   
+  // Loading state per tab switching (mostra skeleton mentre cambia tab)
+  const [isTabLoading, setIsTabLoading] = useState(false)
+  
   const fetchGiftCards = useCallback(async (
     targetTab?: "active" | "exhausted" | "unavailable", 
     targetPage?: number,
-    forceRefresh = false
+    forceRefresh = false,
+    showLoading = false
   ) => {
+    if (showLoading) setIsTabLoading(true)
     const tab = targetTab || activeTab
     const page = targetPage || paginationRef.current[tab].page
     const search = debouncedSearchQuery.trim()
@@ -218,6 +223,7 @@ export default function AdminGiftCardsPage() {
       setGiftCards([])
     } finally {
       setLoading(false)
+      if (showLoading) setIsTabLoading(false)
     }
   }, [activeTab, debouncedSearchQuery])
   
@@ -298,7 +304,7 @@ export default function AdminGiftCardsPage() {
 
   // Carica gift cards quando cambia tab o ricerca (debounced) - la pagina è gestita separatamente
   useEffect(() => {
-    fetchGiftCards()
+    fetchGiftCards(undefined, undefined, false, true) // showLoading = true per tab switch
   }, [activeTab, debouncedSearchQuery, fetchGiftCards])
 
   // Ricarica quando la pagina prende focus (utente torna sulla tab) - usa cache
@@ -820,8 +826,8 @@ export default function AdminGiftCardsPage() {
   }
   
   // Determine what to show in the gift cards list
-  const showSkeletons = isPageLoading
-  const displayGiftCards = isPageLoading ? [] : giftCards
+  const showSkeletons = isPageLoading || isTabLoading
+  const displayGiftCards = (isPageLoading || isTabLoading) ? [] : giftCards
 
   return (
     <main className="min-h-screen bg-brand-cream">
@@ -888,8 +894,9 @@ export default function AdminGiftCardsPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setActiveTab("active")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setActiveTab("active")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               activeTab === "active"
                 ? "bg-brand-primary text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
@@ -898,8 +905,9 @@ export default function AdminGiftCardsPage() {
             Attive ({activeCount})
           </button>
           <button
-            onClick={() => setActiveTab("exhausted")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setActiveTab("exhausted")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               activeTab === "exhausted"
                 ? "bg-amber-500 text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
@@ -908,8 +916,9 @@ export default function AdminGiftCardsPage() {
             Credito esaurito ({exhaustedCount})
           </button>
           <button
-            onClick={() => setActiveTab("unavailable")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setActiveTab("unavailable")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               activeTab === "unavailable"
                 ? "bg-red-500 text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
@@ -926,7 +935,7 @@ export default function AdminGiftCardsPage() {
           onPageChange={handlePageChange}
           totalItems={pagination[activeTab].total}
           itemsPerPage={ITEMS_PER_PAGE}
-          disabled={isPageLoading}
+          disabled={isPageLoading || isTabLoading}
         />
 
         {/* Gift Cards List */}

@@ -168,11 +168,16 @@ export default function AdminOrdersPage() {
   const ordersCacheRef = useRef(ordersCache)
   ordersCacheRef.current = ordersCache
   
+  // Loading state per tab switching (mostra skeleton mentre cambia tab)
+  const [isTabLoading, setIsTabLoading] = useState(false)
+  
   const fetchOrders = useCallback(async (
     targetFilter?: "active" | "archived" | "cancelled", 
     targetPage?: number,
-    forceRefresh = false
+    forceRefresh = false,
+    showLoading = false
   ) => {
+    if (showLoading) setIsTabLoading(true)
     const tab = targetFilter || filter
     const page = targetPage || paginationRef.current[tab].page
     const search = debouncedSearchQuery.trim()
@@ -243,12 +248,13 @@ export default function AdminOrdersPage() {
       setOrders([])
     } finally {
       setLoading(false)
+      if (showLoading) setIsTabLoading(false)
     }
   }, [filter, debouncedSearchQuery])
 
   // Carica ordini quando cambia tab o ricerca (debounced) - la pagina è gestita separatamente
   useEffect(() => {
-    fetchOrders()
+    fetchOrders(undefined, undefined, false, true) // showLoading = true per tab switch
   }, [filter, debouncedSearchQuery, fetchOrders])
   
   // Check super admin - solo al mount
@@ -479,8 +485,8 @@ export default function AdminOrdersPage() {
   }
   
   // Determine what to show in the orders list
-  const showSkeletons = isPageLoading
-  const displayOrders = isPageLoading ? [] : orders
+  const showSkeletons = isPageLoading || isTabLoading
+  const displayOrders = (isPageLoading || isTabLoading) ? [] : orders
 
   return (
     <main className="min-h-screen bg-brand-cream">
@@ -537,8 +543,9 @@ export default function AdminOrdersPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setFilter("active")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setFilter("active")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               filter === "active"
                 ? "bg-brand-primary text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
@@ -547,8 +554,9 @@ export default function AdminOrdersPage() {
             Attivi ({activeCount})
           </button>
           <button
-            onClick={() => setFilter("archived")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setFilter("archived")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               filter === "archived"
                 ? "bg-brand-primary text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
@@ -557,8 +565,9 @@ export default function AdminOrdersPage() {
             Archiviati ({archivedCount})
           </button>
           <button
-            onClick={() => setFilter("cancelled")}
-            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all ${
+            onClick={() => !isTabLoading && setFilter("cancelled")}
+            disabled={isTabLoading}
+            className={`flex-1 py-2 px-4 rounded-full text-title-sm font-medium transition-all disabled:opacity-50 ${
               filter === "cancelled"
                 ? "bg-red-600 text-white"
                 : "bg-white text-brand-gray border border-brand-light-gray"
