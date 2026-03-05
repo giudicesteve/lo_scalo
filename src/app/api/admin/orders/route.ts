@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
     const where: {
       isArchived?: boolean;
-      status?: OrderStatus;
+      status?: OrderStatus | { not: OrderStatus };
       OR?: Array<{
         orderNumber?: { contains: string; mode: "insensitive" };
         email?: { contains: string; mode: "insensitive" };
