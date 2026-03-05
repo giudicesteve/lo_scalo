@@ -1,10 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { euroToCents, centsToEuro } from "@/lib/utils/currency";
+
+// Force dynamic - uses auth()
+export const dynamic = 'force-dynamic'
+
+// Helper to check admin auth
+async function checkAdmin() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return { error: "Unauthorized", status: 401 };
+  }
+
+  const admin = await prisma.admin.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!admin) {
+    return { error: "Forbidden", status: 403 };
+  }
+
+  return { admin };
+}
 
 // GET - Lista tutti i template
 export async function GET() {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const templates = await prisma.giftCardTemplate.findMany({
       orderBy: { value: "asc" },
     });
@@ -28,6 +55,11 @@ export async function GET() {
 // POST - Crea nuovo template
 export async function POST(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json();
     const template = await prisma.giftCardTemplate.create({
       data: {
@@ -54,6 +86,11 @@ export async function POST(req: Request) {
 // PUT - Aggiorna template
 export async function PUT(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const body = await req.json();
     const data: { value?: number; price?: number; isActive?: boolean } = {};
 
@@ -83,6 +120,11 @@ export async function PUT(req: Request) {
 // DELETE - Elimina template
 export async function DELETE(req: Request) {
   try {
+    const authCheck = await checkAdmin();
+    if ("error" in authCheck) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {
