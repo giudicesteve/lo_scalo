@@ -58,7 +58,7 @@
 - ~~**Cache Headers**~~ ✅ **COMPLETATO** - Cache aggiunta a 5 API pubbliche
 - ~~**Image Optimization**~~ ✅ **COMPLETATO** - Ottimizzazione abilitata, cache 31 giorni, formati webp/avif
 ~~- **Bundle Analyzer**~~ ✅ **COMPLETATO**
-- **React Query**: Implementare caching lato client ( TanStack Query )
+~~- **React Query**: Implementare caching lato client~~ ❌ **RIMOSSO** - Cache server-side già sufficiente per il momento
 
 ### 🔶 Priorità Media
 
