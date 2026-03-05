@@ -88,7 +88,7 @@ RATE_LIMIT_ADMIN_API=100
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Tech Stack
 
