@@ -27,7 +27,14 @@ export async function GET(req: Request) {
 
     // Se archived è specificato, filtra, altrimenti restituisci tutti
     if (archivedParam !== null) {
-      where.isArchived = archivedParam === "true";
+      const isArchived = archivedParam === "true";
+      where.isArchived = isArchived;
+      
+      // Se stiamo cercando ordini archiviati (tab "Archiviati"), 
+      // escludiamo quelli CANCELLED che hanno la loro tab dedicata
+      if (isArchived) {
+        where.status = { not: "CANCELLED" };
+      }
     }
 
     if (statusParam) {

@@ -12,9 +12,12 @@ export async function GET() {
           status: { not: "CANCELLED" },
         },
       }),
-      // Archiviati
+      // Archiviati (escludi CANCELLED che hanno tab dedicata)
       prisma.order.count({
-        where: { isArchived: true },
+        where: { 
+          isArchived: true,
+          status: { not: "CANCELLED" },
+        },
       }),
       // Annullati
       prisma.order.count({

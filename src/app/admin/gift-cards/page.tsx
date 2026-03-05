@@ -28,6 +28,35 @@ const ITEMS_PER_PAGE = 25
 const MIN_SEARCH_LENGTH = 4
 const SEARCH_DEBOUNCE_MS = 300
 
+// Skeleton component for gift card cards
+function GiftCardSkeleton() {
+  return (
+    <div className="w-full bg-white rounded-2xl shadow-card p-4 animate-pulse">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="h-6 w-28 bg-brand-light-gray rounded" />
+        <div className="h-5 w-16 bg-brand-light-gray rounded-full" />
+      </div>
+      
+      {/* Customer Info */}
+      <div className="space-y-2 mb-3">
+        <div className="h-4 w-full bg-brand-light-gray rounded" />
+        <div className="h-4 w-32 bg-brand-light-gray rounded" />
+        <div className="h-4 w-40 bg-brand-light-gray rounded" />
+      </div>
+      
+      {/* Progress Section */}
+      <div className="bg-brand-cream rounded-xl p-3 space-y-2">
+        <div className="flex justify-between">
+          <div className="h-8 w-16 bg-brand-light-gray rounded" />
+          <div className="h-5 w-12 bg-brand-light-gray rounded" />
+        </div>
+        <div className="h-2 w-full bg-brand-light-gray rounded-full" />
+      </div>
+    </div>
+  )
+}
+
 // Helper to parse number with both comma and dot as decimal separator
 const parseNumber = (value: string): number => {
   if (!value) return 0
@@ -767,15 +796,21 @@ export default function AdminGiftCardsPage() {
   const currentPage = pagination[activeTab].page
   const totalPages = Math.ceil(pagination[activeTab].total / ITEMS_PER_PAGE)
   
-  const handlePageChange = (newPage: number) => {
+  // Loading state specific for pagination (shows skeleton instead of spinner)
+  const [isPageLoading, setIsPageLoading] = useState(false)
+
+  const handlePageChange = async (newPage: number) => {
+    setIsPageLoading(true)
     setPagination(prev => ({
       ...prev,
       [activeTab]: { ...prev[activeTab], page: newPage }
     }))
     // Chiama fetchGiftCards direttamente con la nuova pagina
-    fetchGiftCards(undefined, newPage)
+    await fetchGiftCards(undefined, newPage)
+    setIsPageLoading(false)
   }
 
+  // Initial loading state (full page spinner)
   if (loading) {
     return (
       <main className="min-h-screen bg-brand-cream flex items-center justify-center">
@@ -783,6 +818,10 @@ export default function AdminGiftCardsPage() {
       </main>
     )
   }
+  
+  // Determine what to show in the gift cards list
+  const showSkeletons = isPageLoading
+  const displayGiftCards = isPageLoading ? [] : giftCards
 
   return (
     <main className="min-h-screen bg-brand-cream">
@@ -887,11 +926,22 @@ export default function AdminGiftCardsPage() {
           onPageChange={handlePageChange}
           totalItems={pagination[activeTab].total}
           itemsPerPage={ITEMS_PER_PAGE}
+          disabled={isPageLoading}
         />
 
         {/* Gift Cards List */}
         <div className="space-y-4">
-          {giftCards.map((gc) => {
+          {/* Skeleton loading state during pagination */}
+          {showSkeletons && (
+            <>
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                <GiftCardSkeleton key={`skeleton-${i}`} />
+              ))}
+            </>
+          )}
+          
+          {/* Actual gift cards */}
+          {!showSkeletons && displayGiftCards.map((gc) => {
             const usedValue = gc.initialValue - gc.remainingValue
             return (
               <button
@@ -1006,7 +1056,7 @@ export default function AdminGiftCardsPage() {
             )
           })}
 
-          {giftCards.length === 0 && (
+          {!showSkeletons && displayGiftCards.length === 0 && (
             <p className="text-center text-brand-gray py-12">
               Nessuna gift card {" "}
               {activeTab === "active" ? "attiva" : activeTab === "exhausted" ? "con credito esaurito" : "non disponibile"} trovata
@@ -1021,6 +1071,7 @@ export default function AdminGiftCardsPage() {
           onPageChange={handlePageChange}
           totalItems={pagination[activeTab].total}
           itemsPerPage={ITEMS_PER_PAGE}
+          disabled={isPageLoading}
         />
       </div>
 

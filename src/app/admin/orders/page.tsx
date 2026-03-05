@@ -82,6 +82,45 @@ const ITEMS_PER_PAGE = 25
 const MIN_SEARCH_LENGTH = 4
 const SEARCH_DEBOUNCE_MS = 300
 
+// Skeleton component for order cards
+function OrderCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl shadow-card p-4 animate-pulse">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="h-6 w-32 bg-brand-light-gray rounded" />
+          <div className="flex gap-2">
+            <div className="h-5 w-20 bg-brand-light-gray rounded-full" />
+            <div className="h-5 w-24 bg-brand-light-gray rounded-full" />
+          </div>
+        </div>
+        <div className="h-8 w-20 bg-brand-light-gray rounded" />
+      </div>
+      
+      {/* Customer Info */}
+      <div className="space-y-2 mb-3">
+        <div className="h-4 w-48 bg-brand-light-gray rounded" />
+        <div className="h-4 w-32 bg-brand-light-gray rounded" />
+        <div className="h-4 w-40 bg-brand-light-gray rounded" />
+      </div>
+      
+      {/* Items Section */}
+      <div className="bg-brand-cream rounded-xl p-3 mb-3 space-y-2">
+        <div className="h-3 w-16 bg-brand-light-gray/70 rounded" />
+        <div className="h-4 w-full bg-brand-light-gray rounded" />
+        <div className="h-4 w-3/4 bg-brand-light-gray rounded" />
+      </div>
+      
+      {/* Actions */}
+      <div className="flex gap-2">
+        <div className="h-9 w-28 bg-brand-light-gray rounded-full" />
+        <div className="h-9 w-24 bg-brand-light-gray rounded-full" />
+      </div>
+    </div>
+  )
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -416,15 +455,21 @@ export default function AdminOrdersPage() {
   const currentPage = pagination[filter].page
   const totalPages = Math.ceil(pagination[filter].total / ITEMS_PER_PAGE)
   
-  const handlePageChange = (newPage: number) => {
+  // Loading state specific for pagination (shows skeleton instead of spinner)
+  const [isPageLoading, setIsPageLoading] = useState(false)
+
+  const handlePageChange = async (newPage: number) => {
+    setIsPageLoading(true)
     setPagination(prev => ({
       ...prev,
       [filter]: { ...prev[filter], page: newPage }
     }))
     // Chiama fetchOrders direttamente con la nuova pagina
-    fetchOrders(undefined, newPage)
+    await fetchOrders(undefined, newPage)
+    setIsPageLoading(false)
   }
 
+  // Initial loading state (full page spinner)
   if (loading) {
     return (
       <main className="min-h-screen bg-brand-cream flex items-center justify-center">
@@ -432,6 +477,10 @@ export default function AdminOrdersPage() {
       </main>
     )
   }
+  
+  // Determine what to show in the orders list
+  const showSkeletons = isPageLoading
+  const displayOrders = isPageLoading ? [] : orders
 
   return (
     <main className="min-h-screen bg-brand-cream">
@@ -526,11 +575,22 @@ export default function AdminOrdersPage() {
           onPageChange={handlePageChange}
           totalItems={pagination[filter].total}
           itemsPerPage={ITEMS_PER_PAGE}
+          disabled={isPageLoading}
         />
 
         {/* Orders List */}
         <div className="space-y-4">
-          {orders.map((order) => (
+          {/* Skeleton loading state during pagination */}
+          {showSkeletons && (
+            <>
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                <OrderCardSkeleton key={`skeleton-${i}`} />
+              ))}
+            </>
+          )}
+          
+          {/* Actual orders */}
+          {!showSkeletons && displayOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-2xl shadow-card p-4">
               {/* Header: Numero Ordine + Info */}
               <div className="flex items-center justify-between mb-3">
@@ -802,7 +862,7 @@ export default function AdminOrdersPage() {
             </div>
           ))}
 
-          {orders.length === 0 && (
+          {!showSkeletons && displayOrders.length === 0 && (
             <p className="text-center text-brand-gray py-12">
               {searchQuery 
                 ? "Nessun ordine trovato" 
@@ -822,6 +882,7 @@ export default function AdminOrdersPage() {
           onPageChange={handlePageChange}
           totalItems={pagination[filter].total}
           itemsPerPage={ITEMS_PER_PAGE}
+          disabled={isPageLoading}
         />
       </div>
 

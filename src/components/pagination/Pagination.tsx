@@ -8,6 +8,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void
   totalItems: number
   itemsPerPage: number
+  disabled?: boolean
 }
 
 export function Pagination({ 
@@ -15,7 +16,8 @@ export function Pagination({
   totalPages, 
   onPageChange,
   totalItems,
-  itemsPerPage
+  itemsPerPage,
+  disabled = false
 }: PaginationProps) {
   if (totalPages <= 1) return null
 
@@ -55,7 +57,7 @@ export function Pagination({
         {/* Previous */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || disabled}
           className="p-2 rounded-lg border border-brand-light-gray text-brand-gray hover:bg-brand-light-gray/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Pagina precedente"
         >
@@ -67,14 +69,14 @@ export function Pagination({
           <button
             key={index}
             onClick={() => typeof page === "number" && onPageChange(page)}
-            disabled={page === "..."}
+            disabled={page === "..." || disabled}
             className={`min-w-[40px] h-10 px-3 rounded-lg text-body-sm font-medium transition-colors ${
               page === currentPage
                 ? "bg-brand-primary text-white"
                 : page === "..."
                 ? "cursor-default text-brand-gray"
                 : "border border-brand-light-gray text-brand-gray hover:bg-brand-light-gray/30"
-            }`}
+            } ${disabled && page !== currentPage ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {page}
           </button>
@@ -83,7 +85,7 @@ export function Pagination({
         {/* Next */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || disabled}
           className="p-2 rounded-lg border border-brand-light-gray text-brand-gray hover:bg-brand-light-gray/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Pagina successiva"
         >
